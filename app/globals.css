@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ink: #0c0c0c;
+  --charcoal: #1a1a1a;
+  --charcoal-soft: #2a2a2a;
+  --cream: #f7f4ef;
+  --cream-dark: #ebe6de;
+  --surface: #ffffff;
+  --line: #e5e0d8;
+  --line-dark: #d4cec4;
+  --gold: #b8956b;
+  --gold-soft: #d4bc94;
+  --muted: #6b6560;
+}
+
+body {
+  @apply bg-[var(--cream)] text-[var(--ink)] antialiased;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .portal-container {
+    @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-charcoal {
+    @apply bg-[var(--charcoal)] text-white;
+  }
+
+  .headline-stack {
+    @apply font-semibold leading-[0.92] tracking-[-0.04em];
+  }
+
+  .hover-lift {
+    @apply transition duration-500 ease-out;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 60px rgba(12, 12, 12, 0.12);
+  }
+
+  .card-framer {
+    @apply rounded-[1.75rem] bg-white shadow-[0_8px_40px_rgba(12,12,12,0.06)] ring-1 ring-black/[0.04];
+  }
+
+  .rail-scroll {
+    @apply flex gap-5 overflow-x-auto pb-6 pt-1;
+    scroll-snap-type: x mandatory;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .rail-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rail-card {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
+
+  .marquee-text {
+    @apply whitespace-nowrap text-[clamp(4rem,12vw,10rem)] font-semibold uppercase tracking-tighter text-white/[0.04];
+  }
+
+  .animate-float-slow {
+    animation: float-slow 8s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float-slow 8s ease-in-out 2s infinite;
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
