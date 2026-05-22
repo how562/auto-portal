@@ -77,3 +77,7 @@ export function useLeadCapture() {
   }
   return ctx;
 }
+
+export function useOptionalLeadCapture(): LeadCaptureState["openLead"] | undefined {
+  return useContext(LeadCaptureContext)?.openLead;
+}

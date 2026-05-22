@@ -2,6 +2,8 @@
 
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 import type { LeadAction } from "@/lib/leads";
+import { btnPrimaryLg } from "@/lib/buttonClasses";
+import { cardFormWrap } from "@/lib/cardClasses";
 import { settingString, parseSettings } from "@/lib/cmsSettings";
 import type { PageSection } from "@/lib/cmsTypes";
 
@@ -35,13 +37,13 @@ export function CMSFormSection({ section }: { section: PageSection }) {
   return (
     <section className="py-14 sm:py-20">
       <div className="portal-container">
-        <div className="mx-auto max-w-2xl rounded-[2rem] border border-[var(--line)] bg-white px-8 py-12 text-center shadow-[0_12px_48px_rgba(12,12,12,0.06)] sm:px-12 sm:py-14">
+        <div className={cardFormWrap}>
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
             Connect
           </p>
           <h2 className="mt-4 headline-stack text-3xl sm:text-4xl">{headline}</h2>
           {subheadline ? (
-            <p className="mt-4 text-[var(--muted)] leading-relaxed">{subheadline}</p>
+            <p className="mt-3 text-[var(--muted)] leading-snug">{subheadline}</p>
           ) : null}
           <button
             type="button"
@@ -51,7 +53,7 @@ export function CMSFormSection({ section }: { section: PageSection }) {
                 shopperIntent,
               })
             }
-            className="mt-8 rounded-full bg-[var(--ink)] px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--charcoal)] hover:shadow-[0_12px_40px_rgba(12,12,12,0.12)]"
+            className={`mt-8 ${btnPrimaryLg}`}
           >
             {ctaLabel}
           </button>

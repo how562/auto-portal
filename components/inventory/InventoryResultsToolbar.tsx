@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { InventorySortPills } from "@/components/inventory/InventorySortPills";
 import type { InventoryViewMode } from "@/lib/inventoryView";
 import type { InventoryFilters } from "@/lib/inventorySearch";
@@ -28,7 +29,7 @@ function ViewToggle({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full px-3.5 py-2 text-xs font-semibold transition ${
+      className={`rounded-md px-3.5 py-2 text-xs font-semibold transition ${
         active
           ? "bg-[var(--ink)] text-white"
           : "text-[var(--muted)] hover:text-[var(--ink)]"
@@ -48,45 +49,45 @@ export function InventoryResultsToolbar({
   onSortChange,
   onViewModeChange,
 }: InventoryResultsToolbarProps) {
+  const { t } = useLanguage();
+  const matchWord =
+    count === 1
+      ? t("inventory.results.matchSingular")
+      : t("inventory.results.matchPlural");
+
   return (
-    <div className="sticky top-[4.5rem] z-30 -mx-4 border-b border-[var(--line)] bg-[var(--cream)]/95 px-4 py-4 backdrop-blur-md sm:top-24 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <div className="sticky top-[4.5rem] z-30 -mx-4 border-b border-[var(--line)] bg-[var(--cream)]/95 px-4 py-4  sm:top-24 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <p className="text-lg font-semibold tracking-tight text-[var(--ink)]">
             {count}{" "}
-            <span className="font-normal text-[var(--muted)]">
-              {count === 1 ? "match" : "matches"}
-            </span>
+            <span className="font-normal text-[var(--muted)]">{matchWord}</span>
           </p>
-          <p className="text-xs text-[var(--muted)]">Updated as you refine</p>
+          <p className="text-xs text-[var(--muted)]">
+            {t("inventory.results.updatedAsYouRefine")}
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <div
-            className="inline-flex rounded-full bg-white p-1 ring-1 ring-[var(--line-dark)]"
+            className="inline-flex rounded-md bg-white p-1 ring-1 ring-[var(--line-dark)]"
             role="group"
-            aria-label="View mode"
+            aria-label={t("inventory.view.grid")}
           >
             <ViewToggle
               mode="grid"
               active={viewMode === "grid"}
               onClick={() => onViewModeChange("grid")}
-              label="Grid view"
+              label={t("inventory.view.grid")}
             />
             <ViewToggle
               mode="list"
               active={viewMode === "list"}
               onClick={() => onViewModeChange("list")}
-              label="List view"
+              label={t("inventory.view.list")}
             />
           </div>
-
-          <div className="flex flex-col gap-2 sm:items-end">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-              Order by
-            </p>
-            <InventorySortPills value={sort} onChange={onSortChange} />
-          </div>
+          <InventorySortPills value={sort} onChange={onSortChange} />
         </div>
       </div>
     </div>

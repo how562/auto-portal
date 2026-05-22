@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { VehicleLeadPanel } from "@/components/vdp/VehicleLeadPanel";
 import { VehicleCard } from "@/components/portal/VehicleCard";
 import { VehicleImage } from "@/components/vehicle/VehicleImage";
+import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 import {
   formatMileage,
   formatPrice,
@@ -24,7 +28,7 @@ function HighlightCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--line-dark)] bg-white px-5 py-4">
+    <div className="rounded-md border border-[var(--line-dark)] bg-white px-5 py-4">
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
         {label}
       </p>
@@ -38,6 +42,7 @@ export function VehicleDetailView({
   store,
   similar,
 }: VehicleDetailViewProps) {
+  const { t } = useLanguage();
   const title = formatVehicleTitle(vehicle);
   const fitParagraphs = buildWhyItMayFit(vehicle);
   const storeLabel = store
@@ -71,11 +76,11 @@ export function VehicleDetailView({
           aria-label="Breadcrumb"
         >
           <Link href="/" className="transition hover:text-[var(--ink)]">
-            Home
+            {t("vdp.home")}
           </Link>
           <span aria-hidden>→</span>
           <Link href="/inventory" className="transition hover:text-[var(--ink)]">
-            Inventory
+            {t("vdp.inventory")}
           </Link>
           <span aria-hidden>→</span>
           <span className="font-medium text-[var(--ink)]">{title}</span>
@@ -98,7 +103,7 @@ export function VehicleDetailView({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
                   {vehicle.condition
                     ? String(vehicle.condition).toUpperCase()
-                    : "INVENTORY"}
+                    : t("vdp.conditionInventory")}
                 </p>
                 <h1 className="mt-3 headline-stack text-4xl sm:text-5xl">
                   {title}
@@ -110,7 +115,7 @@ export function VehicleDetailView({
                 <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div>
                     <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      Price
+                      {t("vdp.price")}
                     </dt>
                     <dd className="mt-1 text-lg font-semibold">
                       {formatPrice(vehicle.internet_price)}
@@ -118,7 +123,7 @@ export function VehicleDetailView({
                   </div>
                   <div>
                     <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      Stock #
+                      {t("vdp.stockNumber")}
                     </dt>
                     <dd className="mt-1 text-lg font-semibold">
                       {vehicle.stock_number ?? "—"}
@@ -126,7 +131,7 @@ export function VehicleDetailView({
                   </div>
                   <div>
                     <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      Mileage
+                      {t("vdp.mileage")}
                     </dt>
                     <dd className="mt-1 text-lg font-semibold">
                       {formatMileage(vehicle.mileage)}
@@ -134,7 +139,7 @@ export function VehicleDetailView({
                   </div>
                   <div className="col-span-2 sm:col-span-3">
                     <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      VIN
+                      {t("vdp.vin")}
                     </dt>
                     <dd className="mt-1 font-mono text-sm text-[var(--ink)]">
                       {vehicle.vin ?? "—"}
@@ -143,7 +148,7 @@ export function VehicleDetailView({
                   {storeLabel ? (
                     <div className="col-span-2 sm:col-span-3">
                       <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                        Store
+                        {t("vdp.store")}
                       </dt>
                       <dd className="mt-1 text-lg font-semibold">{storeLabel}</dd>
                     </div>
@@ -154,7 +159,7 @@ export function VehicleDetailView({
 
             <section>
               <h2 className="text-2xl font-semibold tracking-tight">
-                Vehicle highlights
+                {t("vdp.vehicleHighlights")}
               </h2>
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <HighlightCard
@@ -166,7 +171,7 @@ export function VehicleDetailView({
                   value={formatMileage(vehicle.mileage)}
                 />
                 <HighlightCard
-                  label="Condition"
+                  label={t("vdp.condition")}
                   value={
                     vehicle.condition
                       ? String(vehicle.condition).toUpperCase()
@@ -174,23 +179,23 @@ export function VehicleDetailView({
                   }
                 />
                 <HighlightCard
-                  label="Body style"
+                  label={t("vdp.bodyStyle")}
                   value={vehicle.body_style ?? "—"}
                 />
                 <HighlightCard
-                  label="Exterior"
+                  label={t("vdp.exterior")}
                   value={vehicle.exterior_color ?? "—"}
                 />
                 <HighlightCard
-                  label="Interior"
+                  label={t("vdp.interior")}
                   value={vehicle.interior_color ?? "—"}
                 />
               </div>
             </section>
 
-            <section className="rounded-[1.75rem] border border-[var(--line-dark)] bg-white p-6 sm:p-8">
+            <section className="rounded-lg border border-[var(--line-dark)] bg-white p-6 sm:p-8">
               <h2 className="text-2xl font-semibold tracking-tight">
-                Why it may fit
+                {t("vdp.whyItMayFit")}
               </h2>
               <div className="mt-6 space-y-4">
                 {fitParagraphs.map((paragraph) => (
@@ -209,17 +214,17 @@ export function VehicleDetailView({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="text-2xl font-semibold tracking-tight">
-                      Similar vehicles
+                      {t("vdp.similarTitle")}
                     </h2>
                     <p className="mt-2 text-sm text-[var(--muted)]">
-                      Compare more options across the group
+                      {t("vdp.similarIntro")}
                     </p>
                   </div>
                   <Link
                     href={similarHref}
                     className="text-sm font-semibold text-[var(--ink)] hover:underline"
                   >
-                    Browse similar →
+                    {t("vdp.browseSimilar")}
                   </Link>
                 </div>
                 <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-2">
@@ -233,15 +238,15 @@ export function VehicleDetailView({
             <div className="flex flex-wrap gap-4 border-t border-[var(--line-dark)] pt-8">
               <Link
                 href="/inventory"
-                className="rounded-full border border-[var(--line-dark)] bg-white px-6 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--ink)]"
+                className={btnSecondaryMd}
               >
-                ← Back to Inventory
+                {t("vdp.backToInventory")}
               </Link>
               <Link
                 href={similarHref}
-                className="rounded-full bg-[var(--ink)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--charcoal)]"
+                className={btnPrimaryMd}
               >
-                Browse similar vehicles
+                {t("vdp.browseSimilarVehicles")}
               </Link>
             </div>
           </div>

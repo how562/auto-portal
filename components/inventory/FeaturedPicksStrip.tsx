@@ -21,7 +21,7 @@ export function FeaturedPicksStrip({
   if (vehicles.length === 0) return null;
 
   return (
-    <div className="rounded-[2rem] bg-[var(--charcoal)] px-6 py-8 text-white sm:px-10 sm:py-10">
+    <div className="rounded-md border border-white/10 bg-[var(--charcoal)] px-6 py-8 text-white sm:px-10 sm:py-10">
       <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--gold-soft)]">
         Featured picks
       </p>
@@ -33,9 +33,9 @@ export function FeaturedPicksStrip({
           <Link
             key={vehicle.id}
             href={vehicleDetailPath(vehicle.id)}
-            className="group flex gap-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-white/25 hover:bg-white/[0.08]"
+            className="group flex gap-4 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-4 transition-colors duration-200 hover:border-white/25 hover:bg-white/[0.08]"
           >
-            <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-xl bg-white/10">
+            <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-md border border-white/10 bg-white/5">
               <VehicleImage
                 vehicle={vehicle}
                 placeholderSize="sm"

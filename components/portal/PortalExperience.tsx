@@ -1,9 +1,9 @@
 "use client";
 
+import { CavenderCommitmentSection } from "@/components/home/CavenderCommitmentSection";
 import { DiscoveryCategoriesSection } from "@/components/home/DiscoveryCategoriesSection";
 import { EditorialHero } from "@/components/home/EditorialHero";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
-import { InventoryRailsSection } from "@/components/home/InventoryRailsSection";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
 import { StoreBrandStrip } from "@/components/home/StoreBrandStrip";
@@ -11,36 +11,30 @@ import { DiscoveryProvider } from "@/components/portal/DiscoveryContext";
 import { GuidedDiscoverySection } from "@/components/portal/GuidedDiscoverySection";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { MobileStickyCTA } from "@/components/portal/MobileStickyCTA";
-import type {
-  HomepageSectionData,
-  Store,
-  Vehicle,
-} from "@/lib/types";
+import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
+import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes";
+import type { Store, Vehicle } from "@/lib/types";
 
 interface PortalExperienceProps {
-  sections: HomepageSectionData[];
   vehicles: Vehicle[];
   stores: Store[];
-  loadError: string | null;
+  communityHero: CommunityHeroContent;
+  commitmentCms: CavenderCommitmentCmsPayload;
 }
 
 function PortalContent({
-  sections,
   vehicles,
   stores,
-  loadError,
+  communityHero,
+  commitmentCms,
 }: PortalExperienceProps) {
   return (
     <>
       <PortalHeader />
-      <EditorialHero previewVehicles={vehicles} loadError={loadError} />
+      <EditorialHero content={communityHero} />
       <DiscoveryCategoriesSection vehicles={vehicles} />
       <GuidedDiscoverySection vehicles={vehicles} />
-      <InventoryRailsSection
-        vehicles={vehicles}
-        sections={sections}
-        loadError={loadError}
-      />
+      <CavenderCommitmentSection cms={commitmentCms} />
       <HowItWorksSection />
       <StoreBrandStrip stores={stores} />
       <PortalFooter stores={stores} />
@@ -52,10 +46,10 @@ function PortalContent({
 
 export function PortalExperience(props: PortalExperienceProps) {
   return (
-    <DiscoveryProvider>
-      <LeadCaptureProvider>
+    <LeadCaptureProvider>
+      <DiscoveryProvider>
         <PortalContent {...props} />
-      </LeadCaptureProvider>
-    </DiscoveryProvider>
+      </DiscoveryProvider>
+    </LeadCaptureProvider>
   );
 }

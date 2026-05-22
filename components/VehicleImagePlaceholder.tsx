@@ -52,21 +52,21 @@ const THEME_STYLES: Record<
     accent: "bg-amber-600/20",
     line: "bg-amber-200/15",
     text: "text-amber-50",
-    badge: "bg-black/35 text-amber-100 ring-amber-400/25",
+    badge: "bg-[var(--navy-deep)]/50 text-amber-100 ring-amber-400/25",
   },
   sedan: {
-    gradient: "from-[#2a3542] via-[#1e2833] to-[#121820]",
+    gradient: "from-[var(--charcoal-soft)] via-[var(--ink)] to-[var(--navy-deep)]",
     accent: "bg-sky-400/15",
     line: "bg-sky-200/12",
     text: "text-sky-50",
-    badge: "bg-black/35 text-sky-100 ring-sky-300/20",
+    badge: "bg-[var(--navy-deep)]/50 text-sky-100 ring-sky-300/20",
   },
   luxury: {
-    gradient: "from-[#2a2824] via-[#1a1917] to-[#0c0c0c]",
+    gradient: "from-[var(--charcoal-soft)] via-[var(--ink)] to-[var(--navy-deep)]",
     accent: "bg-[var(--gold)]/25",
     line: "bg-[var(--gold-soft)]/20",
     text: "text-[var(--gold-soft)]",
-    badge: "bg-black/40 text-[var(--gold-soft)] ring-[var(--gold)]/35",
+    badge: "bg-[var(--navy-deep)]/55 text-[var(--gold-soft)] ring-[var(--gold)]/35",
   },
   default: {
     gradient: "from-[var(--cream-dark)] via-[#ddd6cb] to-[var(--charcoal-soft)]",
@@ -79,7 +79,7 @@ const THEME_STYLES: Record<
 
 function VehicleSilhouette({ theme }: { theme: PlaceholderTheme }) {
   const stroke =
-    theme === "default" ? "rgba(12,12,12,0.18)" : "rgba(255,255,255,0.22)";
+    theme === "default" ? "rgba(21,42,71,0.2)" : "rgba(255,255,255,0.22)";
 
   return (
     <svg
@@ -136,15 +136,6 @@ export function VehicleImagePlaceholder({
       aria-label={`${label} — image coming soon`}
       className={`relative h-full w-full min-h-[140px] overflow-hidden bg-gradient-to-br ${styles.gradient} ${className}`.trim()}
     >
-      <div
-        className={`pointer-events-none absolute -right-8 top-8 h-32 w-32 rounded-full ${styles.accent} blur-2xl`}
-        aria-hidden
-      />
-      <div
-        className={`pointer-events-none absolute -left-6 bottom-12 h-24 w-24 rounded-full ${styles.accent} blur-xl`}
-        aria-hidden
-      />
-
       <div className="absolute inset-0 opacity-60" aria-hidden>
         <div
           className={`absolute left-[8%] top-[18%] h-px w-[55%] ${styles.line}`}
@@ -178,7 +169,7 @@ export function VehicleImagePlaceholder({
       </div>
 
       <span
-        className={`absolute right-3 top-3 z-10 rounded-full font-semibold uppercase tracking-[0.18em] ring-1 backdrop-blur-sm ${sizeStyles.badge} ${styles.badge}`}
+        className={`absolute right-3 top-3 z-10 rounded-md font-semibold uppercase tracking-[0.18em] ring-1 ${sizeStyles.badge} ${styles.badge}`}
       >
         Image coming soon
       </span>

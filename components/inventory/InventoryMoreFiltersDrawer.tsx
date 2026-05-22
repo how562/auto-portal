@@ -25,7 +25,7 @@ function DrawerChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+      className={`rounded-md px-4 py-2 text-sm font-medium transition ${
         active
           ? "bg-[var(--ink)] text-white"
           : "bg-[var(--cream)] text-[var(--muted)] ring-1 ring-[var(--line-dark)] hover:text-[var(--ink)]"
@@ -81,7 +81,7 @@ export function InventoryMoreFiltersDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       <button
         type="button"
-        className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-[var(--ink)]/40 "
         aria-label="Close filters"
         onClick={onClose}
       />
@@ -102,7 +102,7 @@ export function InventoryMoreFiltersDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full px-3 py-1.5 text-sm font-medium text-[var(--muted)] hover:bg-[var(--cream)] hover:text-[var(--ink)]"
+            className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--muted)] hover:bg-[var(--cream)] hover:text-[var(--ink)]"
           >
             Done
           </button>

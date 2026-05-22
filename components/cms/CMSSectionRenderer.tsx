@@ -1,12 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
+import { localizePageSections } from "@/lib/cmsSectionI18n";
 import { VehicleCard } from "@/components/portal/VehicleCard";
 import { parseSettings, settingItems, settingString } from "@/lib/cmsSettings";
 import type { EnrichedPageSection } from "@/lib/cmsTypes";
 import { isProbablySafeHtml, sanitizeCmsHtml } from "@/lib/sanitizeHtml";
 import type { Store } from "@/lib/types";
+import { btnLightMd, btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
+import {
+  cardCreamPad,
+  cardEmpty,
+  cardEmptyState,
+  cardFaqItem,
+  cardGridArticle,
+  cardGridBody,
+  cardHeroDark,
+  cardHeroLight,
+  cardImageFrame,
+  cardLocation,
+} from "@/lib/cardClasses";
 
 function SectionShell({
   children,
@@ -19,7 +35,7 @@ function SectionShell({
 }) {
   return (
     <section
-      className={`py-14 sm:py-20 ${dark ? "bg-[var(--charcoal)] text-white" : ""} ${className}`.trim()}
+      className={`section-pad-tight ${dark ? "bg-[var(--charcoal)] text-white" : ""} ${className}`.trim()}
     >
       {children}
     </section>
@@ -37,10 +53,10 @@ function CmsLink({
 }) {
   const className =
     variant === "primary"
-      ? "rounded-full bg-[var(--ink)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--charcoal)]"
+      ? btnPrimaryMd
       : variant === "light"
-        ? "rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--cream)]"
-        : "rounded-full border border-[var(--line-dark)] px-6 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--ink)]";
+        ? btnLightMd
+        : btnSecondaryMd;
 
   if (href.startsWith("/")) {
     return (
@@ -70,13 +86,7 @@ function HeroSection({ section }: { section: EnrichedPageSection }) {
   return (
     <SectionShell dark={dark}>
       <div className="portal-container">
-        <div
-          className={`relative overflow-hidden rounded-[2rem] px-8 py-16 sm:px-12 sm:py-20 ${
-            dark
-              ? "bg-[var(--ink)] text-white"
-              : "border border-[var(--line)] bg-white shadow-[0_12px_48px_rgba(12,12,12,0.06)]"
-          }`}
-        >
+        <div className={dark ? cardHeroDark : cardHeroLight}>
           {imageUrl ? (
             <div
               className="pointer-events-none absolute inset-0 opacity-20"
@@ -184,7 +194,7 @@ function ImageTextSection({ section }: { section: EnrichedPageSection }) {
             ) : null}
           </div>
           <div
-            className={`relative aspect-[4/3] overflow-hidden rounded-[1.75rem] bg-[var(--cream-dark)] ring-1 ring-[var(--line)] ${
+            className={`${cardImageFrame} aspect-[4/3] ${
               imageFirst ? "lg:order-1" : ""
             }`}
           >
@@ -227,31 +237,31 @@ function SplitFeatureSection({ section }: { section: EnrichedPageSection }) {
         <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
             {(leftTitle || leftBody) && (
-              <div className="rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-6">
+              <div className={cardCreamPad}>
                 {leftTitle ? (
                   <h3 className="text-xl font-semibold tracking-tight">{leftTitle}</h3>
                 ) : null}
                 {leftBody ? (
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                  <p className="mt-2 text-sm leading-snug text-[var(--muted)]">
                     {leftBody}
                   </p>
                 ) : null}
               </div>
             )}
             {(rightTitle || rightBody) && (
-              <div className="rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-6">
+              <div className={cardCreamPad}>
                 {rightTitle ? (
                   <h3 className="text-xl font-semibold tracking-tight">{rightTitle}</h3>
                 ) : null}
                 {rightBody ? (
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                  <p className="mt-2 text-sm leading-snug text-[var(--muted)]">
                     {rightBody}
                   </p>
                 ) : null}
               </div>
             )}
           </div>
-          <div className="relative aspect-[5/4] overflow-hidden rounded-[2rem] bg-[var(--cream-dark)] ring-1 ring-[var(--line)]">
+          <div className={`${cardImageFrame} aspect-[5/4]`}>
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt="" className="h-full w-full object-cover" />
@@ -307,15 +317,12 @@ function FaqSection({ section }: { section: EnrichedPageSection }) {
         ) : null}
         <dl className="mt-10 space-y-4">
           {items.map((item, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-[var(--line)] bg-white px-6 py-5"
-            >
+            <div key={i} className={cardFaqItem}>
               {item.question ? (
                 <dt className="font-semibold text-[var(--ink)]">{item.question}</dt>
               ) : null}
               {item.answer ? (
-                <dd className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+                <dd className="mt-1.5 text-sm leading-snug text-[var(--muted)]">
                   {item.answer}
                 </dd>
               ) : null}
@@ -379,10 +386,7 @@ function CardGridSection({ section }: { section: EnrichedPageSection }) {
         ) : null}
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, i) => (
-            <article
-              key={i}
-              className="flex flex-col overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-black/[0.05] shadow-[0_8px_32px_rgba(12,12,12,0.05)]"
-            >
+            <article key={i} className={cardGridArticle}>
               {card.image_url ? (
                 <div className="aspect-[16/10] overflow-hidden bg-[var(--cream-dark)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -393,15 +397,17 @@ function CardGridSection({ section }: { section: EnrichedPageSection }) {
                   />
                 </div>
               ) : null}
-              <div className="flex flex-1 flex-col p-6">
+              <div className={cardGridBody}>
                 {card.title ? (
-                  <h3 className="text-lg font-semibold">{card.title}</h3>
+                  <h3 className="text-lg font-semibold leading-snug">{card.title}</h3>
                 ) : null}
                 {card.body ? (
-                  <p className="mt-2 flex-1 text-sm text-[var(--muted)]">{card.body}</p>
+                  <p className="flex-1 text-sm leading-snug text-[var(--muted)]">
+                    {card.body}
+                  </p>
                 ) : null}
                 {card.link_label && card.link_href ? (
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <CmsLink
                       href={card.link_href}
                       label={card.link_label}
@@ -445,7 +451,7 @@ function InventoryCollectionSection({
       </div>
       {vehicles.length === 0 ? (
         <div className="portal-container">
-          <p className="rounded-2xl border border-dashed border-[var(--line-dark)] px-6 py-12 text-center text-[var(--muted)]">
+          <p className={cardEmptyState}>
             No vehicles in this collection right now.
           </p>
         </div>
@@ -483,10 +489,7 @@ function LocationsSection({
         ) : null}
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stores.map((store) => (
-            <div
-              key={store.id}
-              className="rounded-2xl border border-[var(--line)] bg-[var(--cream)] px-6 py-8 transition hover:border-[var(--ink)]/20 hover:shadow-[0_12px_32px_rgba(12,12,12,0.06)]"
-            >
+            <div key={store.id} className={cardLocation}>
               <p className="text-lg font-semibold text-[var(--ink)]">{store.name}</p>
               {(store.city || store.state) && (
                 <p className="mt-2 text-sm text-[var(--muted)]">
@@ -537,7 +540,7 @@ function CustomHtmlSection({ section }: { section: EnrichedPageSection }) {
             dangerouslySetInnerHTML={{ __html: safe }}
           />
         ) : (
-          <div className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)] px-6 py-10 text-center text-sm text-[var(--muted)]">
+          <div className={cardEmpty}>
             Custom content is unavailable or did not pass safety checks.
           </div>
         )}
@@ -588,7 +591,13 @@ interface CMSSectionRendererProps {
 }
 
 export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
-  if (sections.length === 0) {
+  const { locale } = useLanguage();
+  const localizedSections = useMemo(
+    () => localizePageSections(sections, locale),
+    [sections, locale],
+  );
+
+  if (localizedSections.length === 0) {
     return (
       <div className="portal-container py-20 text-center text-[var(--muted)]">
         This page has no sections yet.
@@ -598,7 +607,7 @@ export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
 
   return (
     <div className="flex flex-col">
-      {sections.map((section) => (
+      {localizedSections.map((section) => (
         <CMSSectionBlock key={section.id} section={section} />
       ))}
     </div>

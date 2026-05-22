@@ -1,12 +1,29 @@
-import { filterVehicles } from "./filterVehicles";
+import type { Translator } from "./i18n/translations";
+import {
+  buildInventoryUrl,
+  filterVehiclesByIntent,
+  filtersFromShopperSelection,
+  type InventoryMatchFilters,
+  type MatchBodyStyle,
+  type MatchBudget,
+  type MatchCondition,
+  type MatchLifestyle,
+} from "./inventoryMatch";
+import type { SmartMatchRulesCatalog } from "./smartMatchRulesTypes";
 import { getMatchLabel } from "./matchLabels";
-import type { ShopperIntent, Vehicle } from "./types";
+import type {
+  BudgetRange,
+  ConditionFilter,
+  ShopperIntent,
+  Vehicle,
+} from "./types";
 
 export type InventoryCondition = "all" | "new" | "used" | "cpo";
 export type InventoryBudget =
   | "all"
   | "under-25k"
   | "under-30k"
+  | "under-40k"
   | "30-50k"
   | "50k-plus";
 export type InventoryBodyStyle =
@@ -56,66 +73,54 @@ const LIFESTYLE_TO_INTENT: Record<
   "fuel-efficient": "fuel-efficient",
 };
 
-function haystack(vehicle: Vehicle): string {
-  return [vehicle.make, vehicle.model, vehicle.trim, vehicle.body_style]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
+const INVENTORY_LIFESTYLE_TO_MATCH: Record<InventoryLifestyle, MatchLifestyle> = {
+  all: "any",
+  family: "family",
+  work: "work",
+  luxury: "luxury",
+  budget: "budget",
+  "first-vehicle": "first",
+  "fuel-efficient": "efficient",
+};
 
-function matchesBodyStyle(vehicle: Vehicle, body: InventoryBodyStyle): boolean {
-  if (body === "all") return true;
-  const text = haystack(vehicle);
-  switch (body) {
-    case "suv":
-      return text.includes("suv") || text.includes("crossover");
-    case "truck":
-      return (
-        text.includes("truck") ||
-        text.includes("pickup") ||
-        text.includes("sierra") ||
-        text.includes("f-150")
-      );
-    case "sedan":
-      return text.includes("sedan") || text.includes("car");
-    case "coupe":
-      return text.includes("coupe");
-    case "van":
-      return text.includes("van") || text.includes("minivan");
-    default:
-      return true;
-  }
-}
+const INVENTORY_BUDGET_TO_MATCH: Record<InventoryBudget, MatchBudget> = {
+  all: "any",
+  "under-25k": "under-25k",
+  "under-30k": "under-30k",
+  "under-40k": "under-40k",
+  "30-50k": "30-50k",
+  "50k-plus": "50k-plus",
+};
 
-function matchesInventoryBudget(
-  vehicle: Vehicle,
-  budget: InventoryBudget,
-): boolean {
-  if (budget === "all") return true;
-  const price = vehicle.internet_price;
-  if (price === null || price <= 0) return false;
-  switch (budget) {
-    case "under-25k":
-      return price < 25000;
-    case "under-30k":
-      return price < 30000;
-    case "30-50k":
-      return price >= 30000 && price <= 50000;
-    case "50k-plus":
-      return price > 50000;
-    default:
-      return true;
-  }
-}
+const INVENTORY_CONDITION_TO_MATCH: Record<
+  InventoryCondition,
+  MatchCondition
+> = {
+  all: "any",
+  new: "new",
+  used: "used",
+  cpo: "cpo",
+};
 
-function matchesInventoryCondition(
-  vehicle: Vehicle,
-  condition: InventoryCondition,
-): boolean {
-  if (condition === "all") return true;
-  const c = (vehicle.condition ?? "").toLowerCase();
-  if (condition === "cpo") return c === "cpo" || c.includes("certified");
-  return c === condition;
+const INVENTORY_BODY_TO_MATCH: Record<InventoryBodyStyle, MatchBodyStyle> = {
+  all: "any",
+  suv: "suv",
+  truck: "truck",
+  sedan: "sedan",
+  coupe: "coupe",
+  van: "van",
+};
+
+function inventoryFiltersToMatch(
+  filters: InventoryFilters,
+): InventoryMatchFilters {
+  return {
+    lifestyle: INVENTORY_LIFESTYLE_TO_MATCH[filters.lifestyle],
+    budget: INVENTORY_BUDGET_TO_MATCH[filters.budget],
+    condition: INVENTORY_CONDITION_TO_MATCH[filters.condition],
+    body_style: INVENTORY_BODY_TO_MATCH[filters.bodyStyle],
+    store_id: filters.storeId !== "all" ? filters.storeId : undefined,
+  };
 }
 
 export function lifestyleToIntent(lifestyle: InventoryLifestyle): ShopperIntent {
@@ -135,30 +140,13 @@ export function budgetToHomepageRange(
 export function filterInventoryVehicles(
   vehicles: Vehicle[],
   filters: InventoryFilters,
+  smartMatchCatalog?: SmartMatchRulesCatalog,
 ): Vehicle[] {
-  const intent = lifestyleToIntent(filters.lifestyle);
-  const budgetRange = budgetToHomepageRange(filters.budget);
-  const conditionFilter =
-    filters.condition === "all"
-      ? "either"
-      : filters.condition === "cpo"
-        ? "either"
-        : filters.condition;
-
-  let result = vehicles.filter(
-    (v) =>
-      matchesInventoryCondition(v, filters.condition) &&
-      matchesInventoryBudget(v, filters.budget) &&
-      matchesBodyStyle(v, filters.bodyStyle) &&
-      (filters.storeId === "all" || v.store_id === filters.storeId),
+  const result = filterVehiclesByIntent(
+    vehicles,
+    inventoryFiltersToMatch(filters),
+    smartMatchCatalog,
   );
-
-  if (filters.lifestyle !== "all") {
-    result = filterVehicles(result, intent, budgetRange, conditionFilter);
-  } else if (filters.budget !== "all" || filters.condition !== "all") {
-    result = filterVehicles(result, "any", budgetRange, conditionFilter);
-  }
-
   return sortInventoryVehicles(result, filters.sort);
 }
 
@@ -183,17 +171,22 @@ export function sortInventoryVehicles(
   }
 }
 
-export function buildInventorySubtitle(filters: InventoryFilters): string {
+export function buildInventorySubtitle(
+  filters: InventoryFilters,
+  t?: Translator,
+): string {
   const parts: string[] = [];
 
   if (filters.lifestyle !== "all") {
     const labels: Record<Exclude<InventoryLifestyle, "all">, string> = {
-      family: "family-friendly options",
-      work: "work-ready vehicles",
-      luxury: "luxury picks",
-      budget: "budget-smart choices",
-      "first-vehicle": "first-vehicle paths",
-      "fuel-efficient": "fuel-efficient options",
+      family: t?.("inventory.subtitle.family") ?? "family-friendly options",
+      work: t?.("inventory.subtitle.work") ?? "work-ready vehicles",
+      luxury: t?.("inventory.subtitle.luxury") ?? "luxury picks",
+      budget: t?.("inventory.subtitle.budget") ?? "budget-smart choices",
+      "first-vehicle":
+        t?.("inventory.subtitle.firstVehicle") ?? "first-vehicle paths",
+      "fuel-efficient":
+        t?.("inventory.subtitle.fuelEfficient") ?? "fuel-efficient options",
     };
     parts.push(labels[filters.lifestyle]);
   }
@@ -204,28 +197,39 @@ export function buildInventorySubtitle(filters: InventoryFilters): string {
 
   if (filters.budget === "under-25k") parts.push("under $25k");
   else if (filters.budget === "under-30k") parts.push("under $30k");
+  else if (filters.budget === "under-40k") parts.push("under $40k");
   else if (filters.budget === "30-50k") parts.push("$30k–$50k");
   else if (filters.budget === "50k-plus") parts.push("$50k+");
 
   if (filters.condition !== "all") {
     const cond =
       filters.condition === "cpo"
-        ? "certified pre-owned"
-        : filters.condition;
+        ? (t?.("inventory.subtitle.cpo") ?? "certified pre-owned")
+        : filters.condition === "new"
+          ? (t?.("inventory.filter.new") ?? "new")
+          : filters.condition === "used"
+            ? (t?.("inventory.filter.used") ?? "used")
+            : filters.condition;
     parts.push(cond);
   }
 
   if (parts.length === 0) {
-    return "Tell us how you drive—we'll surface vehicles that fit your life across every store.";
+    return (
+      t?.("inventory.subtitleDefault") ??
+      "Tell us how you drive—we'll surface vehicles that fit your life across every store."
+    );
   }
 
   const joined = parts.join(" · ");
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
-export function getResultMatchLabel(filters: InventoryFilters): string | null {
+export function getResultMatchLabel(
+  filters: InventoryFilters,
+  t?: Translator,
+): string | null {
   if (filters.lifestyle === "all") return null;
-  return getMatchLabel(lifestyleToIntent(filters.lifestyle));
+  return getMatchLabel(lifestyleToIntent(filters.lifestyle), t);
 }
 
 export interface RefinementSuggestion {
@@ -236,13 +240,14 @@ export interface RefinementSuggestion {
 
 export function getRefinementSuggestions(
   filters: InventoryFilters,
+  t?: Translator,
 ): RefinementSuggestion[] {
   const suggestions: RefinementSuggestion[] = [];
 
   if (filters.bodyStyle !== "suv" && filters.lifestyle !== "family") {
     suggestions.push({
       id: "space",
-      label: "Need more space?",
+      label: t?.("inventory.refine.needSpace") ?? "Need more space?",
       patch: { bodyStyle: "suv", lifestyle: "family" },
     });
   }
@@ -254,7 +259,7 @@ export function getRefinementSuggestions(
   ) {
     suggestions.push({
       id: "budget",
-      label: "Lower your budget?",
+      label: t?.("inventory.refine.lowerBudget") ?? "Lower your budget?",
       patch: { budget: "under-30k" },
     });
   }
@@ -262,7 +267,7 @@ export function getRefinementSuggestions(
   if (filters.sort !== "newest") {
     suggestions.push({
       id: "newer",
-      label: "Prefer newer models?",
+      label: t?.("inventory.refine.newerModels") ?? "Prefer newer models?",
       patch: { sort: "newest" },
     });
   }
@@ -270,7 +275,7 @@ export function getRefinementSuggestions(
   if (filters.condition === "all" && suggestions.length < 3) {
     suggestions.push({
       id: "cpo",
-      label: "Explore certified options?",
+      label: t?.("inventory.refine.cpo") ?? "Explore certified options?",
       patch: { condition: "cpo" },
     });
   }
@@ -317,6 +322,7 @@ function isBudget(v: string | null): v is InventoryBudget {
     v === "all" ||
     v === "under-25k" ||
     v === "under-30k" ||
+    v === "under-40k" ||
     v === "30-50k" ||
     v === "50k-plus"
   );
@@ -365,4 +371,13 @@ export function lifestyleParamFromHome(
     "fuel-efficient": "fuel-efficient",
   };
   return map[choice] ?? null;
+}
+
+/** Build /inventory query from Smart Match / guided discovery selections. */
+export function buildGuidedDiscoveryInventoryUrl(
+  intent: ShopperIntent,
+  budget: BudgetRange,
+  condition: ConditionFilter,
+): string {
+  return buildInventoryUrl(filtersFromShopperSelection(intent, budget, condition));
 }

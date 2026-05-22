@@ -1,3 +1,4 @@
+import type { Translator } from "./i18n/translations";
 import type { InventoryFilters, InventoryLifestyle } from "@/lib/inventorySearch";
 import { lifestyleToIntent } from "@/lib/inventorySearch";
 import { getMatchLabel } from "@/lib/matchLabels";
@@ -13,14 +14,15 @@ export interface FilterChip {
 export function getActiveFilterChips(
   filters: InventoryFilters,
   stores: { id: string; name: string }[],
+  t?: Translator,
 ): FilterChip[] {
   const chips: FilterChip[] = [];
 
   if (filters.condition !== "all") {
     const labels: Record<string, string> = {
-      new: "New",
-      used: "Pre-owned",
-      cpo: "Certified",
+      new: t?.("inventory.filter.new") ?? "New",
+      used: t?.("inventory.filter.used") ?? "Pre-owned",
+      cpo: t?.("inventory.filter.cpo") ?? "Certified",
     };
     chips.push({
       id: "condition",
@@ -71,7 +73,7 @@ export function getActiveFilterChips(
     const store = stores.find((s) => s.id === filters.storeId);
     chips.push({
       id: "store",
-      label: store?.name ?? "Selected store",
+      label: store?.name ?? (t?.("inventory.chip.selectedStore") ?? "Selected store"),
       patch: { storeId: "all" },
     });
   }
@@ -121,9 +123,10 @@ export function getVehicleMicrocopy(
 export function getVehicleMatchLabel(
   vehicle: Vehicle,
   filters: InventoryFilters,
+  t?: Translator,
 ): string | undefined {
   if (filters.lifestyle !== "all") {
-    return getMatchLabel(lifestyleToIntent(filters.lifestyle));
+    return getMatchLabel(lifestyleToIntent(filters.lifestyle), t);
   }
 
   const intents: ShopperIntent[] = [
@@ -137,7 +140,7 @@ export function getVehicleMatchLabel(
   for (const intent of intents) {
     const matches = filterVehicles([vehicle], intent, "any", "either");
     if (matches.length > 0) {
-      return getMatchLabel(intent);
+      return getMatchLabel(intent, t);
     }
   }
 

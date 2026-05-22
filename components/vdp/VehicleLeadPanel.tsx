@@ -1,102 +1,218 @@
 "use client";
 
+
+
+import { useCta } from "@/components/cta/CtaProvider";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
+
 import { formatPrice, formatVehicleLabel } from "@/lib/format";
+
 import type { Store, VehicleDetail } from "@/lib/types";
 
+import { btnBlock, btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
+
+
+
 interface VehicleLeadPanelProps {
+
   vehicle: VehicleDetail;
+
   store: Store | null;
+
 }
+
+
 
 export function VehicleLeadPanel({ vehicle, store }: VehicleLeadPanelProps) {
+
+  const { t } = useLanguage();
   const { openLead } = useLeadCapture();
+
+  const availability = useCta("availability");
+
+  const buildShortlist = useCta("build_my_shortlist");
+
+  const compareSimilar = useCta("compare_similar");
+
+  const contactTeam = useCta("contact_team");
+
   const label = formatVehicleLabel(vehicle);
+
   const storeId = store?.id ?? vehicle.store_id ?? null;
 
+
+
   return (
-    <div className="card-framer p-6 lg:sticky lg:top-24">
+
+    <div className="card-framer p-5 sm:p-6 lg:sticky lg:top-24">
+
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
-        Ready to connect
+
+        {t("vdp.readyToConnect")}
+
       </p>
+
       <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">
+
         {formatPrice(vehicle.internet_price)}
+
       </p>
+
       <p className="mt-1 text-sm text-[var(--muted)]">
-        Stock #{vehicle.stock_number ?? "—"}
+
+        {t("vdp.stock", undefined, { number: vehicle.stock_number ?? "—" })}
+
       </p>
+
+
 
       <div className="mt-6 flex flex-col gap-2">
+
         <button
+
           type="button"
+
           onClick={() =>
+
             openLead({
+
               action: "availability",
+
               vehicle,
+
               storeId,
+
               shopperIntent: `Check availability for ${label}`,
+
             })
+
           }
-          className="w-full rounded-full bg-[var(--ink)] py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--charcoal)]"
+
+          className={`${btnBlock} ${btnPrimaryMd}`}
+
         >
-          Check Availability
+
+          {availability.label}
+
         </button>
+
         <button
+
           type="button"
+
           onClick={() =>
+
             openLead({
+
               action: "shortlist",
+
               vehicle,
+
               storeId,
+
               shopperIntent: `Add to shortlist: ${label}`,
+
             })
+
           }
-          className="w-full rounded-full border border-[var(--line-dark)] py-3.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--cream)]"
+
+          className={`${btnBlock} ${btnSecondaryMd}`}
+
         >
-          Build My Shortlist
+
+          {buildShortlist.label}
+
         </button>
+
         <button
+
           type="button"
+
           onClick={() =>
+
             openLead({
+
               action: "compare",
+
               vehicle,
+
               storeId,
+
               shopperIntent: `Find similar to ${label}`,
+
             })
+
           }
-          className="w-full rounded-full border border-[var(--line-dark)] py-3.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--cream)]"
+
+          className={`${btnBlock} ${btnSecondaryMd}`}
+
         >
-          Compare Similar
+
+          {compareSimilar.label}
+
         </button>
+
         {store?.phone ? (
+
           <a
+
             href={`tel:${store.phone.replace(/\D/g, "")}`}
-            className="mt-2 w-full rounded-full border border-dashed border-[var(--gold)] py-3.5 text-center text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--cream)]"
+
+            className="mt-2 w-full rounded-md border border-dashed border-[var(--gold)] py-3.5 text-center text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--cream)]"
+
           >
-            Call {store.phone}
+
+            {t("vdp.call", undefined, { phone: store.phone })}
+
           </a>
+
         ) : (
+
           <button
+
             type="button"
+
             onClick={() =>
+
               openLead({
+
                 action: "availability",
+
                 vehicle,
+
                 storeId,
+
                 shopperIntent: `Contact request for ${label}`,
+
               })
+
             }
-            className="mt-2 w-full rounded-full border border-dashed border-[var(--gold)] py-3.5 text-sm font-semibold text-[var(--ink)]"
+
+            className="mt-2 w-full rounded-md border border-dashed border-[var(--gold)] py-3.5 text-sm font-semibold text-[var(--ink)]"
+
           >
-            Contact our team
+
+            {contactTeam.label}
+
           </button>
+
         )}
+
       </div>
 
+
+
       <p className="mt-6 text-center text-xs leading-relaxed text-[var(--muted)]">
-        No pressure. Just real options from across our auto group.
+
+        {t("vdp.trustCopy")}
+
       </p>
+
     </div>
+
   );
+
 }
+
+

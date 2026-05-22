@@ -1,36 +1,106 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
+import { useCta } from "@/components/cta/CtaProvider";
 import { DiscoveryCTA } from "@/components/home/DiscoveryCTA";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { usePortalText } from "@/components/providers/TextSettingsProvider";
+import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
-import { filterVehicles } from "@/lib/filterVehicles";
-import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
-import { MATCH_BADGE_LEGEND, getMatchLabel } from "@/lib/matchLabels";
+import {
+  buildInventoryUrl,
+  filterVehiclesByIntent,
+  filtersFromShopperSelection,
+  getMatchReason,
+} from "@/lib/inventoryMatch";
+import { getMatchLabel } from "@/lib/matchLabels";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import type { BudgetRange, ShopperIntent, Vehicle } from "@/lib/types";
+import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
+import { cardEmptyState, cardPanelPad } from "@/lib/cardClasses";
 import { VehicleCard } from "./VehicleCard";
 
-const STEP1_OPTIONS: { id: ShopperIntent; label: string; desc: string }[] = [
-  { id: "family-suv", label: "Family & daily life", desc: "SUVs, space, comfort" },
-  { id: "work-truck", label: "Work & capability", desc: "Trucks, towing, utility" },
-  { id: "luxury", label: "Luxury & design", desc: "Premium, refined" },
-  { id: "under-30k", label: "Value & budget", desc: "Smart spend under $30k" },
-  { id: "first-time", label: "First vehicle", desc: "Approachable, guided" },
-  { id: "fuel-efficient", label: "Efficiency", desc: "Lower running costs" },
+const PREVIEW_LIMIT = 4;
+
+const STEP1_IDS: ShopperIntent[] = [
+  "family-suv",
+  "work-truck",
+  "luxury",
+  "under-30k",
+  "first-time",
+  "fuel-efficient",
 ];
 
-const STEP2_OPTIONS: { id: BudgetRange; label: string }[] = [
-  { id: "any", label: "Flexible" },
-  { id: "under-30k", label: "Under $30k/mo feel" },
-  { id: "30-50k", label: "$30k – $50k" },
-  { id: "50k-plus", label: "$50k+" },
-];
+const STEP2_IDS: BudgetRange[] = ["any", "under-30k", "30-50k", "50k-plus"];
+
+const STEP1_MAP: Record<
+  ShopperIntent,
+  { label: TranslationKey; desc: TranslationKey }
+> = {
+  any: { label: "match.any", desc: "match.any" },
+  "family-suv": { label: "discovery.intent.family", desc: "discovery.intent.familyDesc" },
+  "work-truck": { label: "discovery.intent.work", desc: "discovery.intent.workDesc" },
+  luxury: { label: "discovery.intent.luxury", desc: "discovery.intent.luxuryDesc" },
+  "under-30k": { label: "discovery.intent.budget", desc: "discovery.intent.budgetDesc" },
+  "first-time": {
+    label: "discovery.intent.firstTime",
+    desc: "discovery.intent.firstTimeDesc",
+  },
+  "fuel-efficient": {
+    label: "discovery.intent.efficiency",
+    desc: "discovery.intent.efficiencyDesc",
+  },
+};
+
+const STEP2_MAP: Record<BudgetRange, TranslationKey> = {
+  any: "discovery.budget.flexible",
+  "under-30k": "discovery.budget.under30k",
+  "30-50k": "discovery.budget.30to50",
+  "50k-plus": "discovery.budget.50plus",
+};
 
 interface GuidedDiscoverySectionProps {
   vehicles: Vehicle[];
 }
 
 export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps) {
-  const { openLead } = useLeadCapture();
+  const { t, locale } = useLanguage();
+  const smartMatchCatalog = useSmartMatchRulesCatalog();
+  const browseInventoryCta = useCta("discovery_browse");
+
+  const smartMatchEyebrow = usePortalText(
+    "smart_match_eyebrow",
+    t("discovery.smartMatch"),
+  );
+  const smartMatchTitle = usePortalText(
+    "smart_match_title",
+    t("discovery.refineYourFit"),
+  );
+  const step1Title = usePortalText(
+    "smart_match_step_1_title",
+    t("discovery.step1Title"),
+  );
+  const step1Body = usePortalText(
+    "smart_match_step_1_body",
+    t("discovery.step1Subtitle"),
+  );
+  const resultsTitle = usePortalText(
+    "smart_match_results_title",
+    t("discovery.yourMatches"),
+  );
+  const resultsBody = usePortalText(
+    "smart_match_results_body",
+    t("discovery.matchesIntro"),
+  );
+  const emptyPlaceholder = usePortalText(
+    "smart_match_empty",
+    t("discovery.completeSteps"),
+  );
+  const viewAllLabel = usePortalText(
+    "smart_match_view_all",
+    t("discovery.viewAllMatches"),
+  );
   const {
     intent,
     budget,
@@ -42,13 +112,41 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
     setGuidedStep,
   } = useDiscovery();
 
-  const matches = useMemo(
-    () => filterVehicles(vehicles, intent, budget, condition).slice(0, 8),
-    [vehicles, intent, budget, condition],
+  const hasIntent = intent !== "any";
+
+  const matchFilters = useMemo(
+    () => filtersFromShopperSelection(intent, budget, condition),
+    [intent, budget, condition],
   );
 
-  const matchLabel = getMatchLabel(intent);
-  const showResults = guidedStep === 3;
+  const matches = useMemo(
+    () => filterVehiclesByIntent(vehicles, matchFilters, smartMatchCatalog),
+    [vehicles, matchFilters, smartMatchCatalog],
+  );
+
+  const previewMatches = useMemo(
+    () => matches.slice(0, PREVIEW_LIMIT),
+    [matches],
+  );
+
+  const inventoryHref = useMemo(
+    () => buildInventoryUrl(matchFilters),
+    [matchFilters],
+  );
+
+  const matchLabel = getMatchLabel(intent, t);
+  const showResults = hasIntent;
+
+  const step1Options = STEP1_IDS.map((id) => ({
+    id,
+    label: t(STEP1_MAP[id].label),
+    desc: t(STEP1_MAP[id].desc),
+  }));
+
+  const step2Options = STEP2_IDS.map((id) => ({
+    id,
+    label: t(STEP2_MAP[id]),
+  }));
 
   return (
     <section
@@ -59,10 +157,10 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              Smart match
+              {smartMatchEyebrow}
             </p>
             <h2 className="mt-3 headline-stack text-4xl sm:text-5xl">
-              Refine your fit
+              {smartMatchTitle}
             </h2>
           </div>
           <div className="flex gap-2">
@@ -90,11 +188,11 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
             {guidedStep === 1 ? (
               <StepPanel
                 step={1}
-                title="What do you need it for?"
-                subtitle="Pick the story that fits your life—we'll bias inventory toward it."
+                title={step1Title}
+                subtitle={step1Body}
               >
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {STEP1_OPTIONS.map((opt) => (
+                  {step1Options.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
@@ -102,10 +200,10 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
                         setIntent(opt.id);
                         setGuidedStep(2);
                       }}
-                      className={`rounded-2xl border px-4 py-4 text-left transition duration-300 ${
+                      className={`rounded-md border px-4 py-4 text-left transition-colors duration-200 ${
                         intent === opt.id
-                          ? "border-[var(--gold)] bg-[var(--cream)] ring-1 ring-[var(--gold)]"
-                          : "border-[var(--line-dark)] bg-[var(--cream)] hover:border-[var(--ink)]/20"
+                          ? "border-[var(--gold)] bg-[var(--cream)]"
+                          : "border-[var(--line-dark)] bg-[var(--cream)] hover:border-[var(--ink)]/35"
                       }`}
                     >
                       <span className="font-semibold text-[var(--ink)]">
@@ -123,11 +221,11 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
             {guidedStep === 2 ? (
               <StepPanel
                 step={2}
-                title="What payment range feels comfortable?"
-                subtitle="No forms—just a range so we can respect your comfort zone."
+                title={t("discovery.step2Title")}
+                subtitle={t("discovery.step2Subtitle")}
               >
                 <div className="flex flex-wrap gap-2">
-                  {STEP2_OPTIONS.map((opt) => (
+                  {step2Options.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
@@ -135,7 +233,7 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
                         setBudget(opt.id);
                         setGuidedStep(3);
                       }}
-                      className={`rounded-full px-5 py-3 text-sm font-medium transition ${
+                      className={`rounded-md px-5 py-3 text-sm font-medium transition ${
                         budget === opt.id
                           ? "bg-[var(--ink)] text-white"
                           : "bg-[var(--cream)] text-[var(--muted)] ring-1 ring-[var(--line-dark)] hover:ring-[var(--ink)]/30"
@@ -151,22 +249,22 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
             {guidedStep === 3 ? (
               <StepPanel
                 step={3}
-                title="New, pre-owned, or either?"
-                subtitle="Last preference—then we reveal your matches."
+                title={t("discovery.step3Title")}
+                subtitle={t("discovery.step3Subtitle")}
               >
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
-                      ["either", "Either"],
-                      ["new", "New"],
-                      ["used", "Pre-owned"],
+                      ["either", t("discovery.condition.either")],
+                      ["new", t("discovery.condition.new")],
+                      ["used", t("discovery.condition.used")],
                     ] as const
                   ).map(([value, label]) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setCondition(value)}
-                      className={`rounded-full px-5 py-3 text-sm font-medium transition ${
+                      className={`rounded-md px-5 py-3 text-sm font-medium transition ${
                         condition === value
                           ? "bg-[var(--ink)] text-white"
                           : "bg-[var(--cream)] text-[var(--muted)] ring-1 ring-[var(--line-dark)] hover:ring-[var(--ink)]/30"
@@ -181,81 +279,73 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
           </div>
 
           <div className="lg:col-span-7">
-            <div className="card-framer min-h-[320px] p-6 sm:p-8">
+            <div className={`${cardPanelPad} min-h-[320px]`}>
               {showResults ? (
                 <>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
-                        Your matches
-                      </p>
-                      <h3 className="mt-2 text-2xl font-semibold">
-                        {matches.length} vehicles surfaced
-                      </h3>
-                      <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-                        Based on your selections, here are vehicles that may fit
-                        your lifestyle.
-                      </p>
-                      <p className="mt-2 text-xs text-[var(--muted)]">
-                        Tuned for {matchLabel} · live group inventory
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {MATCH_BADGE_LEGEND.map((badge) => (
-                          <span
-                            key={badge}
-                            className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                              badge === matchLabel
-                                ? "bg-[var(--ink)] text-white"
-                                : "bg-[var(--cream)] text-[var(--muted)] ring-1 ring-[var(--line-dark)]"
-                            }`}
-                          >
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const v = matches[0] ?? vehicles[0];
-                        openLead({
-                          action: "general-shortlist",
-                          vehicle: v,
-                          shopperIntent: `Smart match: ${intent}, ${budget}, ${condition}`,
-                        });
-                      }}
-                      className="hidden shrink-0 rounded-full border border-[var(--line-dark)] px-5 py-2.5 text-xs font-semibold text-[var(--ink)] transition hover:border-[var(--ink)] sm:block"
-                    >
-                      Get My Shortlist
-                    </button>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
+                      {resultsTitle}
+                    </p>
+                    <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                      {resultsBody}
+                    </p>
                   </div>
 
-                  {matches.length === 0 ? (
-                    <p className="mt-12 rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)] px-6 py-16 text-center text-[var(--muted)]">
-                      No matches yet—try broadening payment range or condition.
-                    </p>
-                  ) : (
-                    <div className="mt-8 grid gap-5 sm:grid-cols-2">
-                      {matches.map((vehicle) => (
-                        <VehicleCard
-                          key={vehicle.id}
-                          vehicle={vehicle}
-                          matchLabel={getMatchLabel(intent)}
-                          variant="editorial"
-                        />
-                      ))}
+                  {previewMatches.length === 0 ? (
+                    <div className="mt-10 flex flex-col items-center text-center">
+                      <p className={`${cardEmptyState} max-w-md`}>
+                        {t("discovery.noMatches")}
+                      </p>
+                      <Link
+                        href={browseInventoryCta.url ?? "/inventory"}
+                        className={`${btnPrimarySm} mt-6`}
+                      >
+                        {browseInventoryCta.label}
+                      </Link>
                     </div>
+                  ) : (
+                    <>
+                      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                        {previewMatches.map((vehicle) => (
+                          <VehicleCard
+                            key={vehicle.id}
+                            vehicle={vehicle}
+                            matchLabel={matchLabel}
+                            matchReason={getMatchReason(
+                              vehicle,
+                              matchFilters,
+                              locale,
+                              smartMatchCatalog,
+                            )}
+                            variant="rail"
+                          />
+                        ))}
+                      </div>
+
+                      <div className="mt-8 flex flex-col items-stretch gap-3 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-[var(--muted)]">
+                          {t("discovery.vehiclesSurfaced", undefined, {
+                            count: matches.length,
+                          })}
+                        </p>
+                        <Link
+                          href={inventoryHref}
+                          className={`${btnSecondarySm} text-center`}
+                        >
+                          {viewAllLabel}
+                        </Link>
+                      </div>
+                    </>
                   )}
                 </>
               ) : (
                 <div className="flex h-full min-h-[280px] flex-col items-center justify-center text-center">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[var(--gold)]/30 to-[var(--cream-dark)]" />
+                  <div className="h-16 w-16 rounded-md border border-[var(--line-dark)] bg-[var(--cream-dark)]" />
                   <p className="mt-6 text-lg font-medium text-[var(--ink)]">
-                    Complete the steps to reveal your matches
+                    {emptyPlaceholder}
                   </p>
                   <p className="mt-2 max-w-sm text-sm text-[var(--muted)]">
-                    Step {guidedStep} of 3 — designed like a product selector,
-                    not a dealership form.
+                    {t("discovery.stepProgress", undefined, { step: guidedStep })}
                   </p>
                 </div>
               )}
@@ -282,10 +372,12 @@ function StepPanel({
   subtitle: string;
   children: React.ReactNode;
 }) {
+  const { t } = useLanguage();
+
   return (
-    <div className="card-framer p-6 sm:p-7">
+    <div className={cardPanelPad}>
       <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-        Step {step}
+        {t("discovery.stepLabel", undefined, { step })}
       </span>
       <h3 className="mt-2 text-xl font-semibold tracking-tight">{title}</h3>
       <p className="mt-2 text-sm text-[var(--muted)]">{subtitle}</p>

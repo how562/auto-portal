@@ -7,7 +7,10 @@ import { GuidedRefinement } from "@/components/inventory/GuidedRefinement";
 import { InventoryMatchResults } from "@/components/inventory/InventoryMatchResults";
 import { InventoryMoreFiltersDrawer } from "@/components/inventory/InventoryMoreFiltersDrawer";
 import { InventoryQuickFilters } from "@/components/inventory/InventoryQuickFilters";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { PortalHeader } from "@/components/layout/PortalHeader";
+import { btnPrimaryMd } from "@/lib/buttonClasses";
 import {
   countMoreFilters,
   getActiveFilterChips,
@@ -34,6 +37,8 @@ export function InventoryPageClient({
   stores,
   loadError,
 }: InventoryPageClientProps) {
+  const { t } = useLanguage();
+  const smartMatchCatalog = useSmartMatchRulesCatalog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialFilters = useMemo(
@@ -82,13 +87,22 @@ export function InventoryPageClient({
   }, [syncUrl]);
 
   const results = useMemo(
-    () => filterInventoryVehicles(vehicles, filters),
-    [vehicles, filters],
+    () => filterInventoryVehicles(vehicles, filters, smartMatchCatalog),
+    [vehicles, filters, smartMatchCatalog],
   );
 
-  const subtitle = buildInventorySubtitle(filters);
-  const suggestions = getRefinementSuggestions(filters);
-  const activeChips = getActiveFilterChips(filters, stores);
+  const subtitle = useMemo(
+    () => buildInventorySubtitle(filters, t),
+    [filters, t],
+  );
+  const suggestions = useMemo(
+    () => getRefinementSuggestions(filters, t),
+    [filters, t],
+  );
+  const activeChips = useMemo(
+    () => getActiveFilterChips(filters, stores, t),
+    [filters, stores, t],
+  );
   const moreFilterCount = countMoreFilters(filters);
 
   return (
@@ -98,10 +112,10 @@ export function InventoryPageClient({
         <div className="portal-container py-10 sm:py-14">
           <header className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              Guided discovery
+              {t("inventory.guidedDiscovery")}
             </p>
             <h1 className="mt-3 headline-stack text-4xl sm:text-5xl lg:text-[3.25rem]">
-              Find your match
+              {t("inventory.findYourMatch")}
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-[var(--muted)]">
               {subtitle}
@@ -137,26 +151,25 @@ export function InventoryPageClient({
           />
 
           {loadError ? (
-            <p className="mt-12 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-red-700">
+            <p className="mt-12 rounded-md border border-red-200 bg-red-50 px-6 py-4 text-red-700">
               {loadError}
             </p>
           ) : null}
 
           {!loadError && results.length === 0 ? (
-            <div className="mt-14 rounded-[2rem] border border-dashed border-[var(--line-dark)] bg-white px-8 py-20 text-center">
+            <div className="mt-14 rounded-md border border-dashed border-[var(--line-dark)] bg-white px-8 py-20 text-center">
               <p className="text-lg font-semibold text-[var(--ink)]">
-                No matches on this path yet
+                {t("inventory.noMatchesTitle")}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-[var(--muted)]">
-                Try a refinement suggestion above or open more filters—we&apos;ll
-                surface more options across the group.
+                {t("inventory.noMatchesBody")}
               </p>
               <button
                 type="button"
                 onClick={clearAll}
-                className="mt-8 rounded-full bg-[var(--ink)] px-6 py-3 text-sm font-semibold text-white"
+                className={`mt-8 ${btnPrimaryMd}`}
               >
-                Reset discovery
+                {t("inventory.resetDiscovery")}
               </button>
             </div>
           ) : null}

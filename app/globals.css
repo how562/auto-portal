@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --ink: #0c0c0c;
-  --charcoal: #1a1a1a;
-  --charcoal-soft: #2a2a2a;
+  --ink: #152a47;
+  --charcoal: #1e3556;
+  --charcoal-soft: #2a4468;
+  --navy-deep: #0c1628;
   --cream: #f7f4ef;
   --cream-dark: #ebe6de;
   --surface: #ffffff;
@@ -14,6 +15,11 @@
   --gold: #b8956b;
   --gold-soft: #d4bc94;
   --muted: #6b6560;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-tight: 0 1px 2px rgba(21, 42, 71, 0.08);
+  --shadow-card: 0 1px 2px rgba(21, 42, 71, 0.08);
 }
 
 body {
@@ -33,21 +39,60 @@ body {
     @apply bg-[var(--charcoal)] text-white;
   }
 
+  .section-pad {
+    @apply py-20 sm:py-28 lg:py-32;
+  }
+
+  .section-pad-tight {
+    @apply py-16 sm:py-24;
+  }
+
   .headline-stack {
-    @apply font-semibold leading-[0.92] tracking-[-0.04em];
+    @apply font-semibold leading-[0.94] tracking-[-0.035em];
+  }
+
+  .ui-btn {
+    @apply inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold transition-colors duration-200;
+  }
+
+  .ui-btn-primary {
+    @apply ui-btn bg-[var(--ink)] text-white hover:bg-[var(--charcoal)];
+  }
+
+  .ui-btn-primary-sm {
+    @apply ui-btn-primary px-5 py-2.5 text-xs;
+  }
+
+  .ui-btn-secondary {
+    @apply ui-btn border border-[var(--line-dark)] bg-white text-[var(--ink)] hover:border-[var(--ink)] hover:bg-[var(--cream)];
+  }
+
+  .ui-btn-secondary-sm {
+    @apply ui-btn-secondary px-5 py-2.5 text-xs;
+  }
+
+  .ui-btn-on-dark {
+    @apply ui-btn border border-white/25 bg-transparent text-white hover:bg-white/10;
+  }
+
+  .ui-card {
+    @apply rounded-md border border-[var(--line-dark)] bg-white;
+  }
+
+  .ui-input {
+    @apply rounded-md border border-[var(--line)] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[var(--ink)];
   }
 
   .hover-lift {
-    @apply transition duration-500 ease-out;
+    @apply transition-colors duration-200;
   }
 
   .hover-lift:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 24px 60px rgba(12, 12, 12, 0.12);
+    border-color: color-mix(in srgb, var(--ink) 35%, var(--line-dark));
   }
 
   .card-framer {
-    @apply rounded-[1.75rem] bg-white shadow-[0_8px_40px_rgba(12,12,12,0.06)] ring-1 ring-black/[0.04];
+    @apply overflow-hidden rounded-md border border-[var(--line-dark)] bg-white;
   }
 
   .rail-scroll {
@@ -88,21 +133,76 @@ body {
   }
 
   .hero-collage-frame {
-    @apply overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_48px_rgba(12,12,12,0.1)] ring-1 ring-[var(--line)];
-  }
-
-  .hero-collage-backdrop-gold {
-    @apply pointer-events-none absolute -right-8 -top-8 h-56 w-56 rounded-full blur-3xl;
-    background-color: color-mix(in srgb, var(--gold) 20%, transparent);
-  }
-
-  .hero-collage-backdrop-cream {
-    @apply pointer-events-none absolute -bottom-12 -left-8 h-48 w-48 rounded-full blur-3xl;
-    background-color: color-mix(in srgb, var(--charcoal) 5%, transparent);
+    @apply overflow-hidden rounded-md border border-[var(--line-dark)] bg-white;
   }
 
   .animate-hero-drift {
     animation: hero-drift 14s ease-in-out infinite;
+  }
+
+  .hero-collage-grid {
+    display: grid;
+    width: 100%;
+    align-items: stretch;
+    gap: 1rem;
+    grid-template-columns: 1fr 0.88fr;
+    grid-template-rows: 1.05fr 0.78fr 0.55fr;
+    grid-template-areas:
+      "tile-a tile-b"
+      "tile-c tile-b"
+      "tile-c tile-d";
+  }
+
+  @media (min-width: 640px) {
+    .hero-collage-grid {
+      gap: 1.125rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-collage-grid {
+      gap: 1.375rem;
+      grid-template-columns: 0.92fr 1.08fr;
+      grid-template-rows: 0.98fr 0.92fr 0.54fr;
+    }
+  }
+
+  .hero-collage-tile {
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    border: 1px solid var(--line-dark);
+    box-shadow: var(--shadow-tight);
+  }
+
+  .hero-collage-tile-a {
+    grid-area: tile-a;
+  }
+
+  .hero-collage-tile-b {
+    grid-area: tile-b;
+    align-self: stretch;
+    min-height: 19rem;
+  }
+
+  @media (min-width: 640px) {
+    .hero-collage-tile-b {
+      min-height: 22rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-collage-tile-b {
+      min-height: 26rem;
+    }
+  }
+
+  .hero-collage-tile-c {
+    grid-area: tile-c;
+  }
+
+  .hero-collage-tile-d {
+    grid-area: tile-d;
   }
 }
 
@@ -112,7 +212,7 @@ body {
     transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-12px) rotate(1deg);
+    transform: translateY(-8px) rotate(0.5deg);
   }
 }
 
@@ -122,6 +222,6 @@ body {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
   }
 }

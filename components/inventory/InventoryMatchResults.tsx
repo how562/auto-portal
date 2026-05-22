@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { DiscoveryVehicleCard } from "@/components/inventory/DiscoveryVehicleCard";
 import { FeaturedPicksStrip } from "@/components/inventory/FeaturedPicksStrip";
 import { InventoryConfidenceBand } from "@/components/inventory/InventoryConfidenceBand";
@@ -29,6 +30,7 @@ export function InventoryMatchResults({
   filters,
   onSortChange,
 }: InventoryMatchResultsProps) {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<InventoryViewMode>("grid");
 
   useEffect(() => {
@@ -48,16 +50,23 @@ export function InventoryMatchResults({
     vehicles.length >= 3 ? pickFeaturedVehicles(rest, 2) : [];
   const showFeaturedStrip = featured.length > 0;
 
-  const microcopyFor = (v: Vehicle) => getVehicleMicrocopy(v, filters);
-  const matchLabelFor = (v: Vehicle) => getVehicleMatchLabel(v, filters);
+  const microcopyFor = useCallback(
+    (v: Vehicle) => getVehicleMicrocopy(v, filters),
+    [filters],
+  );
+  const matchLabelFor = useCallback(
+    (v: Vehicle) => getVehicleMatchLabel(v, filters, t),
+    [filters, t],
+  );
 
   return (
     <section className="mt-10 sm:mt-12">
       <div className="mb-6 max-w-2xl">
-        <h2 className="headline-stack text-3xl sm:text-4xl">Your matches</h2>
+        <h2 className="headline-stack text-3xl sm:text-4xl">
+          {t("inventory.results.yourMatches")}
+        </h2>
         <p className="mt-3 text-[var(--muted)]">
-          A spotlight pick plus the rest of your curated set—switch list view when
-          photos are still arriving.
+          {t("inventory.results.spotlightIntro")}
         </p>
       </div>
 

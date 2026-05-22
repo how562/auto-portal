@@ -29,9 +29,9 @@ export function StoreBrandStrip({ stores }: StoreBrandStripProps) {
           {stores.map((store) => (
             <div
               key={store.id}
-              className="flex min-w-[140px] flex-col items-center rounded-2xl border border-[var(--line)] bg-[var(--cream)] px-8 py-6 transition duration-300 hover:border-[var(--ink)]/20 hover:shadow-[0_12px_32px_rgba(12,12,12,0.06)]"
+              className="flex min-w-[140px] flex-col items-center rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-6 py-5 transition-colors duration-200 hover:border-[var(--ink)]/35 sm:px-7 sm:py-6"
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--ink)] text-sm font-bold text-white">
+              <span className="flex h-12 w-12 items-center justify-center rounded-md bg-[var(--ink)] text-sm font-bold text-white">
                 {storeInitials(store.name)}
               </span>
               <p className="mt-4 text-center text-sm font-semibold text-[var(--ink)]">

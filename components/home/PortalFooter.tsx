@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CavenderLogo } from "@/components/brand/CavenderLogo";
+import { useCta } from "@/components/cta/CtaProvider";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
 import { BRAND_NAME } from "@/lib/brand";
+import { btnAccentMd, btnOnDarkMd } from "@/lib/buttonClasses";
 import type { Store } from "@/lib/types";
 
 interface PortalFooterProps {
@@ -15,8 +18,12 @@ interface PortalFooterProps {
 export function PortalFooter({ stores }: PortalFooterProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const { t } = useLanguage();
   const { openLead } = useLeadCapture();
   const { scrollToGuided } = useDiscovery();
+  const footerShortlist = useCta("footer_shortlist");
+  const footerDiscovery = useCta("footer_discovery_primary");
+  const discoveryHref = footerDiscovery.url ?? "/#guided-discovery";
 
   return (
     <footer className="relative overflow-hidden bg-[var(--ink)] text-white">
@@ -27,16 +34,13 @@ export function PortalFooter({ stores }: PortalFooterProps) {
         <CavenderLogo size="watermark" variant="light" />
       </div>
 
-      <div className="portal-container relative py-16 sm:py-20">
+      <div className="portal-container relative py-20 sm:py-28">
         <CavenderLogo size="footer" variant="light" className="mb-10" />
         <div className="max-w-2xl">
-          <h2 className="headline-stack text-3xl sm:text-4xl">
-            Still deciding? Let us build your shortlist.
+          <h2 className="headline-stack text-3xl sm:text-5xl">
+            {t("footer.headline")}
           </h2>
-          <p className="mt-4 text-sm text-white/45">
-            A concierge curates real options across our stores—personalized,
-            pressure-free, ready when you are.
-          </p>
+          <p className="mt-4 text-sm text-white/45">{t("footer.body")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <button
               type="button"
@@ -46,42 +50,33 @@ export function PortalFooter({ stores }: PortalFooterProps) {
                   shopperIntent: "Footer: Get my shortlist",
                 })
               }
-              className="rounded-full bg-[var(--gold)] px-8 py-4 text-sm font-semibold text-[var(--ink)] transition hover:brightness-110"
+              className={btnAccentMd}
             >
-              Get My Shortlist
+              {footerShortlist.label}
             </button>
             {isHome ? (
-              <button
-                type="button"
-                onClick={scrollToGuided}
-                className="rounded-full border border-white/20 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Start Discovery
+              <button type="button" onClick={scrollToGuided} className={btnOnDarkMd}>
+                {footerDiscovery.label}
               </button>
             ) : (
-              <Link
-                href="/#guided-discovery"
-                className="rounded-full border border-white/20 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Start Discovery
+              <Link href={discoveryHref} className={btnOnDarkMd}>
+                {footerDiscovery.label}
               </Link>
             )}
           </div>
-          <p className="mt-6 text-xs text-white/35">
-            No pressure. Just real options from across our auto group.
-          </p>
+          <p className="mt-6 text-xs text-white/35">{t("footer.trust")}</p>
         </div>
 
         {stores.length > 0 ? (
           <div id="locations-contact" className="mt-14 border-t border-white/10 pt-10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35">
-              Locations & contact
+              {t("footer.locationsContact")}
             </p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {stores.map((store) => (
                 <div
                   key={store.id}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4"
+                  className="rounded-md border border-white/10 bg-white/[0.03] px-5 py-4"
                 >
                   <p className="font-semibold">{store.name}</p>
                   <p className="mt-1 text-xs text-white/40">
@@ -100,14 +95,42 @@ export function PortalFooter({ stores }: PortalFooterProps) {
         ) : null}
 
         <div className="mt-14 grid grid-cols-2 gap-8 sm:grid-cols-4">
-          <FooterCol title="Discover" items={["Find My Vehicle", "Smart Match", "Categories"]} />
-          <FooterCol title="Shop" items={["Inventory", "Under $30k", "Compare"]} />
-          <FooterCol title="Group" items={["Locations", "How It Works", "Contact"]} />
-          <FooterCol title="Legal" items={["Privacy", "Terms", "Accessibility"]} />
+          <FooterCol
+            title={t("footer.col.discover")}
+            items={[
+              t("nav.findMyVehicle"),
+              t("footer.item.smartMatch"),
+              t("footer.item.categories"),
+            ]}
+          />
+          <FooterCol
+            title={t("footer.col.shop")}
+            items={[
+              t("nav.inventory"),
+              t("footer.item.under30k"),
+              t("footer.item.compare"),
+            ]}
+          />
+          <FooterCol
+            title={t("footer.col.group")}
+            items={[
+              t("nav.locations"),
+              t("nav.howItWorks"),
+              t("footer.item.contact"),
+            ]}
+          />
+          <FooterCol
+            title={t("footer.col.legal")}
+            items={[
+              t("footer.item.privacy"),
+              t("footer.item.terms"),
+              t("footer.item.accessibility"),
+            ]}
+          />
         </div>
 
         <p className="mt-12 text-[11px] text-white/25">
-          © {new Date().getFullYear()} {BRAND_NAME}. Guided discovery portal.
+          © {new Date().getFullYear()} {BRAND_NAME}. {t("footer.copyright")}
         </p>
       </div>
     </footer>

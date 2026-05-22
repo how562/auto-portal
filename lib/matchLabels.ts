@@ -1,6 +1,17 @@
+import type { TranslationKey, Translator } from "./i18n/translations";
 import type { ShopperIntent } from "./types";
 
-const INTENT_LABELS: Record<ShopperIntent, string> = {
+const INTENT_LABEL_KEYS: Record<ShopperIntent, TranslationKey> = {
+  any: "match.any",
+  "family-suv": "match.familySuv",
+  "work-truck": "match.workTruck",
+  luxury: "match.luxury",
+  "under-30k": "match.under30k",
+  "first-time": "match.firstTime",
+  "fuel-efficient": "match.fuelEfficient",
+};
+
+const INTENT_LABELS_EN: Record<ShopperIntent, string> = {
   any: "Group Pick",
   "family-suv": "Family Fit",
   "work-truck": "Work Ready",
@@ -11,7 +22,7 @@ const INTENT_LABELS: Record<ShopperIntent, string> = {
 };
 
 /** Shown as legend above Smart Match results */
-export const MATCH_BADGE_LEGEND = [
+export const MATCH_BADGE_LEGEND_EN = [
   "Family Fit",
   "Work Ready",
   "Budget Smart",
@@ -19,6 +30,21 @@ export const MATCH_BADGE_LEGEND = [
   "Efficient Choice",
 ] as const;
 
-export function getMatchLabel(intent: ShopperIntent): string {
-  return INTENT_LABELS[intent] ?? "Group Pick";
+export function getMatchLabel(intent: ShopperIntent, t?: Translator): string {
+  const key = INTENT_LABEL_KEYS[intent];
+  if (t && key) {
+    return t(key, INTENT_LABELS_EN[intent]);
+  }
+  return INTENT_LABELS_EN[intent] ?? "Group Pick";
+}
+
+export function getMatchBadgeLegend(t?: Translator): string[] {
+  const intents: ShopperIntent[] = [
+    "family-suv",
+    "work-truck",
+    "under-30k",
+    "luxury",
+    "fuel-efficient",
+  ];
+  return intents.map((intent) => getMatchLabel(intent, t));
 }

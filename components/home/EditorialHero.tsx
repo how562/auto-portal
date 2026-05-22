@@ -1,193 +1,221 @@
 "use client";
 
-import { CavenderLogo } from "@/components/brand/CavenderLogo";
-import { DiscoveryCTA } from "@/components/home/DiscoveryCTA";
-import { VehicleImage } from "@/components/vehicle/VehicleImage";
-import { formatVehicleTitle } from "@/lib/format";
-import type { Vehicle } from "@/lib/types";
-import { getVehicleImageUrl } from "@/lib/vehicleImage";
+import Link from "next/link";
+import { useMemo } from "react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useDiscovery } from "@/components/portal/DiscoveryContext";
+import { localizeCommunityHero } from "@/lib/communityHeroI18n";
+import { isGuidedDiscoveryHref } from "@/lib/communityHeroUtils";
+import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
+import type { CommunityHeroImagePosition } from "@/lib/communityHeroTypes";
+import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
-const TRUST_PILLS = [
-  "Real inventory",
-  "Multiple dealerships",
-  "Guided discovery",
+const AVATAR_ACCENTS = [
+  "bg-[#c4b8a8]",
+  "bg-[#9a8f7f]",
+  "bg-[#b8956b]",
+  "bg-[#7d7568]",
 ];
 
+const TILE_CLASS: Record<CommunityHeroImagePosition, string> = {
+  top_left: "hero-collage-tile-a min-h-[11rem] sm:min-h-[12.5rem]",
+  right_tall: "hero-collage-tile-b",
+  center_small: "hero-collage-tile-c min-h-[9rem] sm:min-h-[10rem]",
+  bottom_wide: "hero-collage-tile-d min-h-[8rem] sm:min-h-[9rem]",
+};
+
 interface EditorialHeroProps {
-  previewVehicles: Vehicle[];
-  loadError?: string | null;
+  content: CommunityHeroContent;
 }
 
-function selectHeroTiles(vehicles: Vehicle[]): Vehicle[] {
-  return (vehicles ?? []).slice(0, 3);
+function HeroImagePlaceholder() {
+  return (
+    <div className="flex h-full min-h-[inherit] w-full flex-col items-center justify-center gap-3 bg-[var(--cream-dark)] px-6">
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-md bg-white shadow-tight"
+        aria-hidden
+      >
+        <svg
+          className="h-5 w-5 text-[var(--muted)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <circle cx="8.5" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
+          <path d="M3 16l5-5 4 4 3-3 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+        Image placeholder
+      </p>
+    </div>
+  );
 }
 
-function HeroVehicleTile({
-  vehicle,
-  variant,
-  className,
+function HeroCollageTile({
+  imageUrl,
+  alt = "",
+  className = "",
 }: {
-  vehicle: Vehicle;
-  variant: "primary" | "secondary";
+  imageUrl?: string;
+  alt?: string;
   className?: string;
 }) {
-  const title = formatVehicleTitle(vehicle);
-  const isPrimary = variant === "primary";
-
   return (
-    <div className={`hero-collage-frame ${className ?? ""}`}>
-      <div
-        className={`relative overflow-hidden ${
-          isPrimary ? "aspect-[3/4]" : "aspect-[5/4]"
-        }`}
-      >
-        <div className="absolute inset-0">
-          <VehicleImage
-            vehicle={vehicle}
-            large={isPrimary}
-            placeholderSize={isPrimary ? "hero" : "md"}
-            className="h-full w-full object-cover"
-          />
-        </div>
-        {isPrimary && getVehicleImageUrl(vehicle) ? (
-          <>
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
-              style={{
-                background:
-                  "linear-gradient(to top, color-mix(in srgb, var(--ink) 50%, transparent), transparent)",
-              }}
-            />
-            <p className="absolute bottom-4 left-4 right-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/90">
-              Featured inventory
-            </p>
-          </>
-        ) : null}
-      </div>
-      {!isPrimary ? (
-        <p className="truncate px-4 py-3 text-xs font-semibold">{title}</p>
-      ) : null}
-    </div>
-  );
-}
-
-function HeroCollageFallback({
-  loadError,
-}: {
-  loadError?: string | null;
-}) {
-  return (
-    <div className="hero-collage-frame flex aspect-[4/5] w-full max-w-xl flex-col justify-between bg-gradient-to-br from-[var(--charcoal)] via-[var(--charcoal-soft)] to-[var(--ink)] p-8 text-white sm:aspect-[3/4] lg:max-w-none lg:aspect-auto lg:min-h-[32rem]">
-      <div>
-        <CavenderLogo size="hero" variant="light" />
-        <p className="mt-6 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-          Real vehicles. Every store. One guided path.
-        </p>
-      </div>
-      <div>
-        {loadError ? (
-          <p className="mb-4 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-xs leading-relaxed text-white/80">
-            {loadError}
-          </p>
+    <div className={`hero-collage-tile ${className}`.trim()}>
+      <div className="relative h-full w-full min-h-[inherit]">
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageUrl} alt={alt} className="h-full w-full object-cover" />
         ) : (
-          <p className="mb-4 text-sm text-white/55">
-            Inventory previews appear here as vehicles sync from your stores.
-          </p>
+          <HeroImagePlaceholder />
         )}
-        <div className="flex gap-2">
-          <span className="h-2 w-2 rounded-full bg-[var(--gold)]" />
-          <span className="h-2 w-2 rounded-full bg-white/30" />
-          <span className="h-2 w-2 rounded-full bg-white/30" />
-        </div>
       </div>
     </div>
   );
 }
 
-function HeroCollage({
-  tiles,
-  loadError,
-}: {
-  tiles: Vehicle[];
-  loadError?: string | null;
-}) {
-  if (tiles.length === 0) {
-    return <HeroCollageFallback loadError={loadError} />;
-  }
-
+function HeroCollage({ content }: { content: CommunityHeroContent }) {
   return (
-    <div className="relative w-full min-h-[28rem] sm:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[40rem]">
-      <div className="hero-collage-backdrop-cream" aria-hidden />
-      <div className="hero-collage-backdrop-gold" aria-hidden />
-      <div className="relative grid h-full grid-cols-12 gap-4 sm:gap-5 lg:gap-6">
-        {tiles[0] ? (
-          <HeroVehicleTile
-            vehicle={tiles[0]}
-            variant="primary"
-            className="col-span-7 row-span-2 animate-hero-drift"
+    <div className="relative w-full lg:pl-1">
+      <div className="hero-collage-grid min-h-[22rem] sm:min-h-[26rem] lg:min-h-[30rem] xl:min-h-[34rem]">
+        {content.images.map((slot) => (
+          <HeroCollageTile
+            key={slot.position}
+            imageUrl={slot.url}
+            alt={slot.alt ?? ""}
+            className={TILE_CLASS[slot.position]}
           />
-        ) : null}
-        {tiles[1] ? (
-          <HeroVehicleTile
-            vehicle={tiles[1]}
-            variant="secondary"
-            className="col-span-5 mt-8 lg:mt-10"
-          />
-        ) : null}
-        {tiles[2] ? (
-          <HeroVehicleTile
-            vehicle={tiles[2]}
-            variant="secondary"
-            className="col-span-5 -mt-4 col-start-8 lg:-mt-6"
-          />
-        ) : null}
+        ))}
       </div>
     </div>
   );
 }
 
-export function EditorialHero({
-  previewVehicles,
-  loadError,
-}: EditorialHeroProps) {
-  const tiles = selectHeroTiles(previewVehicles);
+function HeroButtons({ content }: { content: CommunityHeroContent }) {
+  const { scrollToGuided } = useDiscovery();
+
+  const primaryClass = `${btnPrimaryMd} min-h-[3rem] min-w-[10.5rem]`;
+  const secondaryClass = `${btnSecondaryMd} min-h-[3rem] min-w-[10.5rem]`;
 
   return (
-    <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-16 sm:pb-24 lg:pt-32 lg:pb-28">
+    <div className="mt-12 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+      {content.buttons.map((button) => {
+        const className =
+          button.variant === "primary" ? primaryClass : secondaryClass;
+
+        if (isGuidedDiscoveryHref(button.url)) {
+          return (
+            <button
+              key={`${button.label}-${button.url}`}
+              type="button"
+              onClick={scrollToGuided}
+              className={className}
+            >
+              {button.label}
+            </button>
+          );
+        }
+
+        if (button.url.startsWith("/")) {
+          return (
+            <Link key={`${button.label}-${button.url}`} href={button.url} className={className}>
+              {button.label}
+            </Link>
+          );
+        }
+
+        return (
+          <a
+            key={`${button.label}-${button.url}`}
+            href={button.url}
+            className={className}
+            rel="noopener noreferrer"
+          >
+            {button.label}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
+  const { locale } = useLanguage();
+  const content = useMemo(
+    () => localizeCommunityHero(rawContent, locale),
+    [rawContent, locale],
+  );
+  const paragraph = content.body.trim() || content.subheadline.trim();
+  const hasSubheadAndBody =
+    content.subheadline.trim().length > 0 && content.body.trim().length > 0;
+
+  return (
+    <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-20 sm:pt-32 sm:pb-24 lg:pt-36 lg:pb-28">
       <div className="portal-container">
-        <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
-          <div>
-            <div className="headline-stack space-y-0">
-              <span className="block text-[clamp(2.75rem,8vw,5.5rem)] text-[var(--ink)]">
-                Find Your Fit
-              </span>
-              <span className="block text-[clamp(2.75rem,8vw,5.5rem)] text-[var(--muted)]">
-                Across Every Store
-              </span>
-            </div>
-
-            <p className="mt-8 max-w-md text-base leading-relaxed text-[var(--muted)] sm:text-lg">
-              A guided auto group portal—shop real inventory, compare paths, and
-              connect with the right dealership without the usual noise.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-2">
-              {TRUST_PILLS.map((pill) => (
-                <span
-                  key={pill}
-                  className="rounded-full border border-[var(--line-dark)] bg-white px-4 py-2 text-xs font-medium text-[var(--ink)]"
-                >
-                  {pill}
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20 xl:gap-24">
+          <div className="order-1 flex max-w-xl flex-col lg:max-w-none lg:py-2">
+            {content.eyebrow.label ? (
+              <Link
+                href={content.eyebrow.url}
+                className="inline-flex w-fit items-center gap-3 rounded-md bg-white py-2 pl-2 pr-4 shadow-tight transition hover:shadow-card"
+              >
+                <span className="flex -space-x-2" aria-hidden>
+                  {AVATAR_ACCENTS.map((accent, i) => (
+                    <span
+                      key={i}
+                      className={`inline-flex h-8 w-8 rounded-full ring-2 ring-white ${accent}`}
+                    />
+                  ))}
                 </span>
-              ))}
-            </div>
+                <span className="text-sm font-medium text-[var(--ink)]">
+                  {content.eyebrow.label}
+                </span>
+                <span className="text-[var(--muted)]" aria-hidden>
+                  ›
+                </span>
+              </Link>
+            ) : null}
 
-            <div className="mt-10">
-              <DiscoveryCTA />
-            </div>
+            {content.headlineLines.length > 0 ? (
+              <h1 className="mt-10 font-serif text-balance font-semibold leading-[0.9] tracking-[-0.035em]">
+                {content.headlineLines.map((line) => (
+                  <span
+                    key={line.text}
+                    className={`block text-[clamp(2.75rem,7vw,5.25rem)] ${
+                      line.muted ? "text-[#9a9288]" : "text-[var(--ink)]"
+                    }`}
+                  >
+                    {line.text}
+                  </span>
+                ))}
+              </h1>
+            ) : null}
+
+            {hasSubheadAndBody ? (
+              <p className="mt-10 max-w-[34rem] text-sm font-semibold leading-snug text-[var(--ink)]">
+                {content.subheadline}
+              </p>
+            ) : null}
+
+            {paragraph ? (
+              <p
+                className={`max-w-[34rem] text-base leading-relaxed text-[var(--muted)] sm:text-[1.0625rem] sm:leading-[1.62] ${
+                  hasSubheadAndBody ? "mt-4" : "mt-10"
+                }`}
+              >
+                {paragraph}
+              </p>
+            ) : null}
+
+            <HeroButtons content={content} />
           </div>
 
-          <HeroCollage tiles={tiles} loadError={loadError} />
+          <div className="order-2 lg:flex lg:items-center lg:justify-end">
+            <HeroCollage content={content} />
+          </div>
         </div>
       </div>
     </section>

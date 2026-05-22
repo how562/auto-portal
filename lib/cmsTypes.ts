@@ -1,6 +1,7 @@
 import type { Store, Vehicle } from "./types";
 
 export const CMS_SECTION_TYPES = [
+  "community_hero",
   "hero",
   "text_block",
   "image_text",
@@ -13,6 +14,8 @@ export const CMS_SECTION_TYPES = [
   "form",
   "locations",
   "custom_html",
+  "top_picks",
+  "cavender_commitment",
 ] as const;
 
 export type CMSSectionType = (typeof CMS_SECTION_TYPES)[number];
@@ -35,6 +38,20 @@ export interface PageSection {
   settings: Record<string, unknown>;
   sort_order: number;
   is_active: boolean;
+  eyebrow?: string | null;
+  headline?: string | null;
+  subheadline?: string | null;
+  body?: string | null;
+  headline_es?: string | null;
+  subheadline_es?: string | null;
+  body_es?: string | null;
+  image_url?: string | null;
+  image_url_es?: string | null;
+  cta_text?: string | null;
+  cta_text_es?: string | null;
+  cta_url?: string | null;
+  cta_url_es?: string | null;
+  layout_variant?: string | null;
 }
 
 export interface CMSPageData {
@@ -55,6 +72,7 @@ export interface EnrichedCMSPageData {
 /** Slugs handled by dedicated App Router segments — never CMS pages. */
 export const RESERVED_CMS_SLUGS = new Set([
   "inventory",
+  "admin",
   "api",
   "_next",
   "favicon.ico",

@@ -23,7 +23,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition duration-200 ${
+      className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition duration-200 ${
         active
           ? "bg-[var(--ink)] text-white"
           : "bg-white text-[var(--muted)] ring-1 ring-[var(--line-dark)] hover:text-[var(--ink)]"
@@ -59,7 +59,7 @@ export function InventoryFilterBar({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-[1.75rem] border border-[var(--line)] bg-white">
+    <div className="rounded-lg border border-[var(--line)] bg-white">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
