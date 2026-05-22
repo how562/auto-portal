@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import { InventoryPageClient } from "@/components/inventory/InventoryPageClient";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
+import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { fetchStores } from "@/lib/stores";
 import { fetchInventoryVehicles } from "@/lib/vehicles";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Browse Vehicles | Auto Group",
-  description: "Narrow down the right vehicle across our dealership group.",
+  title: brandPageTitle("Find Your Match"),
+  description: `A guided discovery experience across ${BRAND_NAME}—curated matches, not a traditional lot listing.`,
 };
 
 async function loadInventory() {

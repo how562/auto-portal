@@ -61,6 +61,15 @@ body {
     display: none;
   }
 
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .rail-card {
     scroll-snap-align: start;
     flex: 0 0 auto;
@@ -77,6 +86,24 @@ body {
   .animate-float-delayed {
     animation: float-slow 8s ease-in-out 2s infinite;
   }
+
+  .hero-collage-frame {
+    @apply overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_48px_rgba(12,12,12,0.1)] ring-1 ring-[var(--line)];
+  }
+
+  .hero-collage-backdrop-gold {
+    @apply pointer-events-none absolute -right-8 -top-8 h-56 w-56 rounded-full blur-3xl;
+    background-color: color-mix(in srgb, var(--gold) 20%, transparent);
+  }
+
+  .hero-collage-backdrop-cream {
+    @apply pointer-events-none absolute -bottom-12 -left-8 h-48 w-48 rounded-full blur-3xl;
+    background-color: color-mix(in srgb, var(--charcoal) 5%, transparent);
+  }
+
+  .animate-hero-drift {
+    animation: hero-drift 14s ease-in-out infinite;
+  }
 }
 
 @keyframes float-slow {
@@ -86,5 +113,15 @@ body {
   }
   50% {
     transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes hero-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
   }
 }

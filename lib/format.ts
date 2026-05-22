@@ -1,3 +1,4 @@
+import { BRAND_TITLE_SUFFIX } from "./brand";
 import type { Vehicle, VehicleDetail } from "./types";
 
 export function formatPrice(value: number | null): string {
@@ -37,5 +38,5 @@ export function formatMetadataTitle(vehicle: VehicleDetail): string {
     Boolean,
   );
   const base = parts.length > 0 ? parts.join(" ") : "Vehicle";
-  return `${base} | Auto Group`;
+  return `${base} | ${BRAND_TITLE_SUFFIX}`;
 }

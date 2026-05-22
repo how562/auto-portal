@@ -33,7 +33,7 @@ function PortalContent({
   return (
     <>
       <PortalHeader />
-      <EditorialHero previewVehicles={vehicles} />
+      <EditorialHero previewVehicles={vehicles} loadError={loadError} />
       <DiscoveryCategoriesSection vehicles={vehicles} />
       <GuidedDiscoverySection vehicles={vehicles} />
       <InventoryRailsSection

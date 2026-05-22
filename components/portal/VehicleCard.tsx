@@ -43,12 +43,13 @@ export function VehicleCard({
     >
       <Link
         href={detailHref}
-        className={`relative block overflow-hidden bg-[var(--cream-dark)] ${
+        className={`relative block overflow-hidden ${
           isRail ? "aspect-[5/4]" : "aspect-[16/10]"
         }`}
       >
         <VehicleImage
           vehicle={vehicle}
+          placeholderSize={isRail ? "sm" : "lg"}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
         />
         {matchLabel ? (

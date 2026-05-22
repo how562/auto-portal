@@ -37,12 +37,13 @@ async function fetchCollection(
 
   const { data, error } = await supabase
     .from("collections")
-    .select("id, store_id, name, title")
+    .select("id, store_id, name")
     .eq("id", collectionId)
     .single();
 
   if (error) {
-    throw new Error(`Failed to load collection ${collectionId}: ${error.message}`);
+    console.error(`Failed to load collection ${collectionId}:`, error.message);
+    return null;
   }
 
   return data as Collection;

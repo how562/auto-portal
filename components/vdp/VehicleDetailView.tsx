@@ -86,7 +86,11 @@ export function VehicleDetailView({
             <section>
               <div className="card-framer overflow-hidden">
                 <div className="aspect-[16/10] sm:aspect-[2/1]">
-                  <VehicleImage vehicle={vehicle} large className="h-full w-full object-cover" />
+                  <VehicleImage
+                    vehicle={vehicle}
+                    placeholderSize="hero"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
 

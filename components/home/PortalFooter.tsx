@@ -1,7 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { CavenderLogo } from "@/components/brand/CavenderLogo";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
+import { BRAND_NAME } from "@/lib/brand";
 import type { Store } from "@/lib/types";
 
 interface PortalFooterProps {
@@ -9,19 +13,22 @@ interface PortalFooterProps {
 }
 
 export function PortalFooter({ stores }: PortalFooterProps) {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const { openLead } = useLeadCapture();
   const { scrollToGuided } = useDiscovery();
 
   return (
     <footer className="relative overflow-hidden bg-[var(--ink)] text-white">
-      <p
-        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[28%] select-none text-[clamp(5rem,18vw,14rem)] font-semibold tracking-tighter text-white/[0.04]"
+      <div
+        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[32%] select-none opacity-[0.06]"
         aria-hidden
       >
-        Auto Group
-      </p>
+        <CavenderLogo size="watermark" variant="light" />
+      </div>
 
       <div className="portal-container relative py-16 sm:py-20">
+        <CavenderLogo size="footer" variant="light" className="mb-10" />
         <div className="max-w-2xl">
           <h2 className="headline-stack text-3xl sm:text-4xl">
             Still deciding? Let us build your shortlist.
@@ -43,13 +50,22 @@ export function PortalFooter({ stores }: PortalFooterProps) {
             >
               Get My Shortlist
             </button>
-            <button
-              type="button"
-              onClick={scrollToGuided}
-              className="rounded-full border border-white/20 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Start Discovery
-            </button>
+            {isHome ? (
+              <button
+                type="button"
+                onClick={scrollToGuided}
+                className="rounded-full border border-white/20 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Start Discovery
+              </button>
+            ) : (
+              <Link
+                href="/#guided-discovery"
+                className="rounded-full border border-white/20 px-8 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Start Discovery
+              </Link>
+            )}
           </div>
           <p className="mt-6 text-xs text-white/35">
             No pressure. Just real options from across our auto group.
@@ -91,7 +107,7 @@ export function PortalFooter({ stores }: PortalFooterProps) {
         </div>
 
         <p className="mt-12 text-[11px] text-white/25">
-          © {new Date().getFullYear()} Auto Group. Guided discovery portal.
+          © {new Date().getFullYear()} {BRAND_NAME}. Guided discovery portal.
         </p>
       </div>
     </footer>

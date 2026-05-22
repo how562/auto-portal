@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  // Avoid corrupted/missing vendor-chunks for Supabase in dev + SSR routes
+  experimental: {
+    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+  },
+};
 
 export default nextConfig;

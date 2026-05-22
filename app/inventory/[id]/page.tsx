@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PortalHeader } from "@/components/layout/PortalHeader";
 import { VehicleDetailView } from "@/components/vdp/VehicleDetailView";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
+import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { formatMetadataTitle, formatVehicleLabel } from "@/lib/format";
 import {
   fetchSimilarVehicles,
@@ -21,13 +22,13 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const vehicle = await fetchVehicleById(params.id);
   if (!vehicle) {
-    return { title: "Vehicle not found | Auto Group" };
+    return { title: brandPageTitle("Vehicle not found") };
   }
 
   const label = formatVehicleLabel(vehicle);
   return {
     title: formatMetadataTitle(vehicle),
-    description: `View ${label}—pricing, details, and connect with our auto group.`,
+    description: `View ${label}—pricing, details, and connect with ${BRAND_NAME}.`,
   };
 }
 

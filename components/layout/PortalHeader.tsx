@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CavenderLogo } from "@/components/brand/CavenderLogo";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 
 function scrollToId(id: string) {
@@ -16,12 +17,7 @@ export function PortalHeader() {
   return (
     <header className="fixed top-0 z-50 w-full border-b border-[var(--line)]/80 bg-[var(--cream)]/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[90rem] items-center justify-between gap-4 px-4 sm:h-16 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="shrink-0 text-sm font-semibold tracking-tight text-[var(--ink)]"
-        >
-          Auto Group
-        </Link>
+        <CavenderLogo href="/" size="header" variant="dark" priority />
 
         <nav className="hidden items-center gap-6 lg:flex">
           {isInventory ? (

@@ -24,7 +24,7 @@ export type InventoryLifestyle =
   | "budget"
   | "first-vehicle"
   | "fuel-efficient";
-export type InventorySort = "match" | "price-asc" | "price-desc" | "newest";
+export type InventorySort = "match" | "value" | "newest";
 
 export interface InventoryFilters {
   condition: InventoryCondition;
@@ -168,14 +168,13 @@ export function sortInventoryVehicles(
 ): Vehicle[] {
   const copy = [...vehicles];
   switch (sort) {
-    case "price-asc":
-      return copy.sort(
-        (a, b) => (a.internet_price ?? 1e9) - (b.internet_price ?? 1e9),
-      );
-    case "price-desc":
-      return copy.sort(
-        (a, b) => (b.internet_price ?? 0) - (a.internet_price ?? 0),
-      );
+    case "value":
+      return copy.sort((a, b) => {
+        const priceA = a.internet_price ?? 1e9;
+        const priceB = b.internet_price ?? 1e9;
+        if (priceA !== priceB) return priceA - priceB;
+        return (b.year ?? 0) - (a.year ?? 0);
+      });
     case "newest":
       return copy.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
     case "match":
@@ -217,7 +216,7 @@ export function buildInventorySubtitle(filters: InventoryFilters): string {
   }
 
   if (parts.length === 0) {
-    return "Explore live inventory across our auto group";
+    return "Tell us how you drive—we'll surface vehicles that fit your life across every store.";
   }
 
   const joined = parts.join(" · ");
@@ -240,22 +239,6 @@ export function getRefinementSuggestions(
 ): RefinementSuggestion[] {
   const suggestions: RefinementSuggestion[] = [];
 
-  if (filters.budget === "all" || filters.budget === "30-50k" || filters.budget === "50k-plus") {
-    suggestions.push({
-      id: "under-25k",
-      label: "Looking for something under $25k?",
-      patch: { budget: "under-25k" },
-    });
-  }
-
-  if (filters.condition === "all" || filters.condition === "new") {
-    suggestions.push({
-      id: "used",
-      label: "Prefer pre-owned value?",
-      patch: { condition: "used" },
-    });
-  }
-
   if (filters.bodyStyle !== "suv" && filters.lifestyle !== "family") {
     suggestions.push({
       id: "space",
@@ -264,11 +247,31 @@ export function getRefinementSuggestions(
     });
   }
 
-  if (filters.lifestyle === "all" && suggestions.length < 3) {
+  if (
+    filters.budget === "all" ||
+    filters.budget === "30-50k" ||
+    filters.budget === "50k-plus"
+  ) {
     suggestions.push({
-      id: "efficient",
-      label: "Want better efficiency?",
-      patch: { lifestyle: "fuel-efficient" },
+      id: "budget",
+      label: "Lower your budget?",
+      patch: { budget: "under-30k" },
+    });
+  }
+
+  if (filters.sort !== "newest") {
+    suggestions.push({
+      id: "newer",
+      label: "Prefer newer models?",
+      patch: { sort: "newest" },
+    });
+  }
+
+  if (filters.condition === "all" && suggestions.length < 3) {
+    suggestions.push({
+      id: "cpo",
+      label: "Explore certified options?",
+      patch: { condition: "cpo" },
     });
   }
 
@@ -302,7 +305,7 @@ export function searchParamsToFilters(
     bodyStyle: isBody(body) ? body : "all",
     lifestyle: isLifestyle(lifestyle) ? lifestyle : "all",
     storeId: store ?? "all",
-    sort: isSort(sort) ? sort : "match",
+    sort: normalizeSort(sort),
   };
 }
 
@@ -340,12 +343,13 @@ function isLifestyle(v: string | null): v is InventoryLifestyle {
   );
 }
 function isSort(v: string | null): v is InventorySort {
-  return (
-    v === "match" ||
-    v === "price-asc" ||
-    v === "price-desc" ||
-    v === "newest"
-  );
+  return v === "match" || v === "value" || v === "newest";
+}
+
+function normalizeSort(v: string | null): InventorySort {
+  if (v === "price-asc" || v === "price-desc") return "value";
+  if (isSort(v)) return v;
+  return "match";
 }
 
 /** Map homepage lifestyle choice to inventory URL */

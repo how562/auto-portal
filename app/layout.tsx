@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { BRAND_NAME, BRAND_TITLE_SUFFIX } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,9 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Auto Group | Guided vehicle discovery",
-  description:
-    "Find your next vehicle by how you live. Guided discovery across real group inventory.",
+  title: `${BRAND_TITLE_SUFFIX} | Guided vehicle discovery`,
+  description: `Find your next vehicle by how you live. Guided discovery across real ${BRAND_NAME} inventory.`,
 };
 
 export default function RootLayout({

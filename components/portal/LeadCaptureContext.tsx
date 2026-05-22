@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   createContext,
   useCallback,
@@ -11,7 +12,11 @@ import {
 import { formatVehicleLabel } from "@/lib/format";
 import type { LeadAction } from "@/lib/leads";
 import type { Vehicle } from "@/lib/types";
-import { LeadModal } from "./LeadModal";
+
+const LeadModal = dynamic(
+  () => import("./LeadModal").then((mod) => mod.LeadModal),
+  { ssr: false },
+);
 
 export interface OpenLeadOptions {
   action: LeadAction;
