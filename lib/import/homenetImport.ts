@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseDealerSendFile } from "./dealerSendParse";
 import { mapDealerSendRow, type HomenetVehicleRow } from "./dealerSendMap";
-import { downloadNewestTxtFile, readSftpConfigFromEnv } from "./sftpInventory";
+import {
+  downloadNewestTxtFile,
+  getSftpEnvDebug,
+  readSftpConfigFromEnv,
+} from "./sftpInventory";
 
 const UPSERT_BATCH_SIZE = 50;
 
@@ -24,13 +28,22 @@ export interface HomenetImportSummary {
   errors: HomenetImportError[];
   /** Present when the import aborts before or during processing. */
   error?: string;
+  /** Temporary safe SFTP env debug (failed imports only; never includes the password). */
+  sftpHost?: string;
+  sftpPort?: number;
+  sftpUser?: string;
+  hasPassword?: boolean;
+  passwordLength?: number;
+  sftpPath?: string;
 }
 
 /** Full summary shape for fatal errors (SFTP, parse, config). */
 export function createFailedImportSummary(
   message: string,
   partial: Partial<HomenetImportSummary> = {},
+  includeSftpDebug = true,
 ): HomenetImportSummary {
+  const debug = includeSftpDebug ? getSftpEnvDebug() : null;
   return {
     ok: false,
     error: message,
@@ -43,6 +56,7 @@ export function createFailedImportSummary(
     skipped: partial.skipped ?? 0,
     upserted: partial.upserted ?? 0,
     errors: partial.errors ?? [{ row: 0, message }],
+    ...(debug ?? {}),
   };
 }
 

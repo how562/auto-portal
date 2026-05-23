@@ -15,13 +15,35 @@ export interface DownloadedInventoryFile {
   content: string;
 }
 
+/** Safe SFTP env snapshot for failed import responses (never includes the password). */
+export interface SftpEnvDebug {
+  sftpHost: string;
+  sftpPort: number;
+  sftpUser: string;
+  hasPassword: boolean;
+  passwordLength: number;
+  sftpPath: string;
+}
+
+export function getSftpEnvDebug(): SftpEnvDebug {
+  const password = process.env.SFTP_PASSWORD?.trim() ?? "";
+  const port = Number(process.env.SFTP_PORT || 22);
+  return {
+    sftpHost: process.env.SFTP_HOST?.trim() ?? "",
+    sftpPort: Number.isFinite(port) ? port : 22,
+    sftpUser: process.env.SFTP_USER?.trim() ?? "",
+    hasPassword: password.length > 0,
+    passwordLength: password.length,
+    sftpPath: process.env.SFTP_PATH?.trim() || "/",
+  };
+}
+
 export function readSftpConfigFromEnv(): SftpConfig {
   const host = process.env.SFTP_HOST?.trim();
   const username = process.env.SFTP_USER?.trim();
   const password = process.env.SFTP_PASSWORD?.trim();
   const remotePath = process.env.SFTP_PATH?.trim() || "/";
-  const portRaw = process.env.SFTP_PORT?.trim() || "22";
-  const port = Number.parseInt(portRaw, 10);
+  const port = Number(process.env.SFTP_PORT || 22);
 
   if (!host || !username || !password) {
     throw new Error(
@@ -48,11 +70,10 @@ export async function downloadNewestTxtFile(
 
   try {
     await client.connect({
-      host: config.host,
-      port: config.port,
-      username: config.username,
-      password: config.password,
-      readyTimeout: 20000,
+      host: process.env.SFTP_HOST!.trim(),
+      port: Number(process.env.SFTP_PORT || 22),
+      username: process.env.SFTP_USER!.trim(),
+      password: process.env.SFTP_PASSWORD!.trim(),
     });
 
     const listing = await client.list(config.remotePath);
