@@ -1,3 +1,10 @@
+import type {
+  AnyAuthMethod,
+  AuthHandlerMiddleware,
+  AuthenticationType,
+  KeyboardInteractiveAuthMethod,
+  PasswordAuthMethod,
+} from "ssh2";
 import SftpClient from "ssh2-sftp-client";
 
 export interface SftpConfig {
@@ -62,6 +69,38 @@ function joinRemotePath(base: string, name: string): string {
   return `${normalizedBase}/${name}`.replace(/\/+/g, "/");
 }
 
+/** Password first, then keyboard-interactive (typed via ssh2 authHandler). */
+function createSftpAuthHandler(
+  username: string,
+  password: string,
+): AuthHandlerMiddleware {
+  return (methodsLeft, _partialSuccess, next) => {
+    if (methodsLeft === null) {
+      const attempt: PasswordAuthMethod = {
+        type: "password",
+        username,
+        password,
+      };
+      next(attempt);
+      return;
+    }
+
+    if (methodsLeft.includes("keyboard-interactive")) {
+      const attempt: KeyboardInteractiveAuthMethod = {
+        type: "keyboard-interactive",
+        username,
+        prompt: (_name, _instructions, _lang, prompts, finish) => {
+          finish(prompts.map(() => password));
+        },
+      };
+      next(attempt);
+      return;
+    }
+
+    (next as (auth: AuthenticationType | AnyAuthMethod | false) => void)(false);
+  };
+}
+
 /** List .txt files in SFTP_PATH and download the newest by modifyTime. */
 export async function downloadNewestTxtFile(
   config: SftpConfig,
@@ -70,22 +109,14 @@ export async function downloadNewestTxtFile(
 
   try {
     const password = process.env.SFTP_PASSWORD!.trim();
+    const username = process.env.SFTP_USER!.trim();
 
     await client.connect({
       host: process.env.SFTP_HOST!.trim(),
       port: Number(process.env.SFTP_PORT || 22),
-      username: process.env.SFTP_USER!.trim(),
+      username,
       password,
-      tryKeyboard: true,
-      onKeyboardInteractive: (
-        _name,
-        _instructions,
-        _lang,
-        prompts,
-        finish,
-      ) => {
-        finish(prompts.map(() => password));
-      },
+      authHandler: createSftpAuthHandler(username, password),
     });
 
     const listing = await client.list(config.remotePath);
