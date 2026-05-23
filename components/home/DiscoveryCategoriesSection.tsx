@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { LifeCategoryCardVisual } from "@/components/home/LifeCategoryCardVisual";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { countByCategory } from "@/lib/categoryCounts";
 import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { DiscoveryCTA } from "@/components/home/DiscoveryCTA";
@@ -12,6 +13,7 @@ import {
 } from "@/lib/inventorySearch";
 import {
   filtersFromLifeCategory,
+  getLocalizedLifeCategory,
   LIFE_CATEGORIES,
   type LifeCategoryId,
 } from "@/lib/lifeFilters";
@@ -26,6 +28,7 @@ export function DiscoveryCategoriesSection({
   vehicles,
 }: DiscoveryCategoriesSectionProps) {
   const router = useRouter();
+  const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
 
   const counts = useMemo(
@@ -54,14 +57,13 @@ export function DiscoveryCategoriesSection({
         <div className="grid gap-10 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:self-start">
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              Shop by life
+              {t("categories.shopByLife")}
             </p>
             <h2 className="mt-4 headline-stack text-4xl sm:text-5xl">
-              How do you drive?
+              {t("categories.howDoYouDrive")}
             </h2>
             <p className="mt-4 text-[var(--muted)]">
-              Choose the life you are shopping for — not a generic filter menu.
-              We will surface vehicles that fit how you actually live.
+              {t("categories.lifeIntro")}
             </p>
             <div className="mt-8 hidden lg:block">
               <DiscoveryCTA layout="stack" size="compact" />
@@ -72,6 +74,7 @@ export function DiscoveryCategoriesSection({
             {LIFE_CATEGORIES.map((cat, index) => {
               const count = counts[cat.id];
               const featured = index === 0;
+              const localized = getLocalizedLifeCategory(cat, locale);
 
               return (
                 <button
@@ -95,19 +98,21 @@ export function DiscoveryCategoriesSection({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
-                        {cat.title}
+                        {localized.title}
                       </h3>
                       <span className="shrink-0 rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-2.5 py-1 text-xs font-bold text-[var(--muted)] group-hover:border-[var(--gold)] group-hover:text-[var(--ink)]">
                         {count > 0
-                          ? `${count.toLocaleString()} vehicles`
-                          : "Explore"}
+                          ? t("categories.vehiclesCount", undefined, {
+                              count: count.toLocaleString(),
+                            })
+                          : t("categories.explore")}
                       </span>
                     </div>
                     <p className="mt-2 max-w-sm text-sm leading-snug text-[var(--muted)]">
-                      {cat.description}
+                      {localized.description}
                     </p>
                     <span className="mt-4 inline-flex text-sm font-semibold text-[var(--ink)]">
-                      {cat.ctaLabel} →
+                      {localized.cta} →
                     </span>
                   </div>
                 </button>

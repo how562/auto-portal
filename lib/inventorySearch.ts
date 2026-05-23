@@ -1,4 +1,5 @@
 import type { Translator } from "./i18n/translations";
+import type { Locale } from "./i18n/types";
 import {
   buildInventoryUrl,
   filterVehiclesByIntent,
@@ -13,6 +14,8 @@ import {
   getLifeCategory,
   getLifeEmptyState,
   getLifeResultMessaging,
+  getLocalizedLifeCategory,
+  getLocalizedLifeRefinementLabel,
   isLifeCategoryId,
   vehicleMatchesLifeCategory,
   vehicleMatchesLifeRefinement,
@@ -324,9 +327,10 @@ export function sortInventoryVehicles(
 export function buildInventorySubtitle(
   filters: InventoryFilters,
   t?: Translator,
+  locale: Locale = "en",
 ): string {
   if (filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle)) {
-    return getLifeResultMessaging(filters.lifestyle).subtitle;
+    return getLifeResultMessaging(filters.lifestyle, locale).subtitle;
   }
 
   const parts: string[] = [];
@@ -366,20 +370,22 @@ export function buildInventorySubtitle(
 
 export function getLifeCategoryHeader(
   filters: InventoryFilters,
+  locale: Locale = "en",
 ): { title: string; subtitle: string } | null {
   if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
     return null;
   }
-  return getLifeResultMessaging(filters.lifestyle);
+  return getLifeResultMessaging(filters.lifestyle, locale);
 }
 
 export function getLifeEmptyStateCopy(
   filters: InventoryFilters,
+  locale: Locale = "en",
 ): { title: string; body: string } | null {
   if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
     return null;
   }
-  return getLifeEmptyState(filters.lifestyle);
+  return getLifeEmptyState(filters.lifestyle, locale);
 }
 
 export interface LifeRefinementChip {
@@ -391,6 +397,7 @@ export interface LifeRefinementChip {
 
 export function getLifeRefinementChips(
   filters: InventoryFilters,
+  locale: Locale = "en",
 ): LifeRefinementChip[] {
   if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
     return [];
@@ -399,7 +406,7 @@ export function getLifeRefinementChips(
   const config = getLifeCategory(filters.lifestyle);
   return config.refinements.map((refinement) => ({
     id: refinement.id,
-    label: refinement.label,
+    label: getLocalizedLifeRefinementLabel(refinement, locale),
     active: filters.lifeRefinement === refinement.id,
     patch: {
       lifeRefinement:
@@ -412,10 +419,12 @@ export function getLifeRefinementChips(
 export function getResultMatchLabel(
   filters: InventoryFilters,
   t?: Translator,
+  locale: Locale = "en",
 ): string | null {
   if (filters.lifestyle === "all") return null;
   if (isLifeCategoryId(filters.lifestyle)) {
-    return getLifeCategory(filters.lifestyle).title;
+    return getLocalizedLifeCategory(getLifeCategory(filters.lifestyle), locale)
+      .title;
   }
   return getMatchLabel(lifestyleToIntent(filters.lifestyle), t);
 }

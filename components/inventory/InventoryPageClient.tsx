@@ -50,7 +50,7 @@ export function InventoryPageClient({
   totalCount,
   serverPaginated,
 }: InventoryPageClientProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,22 +143,28 @@ export function InventoryPageClient({
   );
 
   const subtitle = useMemo(
-    () => buildInventorySubtitle(filters, t),
-    [filters, t],
+    () => buildInventorySubtitle(filters, t, locale),
+    [filters, t, locale],
   );
-  const lifeHeader = useMemo(() => getLifeCategoryHeader(filters), [filters]);
+  const lifeHeader = useMemo(
+    () => getLifeCategoryHeader(filters, locale),
+    [filters, locale],
+  );
   const lifeRefinementChips = useMemo(
-    () => getLifeRefinementChips(filters),
-    [filters],
+    () => getLifeRefinementChips(filters, locale),
+    [filters, locale],
   );
-  const lifeEmptyState = useMemo(() => getLifeEmptyStateCopy(filters), [filters]);
+  const lifeEmptyState = useMemo(
+    () => getLifeEmptyStateCopy(filters, locale),
+    [filters, locale],
+  );
   const suggestions = useMemo(
     () => getRefinementSuggestions(filters, t),
     [filters, t],
   );
   const activeChips = useMemo(
-    () => getActiveFilterChips(filters, stores, t),
-    [filters, stores, t],
+    () => getActiveFilterChips(filters, stores, t, locale),
+    [filters, stores, t, locale],
   );
   const moreFilterCount = countMoreFilters(filters);
 
@@ -183,7 +189,7 @@ export function InventoryPageClient({
             {lifeRefinementChips.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-                  Refine your match
+                  {t("inventory.refineMatch")}
                 </p>
                 <LifeRefinementChips
                   chips={lifeRefinementChips}

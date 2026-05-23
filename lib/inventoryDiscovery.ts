@@ -1,9 +1,12 @@
 import type { Translator } from "./i18n/translations";
+import type { Locale } from "./i18n/types";
 import type { InventoryFilters } from "@/lib/inventorySearch";
 import { lifestyleToIntent } from "@/lib/inventorySearch";
 import {
   getLifeCategory,
   getLifeRefinement,
+  getLocalizedLifeCategory,
+  getLocalizedLifeRefinementLabel,
   isLifeCategoryId,
 } from "@/lib/lifeFilters";
 import { getMatchLabel } from "@/lib/matchLabels";
@@ -20,6 +23,7 @@ export function getActiveFilterChips(
   filters: InventoryFilters,
   stores: { id: string; name: string }[],
   t?: Translator,
+  locale: Locale = "en",
 ): FilterChip[] {
   const chips: FilterChip[] = [];
 
@@ -60,7 +64,7 @@ export function getActiveFilterChips(
 
   if (filters.lifestyle !== "all") {
     const label = isLifeCategoryId(filters.lifestyle)
-      ? getLifeCategory(filters.lifestyle).title
+      ? getLocalizedLifeCategory(getLifeCategory(filters.lifestyle), locale).title
       : filters.lifestyle;
     chips.push({
       id: "lifestyle",
@@ -77,7 +81,7 @@ export function getActiveFilterChips(
     if (refinement) {
       chips.push({
         id: "lifeRefinement",
-        label: refinement.label,
+        label: getLocalizedLifeRefinementLabel(refinement, locale),
         patch: { lifeRefinement: null },
       });
     }
@@ -108,8 +112,13 @@ const MICROCOPY_BY_INTENT: Record<ShopperIntent, string> = {
 export function getVehicleMicrocopy(
   vehicle: Vehicle,
   filters: InventoryFilters,
+  locale: Locale = "en",
 ): string {
   if (filters.lifestyle !== "all") {
+    if (isLifeCategoryId(filters.lifestyle)) {
+      return getLocalizedLifeCategory(getLifeCategory(filters.lifestyle), locale)
+        .resultSubtitle;
+    }
     return MICROCOPY_BY_INTENT[lifestyleToIntent(filters.lifestyle)];
   }
 
@@ -138,8 +147,13 @@ export function getVehicleMatchLabel(
   vehicle: Vehicle,
   filters: InventoryFilters,
   t?: Translator,
+  locale: Locale = "en",
 ): string | undefined {
   if (filters.lifestyle !== "all") {
+    if (isLifeCategoryId(filters.lifestyle)) {
+      return getLocalizedLifeCategory(getLifeCategory(filters.lifestyle), locale)
+        .title;
+    }
     return getMatchLabel(lifestyleToIntent(filters.lifestyle), t);
   }
 

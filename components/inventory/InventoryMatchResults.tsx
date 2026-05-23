@@ -39,7 +39,7 @@ export function InventoryMatchResults({
   filters,
   onSortChange,
 }: InventoryMatchResultsProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [viewMode, setViewMode] = useState<InventoryViewMode>("grid");
 
   useEffect(() => {
@@ -60,12 +60,12 @@ export function InventoryMatchResults({
   const showFeaturedStrip = featured.length > 0;
 
   const microcopyFor = useCallback(
-    (v: Vehicle) => getVehicleMicrocopy(v, filters),
-    [filters],
+    (v: Vehicle) => getVehicleMicrocopy(v, filters, locale),
+    [filters, locale],
   );
   const matchLabelFor = useCallback(
-    (v: Vehicle) => getVehicleMatchLabel(v, filters, t),
-    [filters, t],
+    (v: Vehicle) => getVehicleMatchLabel(v, filters, t, locale),
+    [filters, t, locale],
   );
 
   return (

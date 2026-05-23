@@ -67,6 +67,8 @@ const en = {
   "categories.howDoYouDrive": "How do you drive?",
   "categories.intro":
     "Editorial categories—not generic filters. Pick a path and we'll tune your matches instantly.",
+  "categories.lifeIntro":
+    "Choose the life you are shopping for — not a generic filter menu. We will surface vehicles that fit how you actually live.",
   "categories.viewMatches": "View matches →",
   "categories.explore": "Explore",
   "categories.vehiclesCount": "{count} vehicles",
@@ -364,6 +366,8 @@ const es: Record<keyof typeof en, string> = {
   "categories.howDoYouDrive": "¿Cómo manejas?",
   "categories.intro":
     "Categorías editoriales—no filtros genéricos. Elige un camino y afinamos tus opciones al instante.",
+  "categories.lifeIntro":
+    "Elige la vida para la que compras — no un menú de filtros genérico. Mostraremos vehículos que encajan con cómo vives realmente.",
   "categories.viewMatches": "Ver opciones →",
   "categories.explore": "Explorar",
   "categories.vehiclesCount": "{count} vehículos",

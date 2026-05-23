@@ -1,6 +1,7 @@
 "use client";
 
 import type { InventoryFilters, LifeRefinementChip } from "@/lib/inventorySearch";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 interface LifeRefinementChipsProps {
   chips: LifeRefinementChip[];
@@ -8,13 +9,15 @@ interface LifeRefinementChipsProps {
 }
 
 export function LifeRefinementChips({ chips, onApply }: LifeRefinementChipsProps) {
+  const { t } = useLanguage();
+
   if (chips.length === 0) return null;
 
   return (
     <div
       className="flex flex-wrap gap-2"
       role="group"
-      aria-label="Refine your life match"
+      aria-label={t("inventory.refineMatch")}
     >
       {chips.map((chip) => (
         <button

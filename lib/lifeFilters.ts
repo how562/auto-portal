@@ -1,3 +1,4 @@
+import type { Locale } from "./i18n/types";
 import {
   normalizeVehicle,
   vehicleMatchesSmartMatchRule,
@@ -54,6 +55,7 @@ export interface LifeMatchRule {
 export interface LifeRefinement {
   id: string;
   label: string;
+  label_es?: string;
   filterPatch?: LifeFilterPatch;
   matchRules?: LifeMatchRule[];
 }
@@ -61,19 +63,69 @@ export interface LifeRefinement {
 export interface LifeCategoryConfig {
   id: LifeCategoryId;
   title: string;
+  title_es?: string;
   description: string;
+  description_es?: string;
   ctaLabel: string;
+  cta_es?: string;
   /** Optional hero image for Shop by Life cards (right-side treatment). */
   imageUrl?: string;
   priority: number;
   resultTitle: string;
+  resultTitle_es?: string;
   resultSubtitle: string;
+  resultSubtitle_es?: string;
   emptyStateTitle: string;
+  emptyStateTitle_es?: string;
   emptyStateBody: string;
+  emptyStateBody_es?: string;
   matchRules: LifeMatchRule[];
   refinements: LifeRefinement[];
   smartMatchKey?: SmartMatchLifestyleKey;
   impliedBodyStyle?: LifeFilterPatch["bodyStyle"];
+}
+
+function pickLocaleText(
+  en: string,
+  es: string | undefined,
+  locale: Locale,
+): string {
+  if (locale === "es" && es?.trim()) return es.trim();
+  return en;
+}
+
+export function getLocalizedLifeCategory(
+  config: LifeCategoryConfig,
+  locale: Locale,
+) {
+  return {
+    title: pickLocaleText(config.title, config.title_es, locale),
+    description: pickLocaleText(config.description, config.description_es, locale),
+    cta: pickLocaleText(config.ctaLabel, config.cta_es, locale),
+    resultTitle: pickLocaleText(config.resultTitle, config.resultTitle_es, locale),
+    resultSubtitle: pickLocaleText(
+      config.resultSubtitle,
+      config.resultSubtitle_es,
+      locale,
+    ),
+    emptyStateTitle: pickLocaleText(
+      config.emptyStateTitle,
+      config.emptyStateTitle_es,
+      locale,
+    ),
+    emptyStateBody: pickLocaleText(
+      config.emptyStateBody,
+      config.emptyStateBody_es,
+      locale,
+    ),
+  };
+}
+
+export function getLocalizedLifeRefinementLabel(
+  refinement: LifeRefinement,
+  locale: Locale,
+): string {
+  return pickLocaleText(refinement.label, refinement.label_es, locale);
 }
 
 const LUXURY_MAKES = [
@@ -177,14 +229,24 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "family",
     title: "Family",
+    title_es: "Familia",
     description: "Room for the kids, the gear, and everything in between.",
+    description_es:
+      "Espacio para los niños, el equipaje y todo lo demás.",
     ctaLabel: "Show family options",
+    cta_es: "Ver opciones familiares",
+    imageUrl: "/images/life/family.png",
     priority: 10,
     resultTitle: "Built for Your Crew",
+    resultTitle_es: "Hecho para tu familia",
     resultSubtitle: "Safe, spacious, and ready for everyday life.",
+    resultSubtitle_es: "Seguro, espacioso y listo para la vida diaria.",
     emptyStateTitle: "Family options are on the way",
+    emptyStateTitle_es: "Opciones familiares en camino",
     emptyStateBody:
       "We are refreshing family-friendly SUVs and vans. Try removing a refinement or browse all inventory.",
+    emptyStateBody_es:
+      "Estamos renovando SUVs y vans familiares. Quita un refinamiento o explora todo el inventario.",
     smartMatchKey: "family",
     impliedBodyStyle: "suv",
     matchRules: [
@@ -209,6 +271,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "third-row",
         label: "Third row",
+        label_es: "Tercera fila",
         matchRules: [
           {
             keywords: [
@@ -226,6 +289,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "safety-first",
         label: "Safety first",
+        label_es: "Seguridad primero",
         matchRules: [
           {
             keywords: [
@@ -244,6 +308,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "cargo-space",
         label: "Cargo space",
+        label_es: "Espacio de carga",
         matchRules: [
           {
             keywords: [
@@ -262,6 +327,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "budget-friendly",
         label: "Budget-friendly",
+        label_es: "Económico",
         filterPatch: { budget: "under-30k" },
       },
     ],
@@ -269,14 +335,24 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "work",
     title: "Built for the Job",
+    title_es: "Hecho para el trabajo",
     description: "Trucks and capability that show up when you need them.",
+    description_es:
+      "Camionetas y capacidad que responden cuando las necesitas.",
     ctaLabel: "Find work-ready vehicles",
+    cta_es: "Buscar vehículos para trabajo",
+    imageUrl: "/images/life/work.png",
     priority: 20,
     resultTitle: "Ready for Work and the Weekend",
+    resultTitle_es: "Listo para el trabajo y el fin de semana",
     resultSubtitle: "Capability, utility, and comfort when you need it.",
+    resultSubtitle_es: "Capacidad, utilidad y comodidad cuando la necesitas.",
     emptyStateTitle: "Work-ready inventory is updating",
+    emptyStateTitle_es: "Inventario para trabajo en actualización",
     emptyStateBody:
       "New trucks and capability-focused vehicles arrive often. Clear refinements or browse all inventory.",
+    emptyStateBody_es:
+      "Llegan camionetas y vehículos de capacidad con frecuencia. Quita refinamientos o explora todo el inventario.",
     smartMatchKey: "work",
     impliedBodyStyle: "truck",
     matchRules: [
@@ -303,11 +379,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "towing",
         label: "Towing",
+        label_es: "Remolque",
         matchRules: [{ keywords: ["towing", "tow package", "trailer", "hitch"] }],
       },
       {
         id: "truck-bed",
         label: "Truck bed",
+        label_es: "Caja de camioneta",
         matchRules: [
           {
             bodyStyles: ["truck", "pickup"],
@@ -318,6 +396,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "crew-cab",
         label: "Crew cab",
+        label_es: "Cabina doble",
         matchRules: [
           {
             keywords: ["crew cab", "double cab", "supercrew", "super cab", "quad cab"],
@@ -327,6 +406,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "four-by-four",
         label: "4x4",
+        label_es: "4x4",
         matchRules: [
           { keywords: ["4x4", "4wd", "four-wheel", "four wheel", "awd"] },
         ],
@@ -336,14 +416,24 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "luxury",
     title: "Treat Yourself",
+    title_es: "Date un gusto",
     description: "Premium comfort, elevated design, and a drive that feels different.",
+    description_es:
+      "Confort premium, diseño elevado y una conducción que se siente distinta.",
     ctaLabel: "Explore premium options",
+    cta_es: "Explorar opciones premium",
+    imageUrl: "/images/life/luxury.png",
     priority: 30,
     resultTitle: "You Deserve a Better Drive",
+    resultTitle_es: "Mereces una mejor conducción",
     resultSubtitle: "Premium comfort, standout design, and elevated features.",
+    resultSubtitle_es: "Confort premium, diseño destacado y características elevadas.",
     emptyStateTitle: "Premium picks are coming soon",
+    emptyStateTitle_es: "Selecciones premium muy pronto",
     emptyStateBody:
       "Luxury inventory changes quickly. Try a refinement or explore the full lineup.",
+    emptyStateBody_es:
+      "El inventario de lujo cambia rápido. Prueba un refinamiento o explora toda la línea.",
     smartMatchKey: "luxury",
     matchRules: [
       { makes: LUXURY_MAKES },
@@ -368,11 +458,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "leather",
         label: "Leather",
+        label_es: "Piel",
         matchRules: [{ keywords: ["leather", "leather-appointed", "leatherette"] }],
       },
       {
         id: "premium-audio",
         label: "Premium audio",
+        label_es: "Audio premium",
         matchRules: [
           {
             keywords: [
@@ -390,6 +482,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "panoramic-roof",
         label: "Panoramic roof",
+        label_es: "Techo panorámico",
         matchRules: [
           { keywords: ["panoramic", "sunroof", "moonroof", "skyroof"] },
         ],
@@ -397,6 +490,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "performance",
         label: "Performance",
+        label_es: "Desempeño",
         matchRules: [
           {
             keywords: [
@@ -418,15 +512,25 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "budget",
     title: "Keep It Affordable",
+    title_es: "Mantén el precio accesible",
     description:
       "Options that fit your monthly budget — not just the sticker price.",
+    description_es:
+      "Opciones que encajan con tu presupuesto mensual — no solo el precio de lista.",
     ctaLabel: "See affordable options",
+    cta_es: "Ver opciones accesibles",
+    imageUrl: "/images/life/budget.png",
     priority: 40,
     resultTitle: "Drive More, Stress Less",
+    resultTitle_es: "Maneja más, preocúpate menos",
     resultSubtitle: "Smart options built around real budgets.",
+    resultSubtitle_es: "Opciones inteligentes pensadas para presupuestos reales.",
     emptyStateTitle: "Value picks are restocking",
+    emptyStateTitle_es: "Opciones de valor en reposición",
     emptyStateBody:
       "Affordable inventory turns fast. Widen your search or browse all vehicles.",
+    emptyStateBody_es:
+      "El inventario accesible se mueve rápido. Amplía tu búsqueda o explora todos los vehículos.",
     smartMatchKey: "budget",
     matchRules: [
       { maxPrice: 30000 },
@@ -444,11 +548,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "under-30k",
         label: "Under $30k",
+        label_es: "Menos de $30k",
         filterPatch: { budget: "under-30k" },
       },
       {
         id: "best-savings",
         label: "Best savings",
+        label_es: "Mejores ahorros",
         matchRules: [
           {
             keywords: [
@@ -465,11 +571,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "good-mpg",
         label: "Good MPG",
+        label_es: "Buen MPG",
         matchRules: [{ keywords: EFFICIENT_KEYWORDS }],
       },
       {
         id: "used-options",
         label: "Used options",
+        label_es: "Opciones seminuevas",
         filterPatch: { condition: "used" },
       },
     ],
@@ -477,14 +585,23 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "first-vehicle",
     title: "First Car",
+    title_es: "Primer vehículo",
     description: "Simple, reliable, and easy to get started.",
+    description_es: "Simple, confiable y fácil para empezar.",
     ctaLabel: "Find first-car options",
+    cta_es: "Buscar opciones para primer auto",
+    imageUrl: "/images/life/first.png",
     priority: 50,
     resultTitle: "Your First Drive Starts Here",
+    resultTitle_es: "Tu primera conducción empieza aquí",
     resultSubtitle: "Approachable, reliable options without the overwhelm.",
+    resultSubtitle_es: "Opciones accesibles y confiables sin complicaciones.",
     emptyStateTitle: "First-car picks are updating",
+    emptyStateTitle_es: "Selecciones para primer auto en actualización",
     emptyStateBody:
       "Starter-friendly inventory changes often. Try a refinement or see everything we have.",
+    emptyStateBody_es:
+      "El inventario para principiantes cambia seguido. Prueba un refinamiento o mira todo lo que tenemos.",
     smartMatchKey: "first",
     matchRules: [
       {
@@ -506,11 +623,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "under-25k",
         label: "Under $25k",
+        label_es: "Menos de $25k",
         filterPatch: { budget: "under-25k" },
       },
       {
         id: "easy-to-own",
         label: "Easy to own",
+        label_es: "Fácil de tener",
         matchRules: [
           {
             keywords: ["reliable", "easy", "simple", "low maintenance", "commuter"],
@@ -521,11 +640,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "good-mpg",
         label: "Good MPG",
+        label_es: "Buen MPG",
         matchRules: [{ keywords: EFFICIENT_KEYWORDS }],
       },
       {
         id: "used",
         label: "Used",
+        label_es: "Seminuevo",
         filterPatch: { condition: "used" },
       },
     ],
@@ -533,14 +654,23 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "fuel-efficient",
     title: "Save on Gas",
+    title_es: "Ahorra en gasolina",
     description: "Go further on every tank and spend less along the way.",
+    description_es: "Ve más lejos con cada tanque y gasta menos en el camino.",
     ctaLabel: "Show fuel-friendly vehicles",
+    cta_es: "Ver vehículos eficientes",
+    imageUrl: "/images/life/efficient.png",
     priority: 60,
     resultTitle: "Spend Less at the Pump",
+    resultTitle_es: "Gasta menos en la gasolinera",
     resultSubtitle: "Hybrids, EVs, and efficient daily drivers.",
+    resultSubtitle_es: "Híbridos, eléctricos y conductores diarios eficientes.",
     emptyStateTitle: "Efficient options are on the way",
+    emptyStateTitle_es: "Opciones eficientes en camino",
     emptyStateBody:
       "Fuel-friendly inventory updates regularly. Clear refinements or browse all vehicles.",
+    emptyStateBody_es:
+      "El inventario eficiente se actualiza seguido. Quita refinamientos o explora todos los vehículos.",
     smartMatchKey: "efficient",
     matchRules: [
       { keywords: EFFICIENT_KEYWORDS },
@@ -557,11 +687,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "hybrid",
         label: "Hybrid",
+        label_es: "Híbrido",
         matchRules: [{ keywords: ["hybrid", "phev", "plug-in"] }],
       },
       {
         id: "ev",
         label: "EV",
+        label_es: "Eléctrico",
         matchRules: [
           {
             keywords: ["electric", " ev ", "bolt", "leaf", "ioniq", "mach-e"],
@@ -571,6 +703,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "30-plus-mpg",
         label: "30+ MPG",
+        label_es: "30+ MPG",
         matchRules: [
           { keywords: ["30 mpg", "35 mpg", "40 mpg", "45 mpg", "50 mpg", "mpg"] },
         ],
@@ -578,6 +711,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "small-suv",
         label: "Small SUV",
+        label_es: "SUV compacto",
         filterPatch: { bodyStyle: "suv" },
         matchRules: [
           {
@@ -591,14 +725,24 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "weekend-ready",
     title: "Weekend Ready",
+    title_es: "Listo para el fin de semana",
     description: "Road trips, projects, and adventures without overthinking it.",
+    description_es:
+      "Viajes, proyectos y aventuras sin complicarte la vida.",
     ctaLabel: "Explore weekend vehicles",
+    cta_es: "Explorar vehículos de fin de semana",
+    imageUrl: "/images/life/weekend.png",
     priority: 70,
     resultTitle: "Built for the Open Road",
+    resultTitle_es: "Hecho para la carretera abierta",
     resultSubtitle: "Adventure-ready SUVs, trucks, and capable crossovers.",
+    resultSubtitle_es: "SUVs, camionetas y crossovers listos para aventura.",
     emptyStateTitle: "Weekend-ready inventory is updating",
+    emptyStateTitle_es: "Inventario de fin de semana en actualización",
     emptyStateBody:
       "Adventure-focused vehicles arrive often. Try a refinement or browse all inventory.",
+    emptyStateBody_es:
+      "Llegan vehículos para aventura con frecuencia. Prueba un refinamiento o explora todo el inventario.",
     smartMatchKey: "weekend",
     matchRules: [
       {
@@ -626,11 +770,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "awd-4wd",
         label: "AWD/4WD",
+        label_es: "AWD/4WD",
         matchRules: [{ keywords: ["awd", "4wd", "4x4", "all-wheel", "four-wheel"] }],
       },
       {
         id: "off-road",
         label: "Off-road",
+        label_es: "Todo terreno",
         matchRules: [
           {
             keywords: ["off-road", "offroad", "trail", "all-terrain", "skid plate"],
@@ -640,6 +786,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "cargo-space",
         label: "Cargo space",
+        label_es: "Espacio de carga",
         matchRules: [
           {
             keywords: ["cargo", "storage", "roof rack", "roof rail", "hitch"],
@@ -649,6 +796,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "towing",
         label: "Towing",
+        label_es: "Remolque",
         matchRules: [{ keywords: ["towing", "tow package", "trailer", "hitch"] }],
       },
     ],
@@ -656,14 +804,23 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
   {
     id: "everyday-drive",
     title: "Everyday Drive",
+    title_es: "Conducción diaria",
     description: "Easy to drive, easy to park, and built for daily life.",
+    description_es: "Fácil de manejar, fácil de estacionar y hecho para el día a día.",
     ctaLabel: "Find daily drivers",
+    cta_es: "Buscar conductores diarios",
+    imageUrl: "/images/life/everyday.png",
     priority: 80,
     resultTitle: "Your Daily, Elevated",
+    resultTitle_es: "Tu día a día, elevado",
     resultSubtitle: "Comfortable, efficient, and easy to live with.",
+    resultSubtitle_es: "Cómodo, eficiente y fácil de vivir.",
     emptyStateTitle: "Daily drivers are restocking",
+    emptyStateTitle_es: "Conductores diarios en reposición",
     emptyStateBody:
       "Commuter-friendly inventory turns quickly. Clear refinements or see the full lineup.",
+    emptyStateBody_es:
+      "El inventario para el día a día se mueve rápido. Quita refinamientos o mira toda la línea.",
     smartMatchKey: "everyday",
     matchRules: [
       {
@@ -685,11 +842,13 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "good-mpg",
         label: "Good MPG",
+        label_es: "Buen MPG",
         matchRules: [{ keywords: EFFICIENT_KEYWORDS }],
       },
       {
         id: "easy-parking",
         label: "Easy parking",
+        label_es: "Fácil de estacionar",
         matchRules: [
           {
             keywords: ["compact", "easy", "parking", "city", "small"],
@@ -700,6 +859,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "comfortable",
         label: "Comfortable",
+        label_es: "Cómodo",
         matchRules: [
           {
             keywords: [
@@ -716,6 +876,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       {
         id: "low-mileage",
         label: "Low mileage",
+        label_es: "Bajo kilometraje",
         matchRules: [{ maxMileage: 35000 }],
       },
     ],
@@ -910,25 +1071,33 @@ export function filtersFromLifeCategory(
   return patch;
 }
 
-export function getLifeResultMessaging(categoryId: LifeCategoryId): {
+export function getLifeResultMessaging(
+  categoryId: LifeCategoryId,
+  locale: Locale = "en",
+): {
   title: string;
   subtitle: string;
 } {
   const config = getLifeCategory(categoryId);
+  const localized = getLocalizedLifeCategory(config, locale);
   return {
-    title: config.resultTitle,
-    subtitle: config.resultSubtitle,
+    title: localized.resultTitle,
+    subtitle: localized.resultSubtitle,
   };
 }
 
-export function getLifeEmptyState(categoryId: LifeCategoryId): {
+export function getLifeEmptyState(
+  categoryId: LifeCategoryId,
+  locale: Locale = "en",
+): {
   title: string;
   body: string;
 } {
   const config = getLifeCategory(categoryId);
+  const localized = getLocalizedLifeCategory(config, locale);
   return {
-    title: config.emptyStateTitle,
-    body: config.emptyStateBody,
+    title: localized.emptyStateTitle,
+    body: localized.emptyStateBody,
   };
 }
 
