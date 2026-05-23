@@ -101,7 +101,36 @@ function createSftpAuthHandler(
   };
 }
 
-/** List .txt files in SFTP_PATH and download the newest by modifyTime. */
+function isInventoryFileName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.endsWith(".csv") || lower.endsWith(".txt");
+}
+
+function selectInventoryFile<T extends { name: string; modifyTime?: number }>(
+  files: T[],
+): T {
+  if (files.length === 1) {
+    return files[0];
+  }
+
+  const csvFiles = files.filter((entry) =>
+    entry.name.toLowerCase().endsWith(".csv"),
+  );
+  const candidates =
+    csvFiles.length > 0
+      ? csvFiles
+      : files.filter((entry) => entry.name.toLowerCase().endsWith(".txt"));
+
+  candidates.sort((a, b) => {
+    const aTime = a.modifyTime ?? 0;
+    const bTime = b.modifyTime ?? 0;
+    return bTime - aTime;
+  });
+
+  return candidates[0];
+}
+
+/** List .txt/.csv files in SFTP_PATH and download the selected inventory file. */
 export async function downloadNewestTxtFile(
   config: SftpConfig,
 ): Promise<DownloadedInventoryFile> {
@@ -120,34 +149,27 @@ export async function downloadNewestTxtFile(
     });
 
     const listing = await client.list(config.remotePath);
-    const txtFiles = listing.filter(
-      (entry) =>
-        entry.type === "-" && entry.name.toLowerCase().endsWith(".txt"),
+    const inventoryFiles = listing.filter(
+      (entry) => entry.type === "-" && isInventoryFileName(entry.name),
     );
 
-    if (txtFiles.length === 0) {
+    if (inventoryFiles.length === 0) {
       throw new Error(
-        `No .txt files found in SFTP path: ${config.remotePath}`,
+        `No .txt or .csv files found in SFTP path: ${config.remotePath}`,
       );
     }
 
-    txtFiles.sort((a, b) => {
-      const aTime = a.modifyTime ?? 0;
-      const bTime = b.modifyTime ?? 0;
-      return bTime - aTime;
-    });
-
-    const newest = txtFiles[0];
-    const remoteFilePath = joinRemotePath(config.remotePath, newest.name);
+    const selected = selectInventoryFile(inventoryFiles);
+    const remoteFilePath = joinRemotePath(config.remotePath, selected.name);
     const buffer = await client.get(remoteFilePath);
     const content = Buffer.isBuffer(buffer)
       ? buffer.toString("utf8")
       : String(buffer);
 
     return {
-      fileName: newest.name,
+      fileName: selected.name,
       remotePath: remoteFilePath,
-      modifiedAt: newest.modifyTime ?? null,
+      modifiedAt: selected.modifyTime ?? null,
       content,
     };
   } finally {
