@@ -6,7 +6,11 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 const nextConfig = {
   // Avoid corrupted/missing vendor-chunks for Supabase in dev + SSR routes
   experimental: {
-    serverComponentsExternalPackages: ["@supabase/supabase-js"],
+    serverComponentsExternalPackages: [
+      "@supabase/supabase-js",
+      "ssh2-sftp-client",
+      "ssh2",
+    ],
   },
   images: supabaseHost
     ? {
