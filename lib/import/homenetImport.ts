@@ -68,6 +68,142 @@ function chunk<T>(items: T[], size: number): T[][] {
   return batches;
 }
 
+/** Matches the vehicles_store_vin_unique constraint (store_id, vin). */
+function storeVinKey(storeId: string, vin: string): string {
+  return `${storeId}\0${vin}`;
+}
+
+function hasStoreVinConflictKey(
+  row: HomenetVehicleRow,
+): row is HomenetVehicleRow & { store_id: string; vin: string } {
+  return Boolean(row.store_id?.trim() && row.vin?.trim());
+}
+
+/** Fields refreshed when a vehicle already exists for the same store + VIN. */
+function toMergeUpdate(row: HomenetVehicleRow) {
+  return {
+    internet_price: row.internet_price,
+    msrp: row.msrp,
+    sale_price: row.sale_price,
+    image_urls: row.image_urls,
+    image_count: row.image_count,
+    has_images: row.has_images,
+    data_quality_score: row.data_quality_score,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function upsertVehicleBatch(
+  supabase: SupabaseClient,
+  batch: HomenetVehicleRow[],
+): Promise<{ upserted: number; errors: HomenetImportError[] }> {
+  const errors: HomenetImportError[] = [];
+  let upserted = 0;
+
+  const keyedRows = batch.filter(hasStoreVinConflictKey);
+  const unkeyedRows = batch.filter((row) => !hasStoreVinConflictKey(row));
+
+  if (keyedRows.length > 0) {
+    const orFilter = keyedRows
+      .map((row) => `and(store_id.eq.${row.store_id},vin.eq.${row.vin})`)
+      .join(",");
+
+    const { data: existing, error: lookupError } = await supabase
+      .from("vehicles")
+      .select("store_id, vin")
+      .or(orFilter);
+
+    if (lookupError) {
+      for (const row of keyedRows) {
+        errors.push({
+          row: 0,
+          import_key: row.import_key,
+          message: `Upsert lookup failed: ${lookupError.message}`,
+        });
+      }
+    } else {
+      const existingKeys = new Set(
+        (existing ?? []).map((row) =>
+          storeVinKey(row.store_id as string, row.vin as string),
+        ),
+      );
+
+      const toInsert = keyedRows.filter(
+        (row) => !existingKeys.has(storeVinKey(row.store_id, row.vin)),
+      );
+      const toUpdate = keyedRows.filter((row) =>
+        existingKeys.has(storeVinKey(row.store_id, row.vin)),
+      );
+
+      if (toInsert.length > 0) {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .insert(toInsert)
+          .select("id");
+
+        if (error) {
+          for (const row of toInsert) {
+            errors.push({
+              row: 0,
+              import_key: row.import_key,
+              message: `Insert failed: ${error.message}`,
+            });
+          }
+        } else {
+          upserted += data?.length ?? toInsert.length;
+        }
+      }
+
+      if (toUpdate.length > 0) {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .upsert(
+            toUpdate.map((row) => ({
+              store_id: row.store_id,
+              vin: row.vin,
+              ...toMergeUpdate(row),
+            })),
+            { onConflict: "store_id,vin" },
+          )
+          .select("id");
+
+        if (error) {
+          for (const row of toUpdate) {
+            errors.push({
+              row: 0,
+              import_key: row.import_key,
+              message: `Update failed: ${error.message}`,
+            });
+          }
+        } else {
+          upserted += data?.length ?? toUpdate.length;
+        }
+      }
+    }
+  }
+
+  if (unkeyedRows.length > 0) {
+    const { data, error } = await supabase
+      .from("vehicles")
+      .insert(unkeyedRows)
+      .select("id");
+
+    if (error) {
+      for (const row of unkeyedRows) {
+        errors.push({
+          row: 0,
+          import_key: row.import_key,
+          message: `Insert failed: ${error.message}`,
+        });
+      }
+    } else {
+      upserted += data?.length ?? unkeyedRows.length;
+    }
+  }
+
+  return { upserted, errors };
+}
+
 async function fetchStoreNameLookup(
   supabase: SupabaseClient,
 ): Promise<Map<string, string>> {
@@ -127,23 +263,9 @@ export async function runHomenetInventoryImport(
   let upserted = 0;
 
   for (const batch of chunk(mappedRows, UPSERT_BATCH_SIZE)) {
-    const { data, error } = await supabase
-      .from("vehicles")
-      .upsert(batch, { onConflict: "import_key" })
-      .select("id");
-
-    if (error) {
-      for (const row of batch) {
-        errors.push({
-          row: 0,
-          import_key: row.import_key,
-          message: `Upsert failed: ${error.message}`,
-        });
-      }
-      continue;
-    }
-
-    upserted += data?.length ?? batch.length;
+    const result = await upsertVehicleBatch(supabase, batch);
+    upserted += result.upserted;
+    errors.push(...result.errors);
   }
 
   return {
