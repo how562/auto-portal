@@ -135,6 +135,37 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     maxPrice: 35000,
     condition: null,
   }),
+  rule("weekend", 70, {
+    labelEn: "Adventure-ready SUV or truck for weekends and road trips",
+    labelEs: "SUV o camioneta lista para aventuras y viajes",
+    bodyStyles: ["suv", "truck", "pickup", "crossover"],
+    makes: [],
+    modelKeywords: [
+      "awd",
+      "4wd",
+      "4x4",
+      "off-road",
+      "towing",
+      "trail",
+      "adventure",
+      "roof rack",
+    ],
+    trimKeywords: ["trail", "off-road", "adventure"],
+    minPrice: null,
+    maxPrice: null,
+    condition: null,
+  }),
+  rule("everyday", 80, {
+    labelEn: "Comfortable, efficient daily driver",
+    labelEs: "Conductor diario cómodo y eficiente",
+    bodyStyles: ["sedan", "crossover", "suv", "hatch", "compact"],
+    makes: [],
+    modelKeywords: ["commuter", "daily", "mpg", "hybrid", "comfort"],
+    trimKeywords: [],
+    minPrice: null,
+    maxPrice: 45000,
+    condition: null,
+  }),
 ];
 
 export function buildFallbackSmartMatchCatalog(): SmartMatchRulesCatalog {

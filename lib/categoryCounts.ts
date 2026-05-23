@@ -1,13 +1,13 @@
-import { countVehiclesForShopByLife, type ShopByLifeChoice } from "./inventoryMatch";
+import { countLifeCategory, type LifeCategoryId } from "./lifeFilters";
 import type { SmartMatchRulesCatalog } from "./smartMatchRulesTypes";
 import type { Vehicle } from "./types";
 
-export type CategoryChoice = ShopByLifeChoice;
+export type CategoryChoice = LifeCategoryId;
 
 export function countByCategory(
   vehicles: Vehicle[],
   choice: CategoryChoice,
   catalog?: SmartMatchRulesCatalog,
 ): number {
-  return countVehiclesForShopByLife(vehicles, choice, catalog);
+  return countLifeCategory(vehicles, choice, catalog);
 }

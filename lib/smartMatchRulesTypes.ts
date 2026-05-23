@@ -4,7 +4,9 @@ export type SmartMatchLifestyleKey =
   | "luxury"
   | "budget"
   | "first"
-  | "efficient";
+  | "efficient"
+  | "weekend"
+  | "everyday";
 
 export type SmartMatchRuleCondition = "new" | "used" | "cpo";
 

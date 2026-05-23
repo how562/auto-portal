@@ -9,8 +9,17 @@ import {
   type MatchCondition,
   type MatchLifestyle,
 } from "./inventoryMatch";
-import type { SmartMatchRulesCatalog } from "./smartMatchRulesTypes";
+import {
+  getLifeCategory,
+  getLifeEmptyState,
+  getLifeResultMessaging,
+  isLifeCategoryId,
+  vehicleMatchesLifeCategory,
+  vehicleMatchesLifeRefinement,
+  type LifeCategoryId,
+} from "./lifeFilters";
 import { getMatchLabel } from "./matchLabels";
+import type { SmartMatchRulesCatalog } from "./smartMatchRulesTypes";
 import type {
   BudgetRange,
   ConditionFilter,
@@ -40,7 +49,9 @@ export type InventoryLifestyle =
   | "luxury"
   | "budget"
   | "first-vehicle"
-  | "fuel-efficient";
+  | "fuel-efficient"
+  | "weekend-ready"
+  | "everyday-drive";
 /**
  * Underlying sort vocabulary shared by customer and admin code paths.
  *
@@ -69,6 +80,8 @@ export interface InventoryFilters {
   budget: InventoryBudget;
   bodyStyle: InventoryBodyStyle;
   lifestyle: InventoryLifestyle;
+  /** Active refinement chip within the selected life category. */
+  lifeRefinement: string | null;
   storeId: string;
   sort: InventorySort;
 }
@@ -80,13 +93,13 @@ export const DEFAULT_INVENTORY_FILTERS: InventoryFilters = {
   budget: "all",
   bodyStyle: "all",
   lifestyle: "all",
+  lifeRefinement: null,
   storeId: "all",
   sort: DEFAULT_INVENTORY_SORT,
 };
 
-const LIFESTYLE_TO_INTENT: Record<
-  Exclude<InventoryLifestyle, "all">,
-  ShopperIntent
+const LIFESTYLE_TO_INTENT: Partial<
+  Record<Exclude<InventoryLifestyle, "all">, ShopperIntent>
 > = {
   family: "family-suv",
   work: "work-truck",
@@ -104,6 +117,8 @@ const INVENTORY_LIFESTYLE_TO_MATCH: Record<InventoryLifestyle, MatchLifestyle> =
   budget: "budget",
   "first-vehicle": "first",
   "fuel-efficient": "efficient",
+  "weekend-ready": "weekend",
+  "everyday-drive": "everyday",
 };
 
 const INVENTORY_BUDGET_TO_MATCH: Record<InventoryBudget, MatchBudget> = {
@@ -136,9 +151,12 @@ const INVENTORY_BODY_TO_MATCH: Record<InventoryBodyStyle, MatchBodyStyle> = {
 
 function inventoryFiltersToMatch(
   filters: InventoryFilters,
+  skipLifestyle = false,
 ): InventoryMatchFilters {
   return {
-    lifestyle: INVENTORY_LIFESTYLE_TO_MATCH[filters.lifestyle],
+    lifestyle: skipLifestyle
+      ? "any"
+      : INVENTORY_LIFESTYLE_TO_MATCH[filters.lifestyle],
     budget: INVENTORY_BUDGET_TO_MATCH[filters.budget],
     condition: INVENTORY_CONDITION_TO_MATCH[filters.condition],
     body_style: INVENTORY_BODY_TO_MATCH[filters.bodyStyle],
@@ -148,7 +166,7 @@ function inventoryFiltersToMatch(
 
 export function lifestyleToIntent(lifestyle: InventoryLifestyle): ShopperIntent {
   if (lifestyle === "all") return "any";
-  return LIFESTYLE_TO_INTENT[lifestyle];
+  return LIFESTYLE_TO_INTENT[lifestyle] ?? "any";
 }
 
 export function budgetToHomepageRange(
@@ -165,11 +183,36 @@ export function filterInventoryVehicles(
   filters: InventoryFilters,
   smartMatchCatalog?: SmartMatchRulesCatalog,
 ): Vehicle[] {
-  const result = filterVehiclesByIntent(
+  const useLifeFilters = filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle);
+
+  let result = filterVehiclesByIntent(
     vehicles,
-    inventoryFiltersToMatch(filters),
+    inventoryFiltersToMatch(filters, useLifeFilters),
     smartMatchCatalog,
   );
+
+  if (useLifeFilters) {
+    result = result.filter((vehicle) => {
+      if (
+        !vehicleMatchesLifeCategory(
+          vehicle,
+          filters.lifestyle as LifeCategoryId,
+          smartMatchCatalog,
+        )
+      ) {
+        return false;
+      }
+      if (filters.lifeRefinement) {
+        return vehicleMatchesLifeRefinement(
+          vehicle,
+          filters.lifestyle as LifeCategoryId,
+          filters.lifeRefinement,
+        );
+      }
+      return true;
+    });
+  }
+
   return sortInventoryVehicles(result, filters.sort);
 }
 
@@ -282,21 +325,11 @@ export function buildInventorySubtitle(
   filters: InventoryFilters,
   t?: Translator,
 ): string {
-  const parts: string[] = [];
-
-  if (filters.lifestyle !== "all") {
-    const labels: Record<Exclude<InventoryLifestyle, "all">, string> = {
-      family: t?.("inventory.subtitle.family") ?? "family-friendly options",
-      work: t?.("inventory.subtitle.work") ?? "work-ready vehicles",
-      luxury: t?.("inventory.subtitle.luxury") ?? "luxury picks",
-      budget: t?.("inventory.subtitle.budget") ?? "budget-smart choices",
-      "first-vehicle":
-        t?.("inventory.subtitle.firstVehicle") ?? "first-vehicle paths",
-      "fuel-efficient":
-        t?.("inventory.subtitle.fuelEfficient") ?? "fuel-efficient options",
-    };
-    parts.push(labels[filters.lifestyle]);
+  if (filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle)) {
+    return getLifeResultMessaging(filters.lifestyle).subtitle;
   }
+
+  const parts: string[] = [];
 
   if (filters.bodyStyle !== "all") {
     parts.push(`${filters.bodyStyle.toUpperCase()}s`);
@@ -331,11 +364,59 @@ export function buildInventorySubtitle(
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
+export function getLifeCategoryHeader(
+  filters: InventoryFilters,
+): { title: string; subtitle: string } | null {
+  if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
+    return null;
+  }
+  return getLifeResultMessaging(filters.lifestyle);
+}
+
+export function getLifeEmptyStateCopy(
+  filters: InventoryFilters,
+): { title: string; body: string } | null {
+  if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
+    return null;
+  }
+  return getLifeEmptyState(filters.lifestyle);
+}
+
+export interface LifeRefinementChip {
+  id: string;
+  label: string;
+  active: boolean;
+  patch: Partial<InventoryFilters>;
+}
+
+export function getLifeRefinementChips(
+  filters: InventoryFilters,
+): LifeRefinementChip[] {
+  if (filters.lifestyle === "all" || !isLifeCategoryId(filters.lifestyle)) {
+    return [];
+  }
+
+  const config = getLifeCategory(filters.lifestyle);
+  return config.refinements.map((refinement) => ({
+    id: refinement.id,
+    label: refinement.label,
+    active: filters.lifeRefinement === refinement.id,
+    patch: {
+      lifeRefinement:
+        filters.lifeRefinement === refinement.id ? null : refinement.id,
+      ...(refinement.filterPatch ?? {}),
+    },
+  }));
+}
+
 export function getResultMatchLabel(
   filters: InventoryFilters,
   t?: Translator,
 ): string | null {
   if (filters.lifestyle === "all") return null;
+  if (isLifeCategoryId(filters.lifestyle)) {
+    return getLifeCategory(filters.lifestyle).title;
+  }
   return getMatchLabel(lifestyleToIntent(filters.lifestyle), t);
 }
 
@@ -349,9 +430,13 @@ export function getRefinementSuggestions(
   filters: InventoryFilters,
   t?: Translator,
 ): RefinementSuggestion[] {
+  if (filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle)) {
+    return [];
+  }
+
   const suggestions: RefinementSuggestion[] = [];
 
-  if (filters.bodyStyle !== "suv" && filters.lifestyle !== "family") {
+  if (filters.bodyStyle !== "suv") {
     suggestions.push({
       id: "space",
       label: t?.("inventory.refine.needSpace") ?? "Need more space?",
@@ -396,6 +481,7 @@ export function hasActiveInventoryFilters(filters: InventoryFilters): boolean {
     filters.budget !== "all" ||
     filters.bodyStyle !== "all" ||
     filters.lifestyle !== "all" ||
+    filters.lifeRefinement != null ||
     filters.storeId !== "all"
   );
 }
@@ -439,6 +525,7 @@ export function filtersToSearchParams(
   if (filters.budget !== "all") params.set("budget", filters.budget);
   if (filters.bodyStyle !== "all") params.set("body", filters.bodyStyle);
   if (filters.lifestyle !== "all") params.set("lifestyle", filters.lifestyle);
+  if (filters.lifeRefinement) params.set("refine", filters.lifeRefinement);
   if (filters.storeId !== "all") params.set("store", filters.storeId);
   if (filters.sort !== DEFAULT_INVENTORY_SORT) params.set("sort", filters.sort);
   if (page && page > 1) params.set("page", String(page));
@@ -452,6 +539,7 @@ export function searchParamsToFilters(
   const budget = params.get("budget");
   const body = params.get("body");
   const lifestyle = params.get("lifestyle");
+  const refine = params.get("refine");
   const store = params.get("store");
   const sort = params.get("sort");
 
@@ -460,6 +548,7 @@ export function searchParamsToFilters(
     budget: isBudget(budget) ? budget : "all",
     bodyStyle: isBody(body) ? body : "all",
     lifestyle: isLifestyle(lifestyle) ? lifestyle : "all",
+    lifeRefinement: refine,
     storeId: store ?? "all",
     sort: normalizeSort(sort),
   };
@@ -496,7 +585,9 @@ function isLifestyle(v: string | null): v is InventoryLifestyle {
     v === "luxury" ||
     v === "budget" ||
     v === "first-vehicle" ||
-    v === "fuel-efficient"
+    v === "fuel-efficient" ||
+    v === "weekend-ready" ||
+    v === "everyday-drive"
   );
 }
 /**
@@ -552,6 +643,8 @@ export function lifestyleParamFromHome(
     budget: "budget",
     "first-vehicle": "first-vehicle",
     "fuel-efficient": "fuel-efficient",
+    "weekend-ready": "weekend-ready",
+    "everyday-drive": "everyday-drive",
   };
   return map[choice] ?? null;
 }

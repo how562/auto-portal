@@ -133,18 +133,22 @@ export function InventoryMoreFiltersDrawer({
               [
                 ["all", "All paths"],
                 ["family", "Family"],
-                ["work", "Work"],
-                ["luxury", "Luxury"],
-                ["budget", "Value"],
-                ["first-vehicle", "First vehicle"],
-                ["fuel-efficient", "Efficiency"],
+                ["work", "Built for the Job"],
+                ["luxury", "Treat Yourself"],
+                ["budget", "Keep It Affordable"],
+                ["first-vehicle", "First Car"],
+                ["fuel-efficient", "Save on Gas"],
+                ["weekend-ready", "Weekend Ready"],
+                ["everyday-drive", "Everyday Drive"],
               ] as const
             ).map(([value, label]) => (
               <DrawerChip
                 key={value}
                 active={filters.lifestyle === value}
                 label={label}
-                onClick={() => onChange({ lifestyle: value })}
+                onClick={() =>
+                  onChange({ lifestyle: value, lifeRefinement: null })
+                }
               />
             ))}
           </FilterGroup>

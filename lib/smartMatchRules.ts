@@ -32,6 +32,8 @@ const LIFESTYLE_KEYS = new Set<string>([
   "budget",
   "first",
   "efficient",
+  "weekend",
+  "everyday",
 ]);
 
 function isLifestyleKey(value: string): value is SmartMatchLifestyleKey {
@@ -127,6 +129,8 @@ function buildEmptyCatalog(): SmartMatchRulesCatalog {
     budget: [],
     first: [],
     efficient: [],
+    weekend: [],
+    everyday: [],
   };
 }
 

@@ -7,6 +7,7 @@ import { GuidedRefinement } from "@/components/inventory/GuidedRefinement";
 import { InventoryMatchResults } from "@/components/inventory/InventoryMatchResults";
 import { InventoryMoreFiltersDrawer } from "@/components/inventory/InventoryMoreFiltersDrawer";
 import { InventoryQuickFilters } from "@/components/inventory/InventoryQuickFilters";
+import { LifeRefinementChips } from "@/components/inventory/LifeRefinementChips";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { PortalHeader } from "@/components/layout/PortalHeader";
@@ -20,6 +21,9 @@ import {
   buildInventorySubtitle,
   filterInventoryVehicles,
   filtersToSearchParams,
+  getLifeCategoryHeader,
+  getLifeEmptyStateCopy,
+  getLifeRefinementChips,
   getRefinementSuggestions,
   paginateInventoryResults,
   parseInventoryPage,
@@ -80,7 +84,13 @@ export function InventoryPageClient({
   const updateFilters = useCallback(
     (patch: Partial<InventoryFilters>) => {
       setFilters((prev) => {
-        const next = { ...prev, ...patch };
+        const next = {
+          ...prev,
+          ...patch,
+          ...(patch.lifestyle != null && patch.lifestyle !== prev.lifestyle
+            ? { lifeRefinement: null }
+            : {}),
+        };
         syncUrl(next);
         return next;
       });
@@ -136,6 +146,12 @@ export function InventoryPageClient({
     () => buildInventorySubtitle(filters, t),
     [filters, t],
   );
+  const lifeHeader = useMemo(() => getLifeCategoryHeader(filters), [filters]);
+  const lifeRefinementChips = useMemo(
+    () => getLifeRefinementChips(filters),
+    [filters],
+  );
+  const lifeEmptyState = useMemo(() => getLifeEmptyStateCopy(filters), [filters]);
   const suggestions = useMemo(
     () => getRefinementSuggestions(filters, t),
     [filters, t],
@@ -156,14 +172,26 @@ export function InventoryPageClient({
               {t("inventory.guidedDiscovery")}
             </p>
             <h1 className="mt-3 headline-stack text-4xl sm:text-5xl lg:text-[3.25rem]">
-              {t("inventory.findYourMatch")}
+              {lifeHeader?.title ?? t("inventory.findYourMatch")}
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-[var(--muted)]">
-              {subtitle}
+              {lifeHeader?.subtitle ?? subtitle}
             </p>
           </header>
 
           <div className="mt-10 space-y-5">
+            {lifeRefinementChips.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Refine your match
+                </p>
+                <LifeRefinementChips
+                  chips={lifeRefinementChips}
+                  onApply={updateFilters}
+                />
+              </div>
+            ) : null}
+
             <ActiveFilterChips
               chips={activeChips}
               onRemove={applyFilterPatch}
@@ -200,10 +228,10 @@ export function InventoryPageClient({
           {!loadError && pagedResults.totalCount === 0 ? (
             <div className="mt-14 rounded-md border border-dashed border-[var(--line-dark)] bg-white px-8 py-20 text-center">
               <p className="text-lg font-semibold text-[var(--ink)]">
-                {t("inventory.noMatchesTitle")}
+                {lifeEmptyState?.title ?? t("inventory.noMatchesTitle")}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm text-[var(--muted)]">
-                {t("inventory.noMatchesBody")}
+                {lifeEmptyState?.body ?? t("inventory.noMatchesBody")}
               </p>
               <button
                 type="button"

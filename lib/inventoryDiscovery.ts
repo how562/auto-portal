@@ -1,6 +1,11 @@
 import type { Translator } from "./i18n/translations";
-import type { InventoryFilters, InventoryLifestyle } from "@/lib/inventorySearch";
+import type { InventoryFilters } from "@/lib/inventorySearch";
 import { lifestyleToIntent } from "@/lib/inventorySearch";
+import {
+  getLifeCategory,
+  getLifeRefinement,
+  isLifeCategoryId,
+} from "@/lib/lifeFilters";
 import { getMatchLabel } from "@/lib/matchLabels";
 import { filterVehicles } from "@/lib/filterVehicles";
 import type { ShopperIntent, Vehicle } from "@/lib/types";
@@ -54,19 +59,28 @@ export function getActiveFilterChips(
   }
 
   if (filters.lifestyle !== "all") {
-    const labels: Record<Exclude<InventoryLifestyle, "all">, string> = {
-      family: "Family path",
-      work: "Work path",
-      luxury: "Luxury path",
-      budget: "Value path",
-      "first-vehicle": "First vehicle",
-      "fuel-efficient": "Efficiency",
-    };
+    const label = isLifeCategoryId(filters.lifestyle)
+      ? getLifeCategory(filters.lifestyle).title
+      : filters.lifestyle;
     chips.push({
       id: "lifestyle",
-      label: labels[filters.lifestyle],
-      patch: { lifestyle: "all" },
+      label,
+      patch: { lifestyle: "all", lifeRefinement: null },
     });
+  }
+
+  if (filters.lifeRefinement && isLifeCategoryId(filters.lifestyle)) {
+    const refinement = getLifeRefinement(
+      filters.lifestyle,
+      filters.lifeRefinement,
+    );
+    if (refinement) {
+      chips.push({
+        id: "lifeRefinement",
+        label: refinement.label,
+        patch: { lifeRefinement: null },
+      });
+    }
   }
 
   if (filters.storeId !== "all") {

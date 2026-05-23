@@ -1,3 +1,7 @@
+import {
+  filtersFromLifeCategory,
+  type LifeCategoryId,
+} from "./lifeFilters";
 import type { Locale } from "./i18n/types";
 import { FALLBACK_SMART_MATCH_CATALOG } from "./smartMatchRulesFallback";
 import type {
@@ -370,6 +374,8 @@ const URL_LIFESTYLE: Record<SmartMatchLifestyleKey, string> = {
   budget: "budget",
   first: "first-vehicle",
   efficient: "fuel-efficient",
+  weekend: "weekend-ready",
+  everyday: "everyday-drive",
 };
 
 /** Build /inventory URL query from match filters (inventory page compatible). */
@@ -537,7 +543,9 @@ export type ShopByLifeChoice =
   | "luxury"
   | "budget"
   | "first-vehicle"
-  | "fuel-efficient";
+  | "fuel-efficient"
+  | "weekend-ready"
+  | "everyday-drive";
 
 const SHOP_BY_LIFE_TO_LIFESTYLE: Record<
   ShopByLifeChoice,
@@ -549,17 +557,29 @@ const SHOP_BY_LIFE_TO_LIFESTYLE: Record<
   budget: "budget",
   "first-vehicle": "first",
   "fuel-efficient": "efficient",
+  "weekend-ready": "weekend",
+  "everyday-drive": "everyday",
 };
 
 export function filtersFromShopByLife(
   choice: ShopByLifeChoice,
 ): InventoryMatchFilters {
+  const lifePatch = filtersFromLifeCategory(choice as LifeCategoryId);
   const lifestyle = SHOP_BY_LIFE_TO_LIFESTYLE[choice];
   return {
     lifestyle,
-    budget: "any",
-    condition: "any",
-    body_style: LIFESTYLE_DEFAULT_BODY[lifestyle] ?? "any",
+    budget:
+      lifePatch.budget && lifePatch.budget !== "all"
+        ? lifePatch.budget
+        : "any",
+    condition:
+      lifePatch.condition && lifePatch.condition !== "all"
+        ? lifePatch.condition
+        : "any",
+    body_style:
+      lifePatch.bodyStyle && lifePatch.bodyStyle !== "all"
+        ? lifePatch.bodyStyle
+        : LIFESTYLE_DEFAULT_BODY[lifestyle] ?? "any",
   };
 }
 
