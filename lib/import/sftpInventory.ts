@@ -69,11 +69,23 @@ export async function downloadNewestTxtFile(
   const client = new SftpClient();
 
   try {
+    const password = process.env.SFTP_PASSWORD!.trim();
+
     await client.connect({
       host: process.env.SFTP_HOST!.trim(),
       port: Number(process.env.SFTP_PORT || 22),
       username: process.env.SFTP_USER!.trim(),
-      password: process.env.SFTP_PASSWORD!.trim(),
+      password,
+      tryKeyboard: true,
+      onKeyboardInteractive: (
+        _name,
+        _instructions,
+        _lang,
+        prompts,
+        finish,
+      ) => {
+        finish(prompts.map(() => password));
+      },
     });
 
     const listing = await client.list(config.remotePath);
