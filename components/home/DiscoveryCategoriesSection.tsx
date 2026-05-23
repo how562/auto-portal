@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { LifeCategoryCardVisual } from "@/components/home/LifeCategoryCardVisual";
 import { countByCategory } from "@/lib/categoryCounts";
 import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { DiscoveryCTA } from "@/components/home/DiscoveryCTA";
@@ -70,29 +71,45 @@ export function DiscoveryCategoriesSection({
           <div className="grid gap-4 sm:grid-cols-2">
             {LIFE_CATEGORIES.map((cat, index) => {
               const count = counts[cat.id];
+              const featured = index === 0;
+
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => navigateToCategory(cat.id)}
                   className={`${cardCategory} ${
-                    index === 0 ? "sm:col-span-2 sm:min-h-[200px]" : ""
+                    featured ? "sm:col-span-2 sm:min-h-[200px]" : "min-h-[140px]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
-                      {cat.title}
-                    </h3>
-                    <span className="shrink-0 rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-2.5 py-1 text-xs font-bold text-[var(--muted)] group-hover:border-[var(--gold)] group-hover:text-[var(--ink)]">
-                      {count > 0 ? `${count.toLocaleString()} vehicles` : "Explore"}
+                  <LifeCategoryCardVisual
+                    categoryId={cat.id}
+                    imageUrl={cat.imageUrl}
+                    featured={featured}
+                  />
+
+                  <div
+                    className={`relative z-10 flex min-w-0 flex-col text-left ${
+                      featured ? "pr-[42%] sm:pr-44" : "pr-[38%] sm:pr-36"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
+                        {cat.title}
+                      </h3>
+                      <span className="shrink-0 rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-2.5 py-1 text-xs font-bold text-[var(--muted)] group-hover:border-[var(--gold)] group-hover:text-[var(--ink)]">
+                        {count > 0
+                          ? `${count.toLocaleString()} vehicles`
+                          : "Explore"}
+                      </span>
+                    </div>
+                    <p className="mt-2 max-w-sm text-sm leading-snug text-[var(--muted)]">
+                      {cat.description}
+                    </p>
+                    <span className="mt-4 inline-flex text-sm font-semibold text-[var(--ink)]">
+                      {cat.ctaLabel} →
                     </span>
                   </div>
-                  <p className="mt-2 max-w-sm text-sm leading-snug text-[var(--muted)]">
-                    {cat.description}
-                  </p>
-                  <span className="mt-4 inline-flex text-sm font-semibold text-[var(--ink)]">
-                    {cat.ctaLabel} →
-                  </span>
                 </button>
               );
             })}

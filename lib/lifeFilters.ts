@@ -63,6 +63,8 @@ export interface LifeCategoryConfig {
   title: string;
   description: string;
   ctaLabel: string;
+  /** Optional hero image for Shop by Life cards (right-side treatment). */
+  imageUrl?: string;
   priority: number;
   resultTitle: string;
   resultSubtitle: string;
