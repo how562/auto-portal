@@ -22,6 +22,28 @@ export interface HomenetImportSummary {
   skipped: number;
   upserted: number;
   errors: HomenetImportError[];
+  /** Present when the import aborts before or during processing. */
+  error?: string;
+}
+
+/** Full summary shape for fatal errors (SFTP, parse, config). */
+export function createFailedImportSummary(
+  message: string,
+  partial: Partial<HomenetImportSummary> = {},
+): HomenetImportSummary {
+  return {
+    ok: false,
+    error: message,
+    fileName: partial.fileName ?? "",
+    remotePath: partial.remotePath ?? "",
+    delimiter: partial.delimiter ?? "",
+    headerCount: partial.headerCount ?? 0,
+    rowsProcessed: partial.rowsProcessed ?? 0,
+    mapped: partial.mapped ?? 0,
+    skipped: partial.skipped ?? 0,
+    upserted: partial.upserted ?? 0,
+    errors: partial.errors ?? [{ row: 0, message }],
+  };
 }
 
 function chunk<T>(items: T[], size: number): T[][] {

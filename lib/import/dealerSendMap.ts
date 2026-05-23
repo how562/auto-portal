@@ -95,11 +95,13 @@ function pickField(lookup: Map<string, string>, field: string): string {
   return "";
 }
 
-function parseIntField(value: string): number | null {
-  const cleaned = value.replace(/[^\d.-]/g, "");
-  if (!cleaned) return null;
-  const n = Number.parseInt(cleaned, 10);
-  return Number.isFinite(n) ? n : null;
+/** Parse integer columns (year, mileage); rounds decimals instead of truncating. */
+function parseIntegerField(value: string): number | null {
+  const cleaned = value.replace(/,/g, "").replace(/[^\d.-]/g, "").trim();
+  if (!cleaned || cleaned === "-" || cleaned === ".") return null;
+  const n = Number.parseFloat(cleaned);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n);
 }
 
 function parsePrice(value: string): number | null {
@@ -176,7 +178,7 @@ export function mapDealerSendRow(
     vin: vin || null,
     stock_number: stock_number || null,
     store_id,
-    year: parseIntField(pickField(lookup, "year")),
+    year: parseIntegerField(pickField(lookup, "year")),
     make: pickField(lookup, "make") || null,
     model: pickField(lookup, "model") || null,
     trim: pickField(lookup, "trim") || null,
@@ -184,7 +186,7 @@ export function mapDealerSendRow(
     body_style: pickField(lookup, "body_style") || null,
     exterior_color: pickField(lookup, "exterior_color") || null,
     interior_color: pickField(lookup, "interior_color") || null,
-    mileage: parseIntField(pickField(lookup, "mileage")),
+    mileage: parseIntegerField(pickField(lookup, "mileage")),
     internet_price: parsePrice(pickField(lookup, "internet_price")),
     primary_image_url: firstImageUrl(pickField(lookup, "primary_image_url")),
     status,
