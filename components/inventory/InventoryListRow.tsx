@@ -11,6 +11,7 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 
 import {
 
+  formatMileage,
   formatPrice,
 
   formatVehicleLabel,
@@ -125,11 +126,11 @@ export function InventoryListRow({
         <p className="text-xs text-[var(--muted)]">{microcopy}</p>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-0.5">
-
           <p className="text-lg font-semibold leading-none text-[var(--ink)]">
-
             {formatPrice(vehicle.internet_price)}
-
+          </p>
+          <p className="text-sm text-[var(--muted)]">
+            {formatMileage(vehicle.mileage)}
           </p>
 
           {vehicle.stock_number ? (

@@ -33,13 +33,13 @@ export interface Vehicle {
   condition: string | null;
   body_style: string | null;
   internet_price: number | null;
+  mileage: number | null;
   stock_number: string | null;
   primary_image_url: string | null;
 }
 
 export interface VehicleDetail extends Vehicle {
   vin: string | null;
-  mileage: number | null;
   exterior_color: string | null;
   interior_color: string | null;
   store_id: string | null;

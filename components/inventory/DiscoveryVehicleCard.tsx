@@ -11,6 +11,7 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 
 import {
 
+  formatMileage,
   formatPrice,
 
   formatVehicleLabel,
@@ -140,11 +141,14 @@ export function DiscoveryVehicleCard({
 
         </Link>
 
-        <p className="text-xl font-semibold leading-none tracking-tight text-[var(--ink)]">
-
-          {formatPrice(vehicle.internet_price)}
-
-        </p>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="text-xl font-semibold leading-none tracking-tight text-[var(--ink)]">
+            {formatPrice(vehicle.internet_price)}
+          </p>
+          <p className="text-sm text-[var(--muted)]">
+            {formatMileage(vehicle.mileage)}
+          </p>
+        </div>
 
 
 

@@ -1,15 +1,92 @@
 import { getSupabase } from "./supabase";
+import type { InventorySort } from "./inventorySearch";
 import type { Store, Vehicle, VehicleDetail } from "./types";
 
+export const INVENTORY_PAGE_SIZE = 20;
+
 export const PORTAL_VEHICLE_SELECT =
-  "id, store_id, year, make, model, trim, condition, body_style, internet_price, stock_number, primary_image_url";
+  "id, store_id, year, make, model, trim, condition, body_style, internet_price, mileage, stock_number, primary_image_url";
 
 export const VEHICLE_DETAIL_SELECT =
   "id, store_id, vin, stock_number, condition, year, make, model, trim, body_style, exterior_color, interior_color, mileage, internet_price, primary_image_url";
 
 const PORTAL_VEHICLE_LIMIT = 80;
-const INVENTORY_VEHICLE_LIMIT = 250;
 const SIMILAR_VEHICLE_LIMIT = 8;
+
+export interface InventoryPageResult {
+  vehicles: Vehicle[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+/** Paginated active inventory from Supabase (20 per page by default). */
+export async function fetchInventoryVehiclesPage(
+  page = 1,
+  pageSize = INVENTORY_PAGE_SIZE,
+  sort: InventorySort = "newest",
+): Promise<InventoryPageResult> {
+  const supabase = getSupabase();
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  const from = (safePage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("vehicles")
+    .select(PORTAL_VEHICLE_SELECT, { count: "exact" })
+    .eq("status", "active");
+
+  if (sort === "value") {
+    query = query.order("internet_price", {
+      ascending: true,
+      nullsFirst: false,
+    });
+  } else {
+    query = query.order("year", { ascending: false, nullsFirst: false });
+  }
+
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    throw new Error(`Failed to load inventory: ${error.message}`);
+  }
+
+  return {
+    vehicles: (data ?? []) as Vehicle[],
+    totalCount: count ?? 0,
+    page: safePage,
+    pageSize,
+  };
+}
+
+/** All active inventory rows (for client-side smart-match filtering). */
+export async function fetchInventoryVehicles(
+  sort: InventorySort = "newest",
+): Promise<Vehicle[]> {
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from("vehicles")
+    .select(PORTAL_VEHICLE_SELECT)
+    .eq("status", "active");
+
+  if (sort === "value") {
+    query = query.order("internet_price", {
+      ascending: true,
+      nullsFirst: false,
+    });
+  } else {
+    query = query.order("year", { ascending: false, nullsFirst: false });
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to load inventory: ${error.message}`);
+  }
+
+  return (data ?? []) as Vehicle[];
+}
 
 export async function fetchPortalVehicles(
   storeId?: string,
@@ -31,23 +108,6 @@ export async function fetchPortalVehicles(
 
   if (error) {
     throw new Error(`Failed to load portal vehicles: ${error.message}`);
-  }
-
-  return (data ?? []) as Vehicle[];
-}
-
-export async function fetchInventoryVehicles(): Promise<Vehicle[]> {
-  const supabase = getSupabase();
-
-  const { data, error } = await supabase
-    .from("vehicles")
-    .select(PORTAL_VEHICLE_SELECT)
-    .eq("status", "active")
-    .order("year", { ascending: false, nullsFirst: false })
-    .limit(INVENTORY_VEHICLE_LIMIT);
-
-  if (error) {
-    throw new Error(`Failed to load inventory: ${error.message}`);
   }
 
   return (data ?? []) as Vehicle[];

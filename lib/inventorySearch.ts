@@ -283,7 +283,50 @@ export function getRefinementSuggestions(
   return suggestions.slice(0, 3);
 }
 
-export function filtersToSearchParams(filters: InventoryFilters): URLSearchParams {
+export function hasActiveInventoryFilters(filters: InventoryFilters): boolean {
+  return (
+    filters.condition !== "all" ||
+    filters.budget !== "all" ||
+    filters.bodyStyle !== "all" ||
+    filters.lifestyle !== "all" ||
+    filters.storeId !== "all"
+  );
+}
+
+export function parseInventoryPage(value: string | null | undefined): number {
+  const parsed = Number.parseInt(value ?? "1", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+export function paginateInventoryResults<T>(
+  items: T[],
+  page: number,
+  pageSize = 20,
+): {
+  items: T[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  pageSize: number;
+} {
+  const totalCount = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+
+  return {
+    items: items.slice(start, start + pageSize),
+    totalCount,
+    page: safePage,
+    totalPages,
+    pageSize,
+  };
+}
+
+export function filtersToSearchParams(
+  filters: InventoryFilters,
+  page?: number,
+): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.condition !== "all") params.set("condition", filters.condition);
   if (filters.budget !== "all") params.set("budget", filters.budget);
@@ -291,6 +334,7 @@ export function filtersToSearchParams(filters: InventoryFilters): URLSearchParam
   if (filters.lifestyle !== "all") params.set("lifestyle", filters.lifestyle);
   if (filters.storeId !== "all") params.set("store", filters.storeId);
   if (filters.sort !== "match") params.set("sort", filters.sort);
+  if (page && page > 1) params.set("page", String(page));
   return params;
 }
 

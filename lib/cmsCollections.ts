@@ -2,7 +2,7 @@ import { getSupabase } from "./supabase";
 import type { Collection, CollectionRule, Vehicle } from "./types";
 
 const VEHICLE_SELECT =
-  "id, store_id, year, make, model, trim, condition, body_style, internet_price, stock_number, primary_image_url";
+  "id, store_id, year, make, model, trim, condition, body_style, internet_price, mileage, stock_number, primary_image_url";
 
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 24;

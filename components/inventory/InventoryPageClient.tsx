@@ -21,21 +21,30 @@ import {
   filterInventoryVehicles,
   filtersToSearchParams,
   getRefinementSuggestions,
+  paginateInventoryResults,
+  parseInventoryPage,
   searchParamsToFilters,
   type InventoryFilters,
 } from "@/lib/inventorySearch";
+import { INVENTORY_PAGE_SIZE } from "@/lib/vehicles";
 import type { Store, Vehicle } from "@/lib/types";
 
 interface InventoryPageClientProps {
   vehicles: Vehicle[];
   stores: Store[];
   loadError: string | null;
+  page: number;
+  totalCount: number;
+  serverPaginated: boolean;
 }
 
 export function InventoryPageClient({
   vehicles,
   stores,
   loadError,
+  page,
+  totalCount,
+  serverPaginated,
 }: InventoryPageClientProps) {
   const { t } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
@@ -54,9 +63,14 @@ export function InventoryPageClient({
     );
   }, [searchParams]);
 
+  const currentPage = useMemo(
+    () => parseInventoryPage(searchParams.get("page")) || page,
+    [searchParams, page],
+  );
+
   const syncUrl = useCallback(
-    (next: InventoryFilters) => {
-      const params = filtersToSearchParams(next);
+    (next: InventoryFilters, nextPage = 1) => {
+      const params = filtersToSearchParams(next, nextPage);
       const qs = params.toString();
       router.replace(qs ? `/inventory?${qs}` : "/inventory", { scroll: false });
     },
@@ -86,9 +100,36 @@ export function InventoryPageClient({
     syncUrl(DEFAULT_INVENTORY_FILTERS);
   }, [syncUrl]);
 
-  const results = useMemo(
-    () => filterInventoryVehicles(vehicles, filters, smartMatchCatalog),
-    [vehicles, filters, smartMatchCatalog],
+  const filteredResults = useMemo(() => {
+    if (serverPaginated) return vehicles;
+    return filterInventoryVehicles(vehicles, filters, smartMatchCatalog);
+  }, [vehicles, filters, smartMatchCatalog, serverPaginated]);
+
+  const pagedResults = useMemo(() => {
+    if (serverPaginated) {
+      return {
+        items: vehicles,
+        totalCount,
+        page: currentPage,
+        totalPages: Math.max(1, Math.ceil(totalCount / INVENTORY_PAGE_SIZE)),
+      };
+    }
+    return paginateInventoryResults(filteredResults, currentPage);
+  }, [
+    serverPaginated,
+    vehicles,
+    filteredResults,
+    totalCount,
+    currentPage,
+  ]);
+
+  const buildPageHref = useCallback(
+    (targetPage: number) => {
+      const params = filtersToSearchParams(filters, targetPage);
+      const qs = params.toString();
+      return qs ? `/inventory?${qs}` : "/inventory";
+    },
+    [filters],
   );
 
   const subtitle = useMemo(
@@ -156,7 +197,7 @@ export function InventoryPageClient({
             </p>
           ) : null}
 
-          {!loadError && results.length === 0 ? (
+          {!loadError && pagedResults.totalCount === 0 ? (
             <div className="mt-14 rounded-md border border-dashed border-[var(--line-dark)] bg-white px-8 py-20 text-center">
               <p className="text-lg font-semibold text-[var(--ink)]">
                 {t("inventory.noMatchesTitle")}
@@ -174,9 +215,13 @@ export function InventoryPageClient({
             </div>
           ) : null}
 
-          {!loadError && results.length > 0 ? (
+          {!loadError && pagedResults.totalCount > 0 ? (
             <InventoryMatchResults
-              vehicles={results}
+              vehicles={pagedResults.items}
+              totalCount={pagedResults.totalCount}
+              page={pagedResults.page}
+              totalPages={pagedResults.totalPages}
+              buildPageHref={buildPageHref}
               filters={filters}
               onSortChange={(sort) => updateFilters({ sort })}
             />

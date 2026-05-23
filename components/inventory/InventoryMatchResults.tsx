@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { InventoryPagination } from "@/components/inventory/InventoryPagination";
 import { DiscoveryVehicleCard } from "@/components/inventory/DiscoveryVehicleCard";
 import { FeaturedPicksStrip } from "@/components/inventory/FeaturedPicksStrip";
 import { InventoryConfidenceBand } from "@/components/inventory/InventoryConfidenceBand";
@@ -21,12 +22,20 @@ import type { Vehicle } from "@/lib/types";
 
 interface InventoryMatchResultsProps {
   vehicles: Vehicle[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  buildPageHref: (page: number) => string;
   filters: InventoryFilters;
   onSortChange: (sort: InventoryFilters["sort"]) => void;
 }
 
 export function InventoryMatchResults({
   vehicles,
+  totalCount,
+  page,
+  totalPages,
+  buildPageHref,
   filters,
   onSortChange,
 }: InventoryMatchResultsProps) {
@@ -71,7 +80,7 @@ export function InventoryMatchResults({
       </div>
 
       <InventoryResultsToolbar
-        count={vehicles.length}
+        count={totalCount}
         sort={filters.sort}
         viewMode={viewMode}
         onSortChange={onSortChange}
@@ -120,6 +129,12 @@ export function InventoryMatchResults({
 
         <InventoryConfidenceBand />
       </div>
+
+      <InventoryPagination
+        page={page}
+        totalPages={totalPages}
+        buildHref={buildPageHref}
+      />
     </section>
   );
 }
