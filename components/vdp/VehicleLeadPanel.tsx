@@ -6,7 +6,11 @@ import { useCta } from "@/components/cta/CtaProvider";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 
-import { formatPrice, formatVehicleLabel } from "@/lib/format";
+import {
+  formatVehicleLabel,
+  formatVehiclePrice,
+  getEffectiveVehiclePrice,
+} from "@/lib/format";
 
 import type { Store, VehicleDetail } from "@/lib/types";
 
@@ -41,6 +45,8 @@ export function VehicleLeadPanel({ vehicle, store }: VehicleLeadPanelProps) {
 
   const storeId = store?.id ?? vehicle.store_id ?? null;
 
+  const effectivePrice = getEffectiveVehiclePrice(vehicle);
+
 
 
   return (
@@ -55,9 +61,19 @@ export function VehicleLeadPanel({ vehicle, store }: VehicleLeadPanelProps) {
 
       <p className="mt-2 text-3xl font-semibold text-[var(--ink)]">
 
-        {formatPrice(vehicle.internet_price)}
+        {formatVehiclePrice(vehicle)}
 
       </p>
+
+      {effectivePrice.source === "msrp" ? (
+
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+
+          MSRP
+
+        </p>
+
+      ) : null}
 
       <p className="mt-1 text-sm text-[var(--muted)]">
 

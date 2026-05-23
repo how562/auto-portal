@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { VehicleImage } from "@/components/vehicle/VehicleImage";
 import {
-  formatPrice,
+  formatVehiclePrice,
   formatVehicleTitle,
   vehicleDetailPath,
 } from "@/lib/format";
@@ -48,7 +48,7 @@ export function FeaturedPicksStrip({
                 {microcopyFor(vehicle)}
               </p>
               <p className="mt-2 text-sm font-semibold text-[var(--gold-soft)]">
-                {formatPrice(vehicle.internet_price)}
+                {formatVehiclePrice(vehicle)}
               </p>
             </div>
           </Link>

@@ -1,7 +1,7 @@
 -- Lifestyle matching rules for Shop by Life and Smart Match (public read).
 create table if not exists public.smart_match_rules (
   id uuid primary key default gen_random_uuid(),
-  lifestyle_key text not null,
+  lifestyle text not null,
   priority integer not null default 0,
   label_en text,
   label_es text,
@@ -18,7 +18,7 @@ create table if not exists public.smart_match_rules (
 );
 
 create index if not exists smart_match_rules_lifestyle_priority_idx
-  on public.smart_match_rules (lifestyle_key, priority)
+  on public.smart_match_rules (lifestyle, priority)
   where is_active = true;
 
 alter table public.smart_match_rules enable row level security;
@@ -31,7 +31,7 @@ create policy "smart_match_rules_public_read"
   using (is_active = true);
 
 insert into public.smart_match_rules (
-  lifestyle_key,
+  lifestyle,
   priority,
   label_en,
   label_es,

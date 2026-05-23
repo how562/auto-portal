@@ -6,7 +6,7 @@ import { useCta } from "@/components/cta/CtaProvider";
 import { CommitmentStarPattern } from "@/components/home/CommitmentStarPattern";
 import { CommitmentValueIcon } from "@/components/home/CommitmentValueIcon";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { resolveCavenderCommitmentContent } from "@/lib/cavenderCommitment";
+import { resolveCavenderCommitmentContent } from "@/lib/cavenderCommitmentContent";
 import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 

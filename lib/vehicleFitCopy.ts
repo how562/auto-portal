@@ -1,5 +1,5 @@
 import type { VehicleDetail } from "./types";
-import { formatPrice } from "./format";
+import { formatPrice, getEffectiveVehiclePrice } from "./format";
 
 const LUXURY_MAKES = [
   "cadillac",
@@ -29,7 +29,10 @@ function haystack(vehicle: VehicleDetail): string {
 export function buildWhyItMayFit(vehicle: VehicleDetail): string[] {
   const paragraphs: string[] = [];
   const text = haystack(vehicle);
-  const price = vehicle.internet_price ?? 0;
+  const effectivePrice = getEffectiveVehiclePrice(vehicle);
+  // Use the price the customer actually sees (internet → MSRP) so copy
+  // doesn't go silent on new vehicles that only carry MSRP.
+  const price = effectivePrice.amount ?? 0;
   const title = [vehicle.year, vehicle.make, vehicle.model]
     .filter(Boolean)
     .join(" ");
@@ -58,7 +61,7 @@ export function buildWhyItMayFit(vehicle: VehicleDetail): string[] {
 
   if (price > 0 && price < 30000) {
     paragraphs.push(
-      `At ${formatPrice(vehicle.internet_price)}, it sits in a value-forward range—transparent pricing without the usual runaround.`,
+      `At ${formatPrice(price)}, it sits in a value-forward range—transparent pricing without the usual runaround.`,
     );
   }
 

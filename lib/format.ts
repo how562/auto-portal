@@ -1,16 +1,69 @@
 import { BRAND_TITLE_SUFFIX } from "./brand";
 import type { Vehicle, VehicleDetail } from "./types";
 
-export function formatPrice(value: number | null): string {
-  if (value === null) {
-    return "Request price";
-  }
+/** Copy used everywhere a vehicle has no usable price to display. */
+export const NO_PRICE_LABEL = "Call for Price";
 
+/**
+ * Treat 0, blank, NaN, and `null`/`undefined` as "no price". Used by
+ * both the importer and the display helpers so $0 can never leak into
+ * the UI.
+ */
+export function isUsablePrice(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+/**
+ * Format a single numeric price. Returns "Call for Price" for any
+ * non-positive / missing value so downstream UI never has to guard.
+ */
+export function formatPrice(value: number | null | undefined): string {
+  if (!isUsablePrice(value)) return NO_PRICE_LABEL;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+export interface EffectiveVehiclePrice {
+  /** The numeric price chosen for display, or `null` when nothing usable. */
+  amount: number | null;
+  /** Which source was picked, useful for "MSRP" labeling on the UI. */
+  source: "internet" | "msrp" | null;
+}
+
+/**
+ * Resolve which price a vehicle should display.
+ *
+ * Priority: `internet_price` (if > 0) → `msrp` (if > 0) → none.
+ * Stays in lockstep with the SQL backfill in
+ * `supabase/migrations/20260523150000_vehicle_pricing_split.sql`.
+ */
+export function getEffectiveVehiclePrice(
+  vehicle: Pick<Vehicle, "internet_price" | "msrp">,
+): EffectiveVehiclePrice {
+  if (isUsablePrice(vehicle.internet_price)) {
+    return { amount: vehicle.internet_price, source: "internet" };
+  }
+  if (isUsablePrice(vehicle.msrp)) {
+    return { amount: vehicle.msrp, source: "msrp" };
+  }
+  return { amount: null, source: null };
+}
+
+/**
+ * Display-ready price string for a vehicle. Falls back through the
+ * effective-price chain and returns "Call for Price" when nothing
+ * usable is available.
+ */
+export function formatVehiclePrice(
+  vehicle: Pick<Vehicle, "internet_price" | "msrp">,
+): string {
+  const effective = getEffectiveVehiclePrice(vehicle);
+  return effective.amount === null
+    ? NO_PRICE_LABEL
+    : formatPrice(effective.amount);
 }
 
 export function formatMileage(value: number | null): string {

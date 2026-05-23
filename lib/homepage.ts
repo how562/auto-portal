@@ -10,7 +10,7 @@ import type {
 const VEHICLE_LIMIT = 8;
 
 const VEHICLE_SELECT =
-  "id, year, make, model, trim, condition, body_style, internet_price, mileage, stock_number, primary_image_url";
+  "id, vin, year, make, model, trim, condition, body_style, internet_price, msrp, sale_price, mileage, stock_number, primary_image_url, image_urls, dealer_name, image_count, has_images, data_quality_score";
 
 export async function fetchHomepageSections(): Promise<HomepageSection[]> {
   const supabase = getSupabase();

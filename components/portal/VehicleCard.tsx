@@ -11,9 +11,9 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 
 import {
 
-  formatPrice,
-
   formatVehicleLabel,
+
+  formatVehiclePrice,
 
   formatVehicleTitle,
 
@@ -146,7 +146,7 @@ export function VehicleCard({
 
           <p className="text-lg font-semibold leading-none text-[var(--ink)]">
 
-            {formatPrice(vehicle.internet_price)}
+            {formatVehiclePrice(vehicle)}
 
           </p>
 

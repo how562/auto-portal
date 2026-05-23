@@ -2,6 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Oblique.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Medium%20Oblique.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20SemiBold%20Oblique.woff2") format("woff2");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Gopadel";
+  src: url("/fonts/gopadel/Gopadel%20Bold%20Oblique.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --ink: #152a47;
   --charcoal: #1e3556;
@@ -20,6 +84,69 @@
   --radius-lg: 12px;
   --shadow-tight: 0 1px 2px rgba(21, 42, 71, 0.08);
   --shadow-card: 0 1px 2px rgba(21, 42, 71, 0.08);
+}
+
+@layer base {
+  html {
+    font-family: "Gopadel", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: inherit;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.55;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+  }
+
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+
+  h2 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.08;
+  }
+
+  h5,
+  h6 {
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  button,
+  [type="button"],
+  [type="submit"],
+  [type="reset"] {
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    letter-spacing: -0.01em;
+  }
 }
 
 body {

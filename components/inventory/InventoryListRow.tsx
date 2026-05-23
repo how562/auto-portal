@@ -12,9 +12,9 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 import {
 
   formatMileage,
-  formatPrice,
-
   formatVehicleLabel,
+
+  formatVehiclePrice,
 
   formatVehicleTitle,
 
@@ -65,7 +65,7 @@ export function InventoryListRow({
 
 
 
-  const meta = [vehicle.body_style, vehicle.condition]
+  const meta = [vehicle.body_style, vehicle.condition, vehicle.dealer_name]
 
     .filter(Boolean)
 
@@ -127,7 +127,7 @@ export function InventoryListRow({
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-0.5">
           <p className="text-lg font-semibold leading-none text-[var(--ink)]">
-            {formatPrice(vehicle.internet_price)}
+            {formatVehiclePrice(vehicle)}
           </p>
           <p className="text-sm text-[var(--muted)]">
             {formatMileage(vehicle.mileage)}
@@ -144,6 +144,15 @@ export function InventoryListRow({
           ) : null}
 
         </div>
+
+        {vehicle.vin ? (
+          <p
+            className="mt-1 select-text font-mono text-[10px] uppercase tracking-wider text-[var(--muted)]"
+            title={vehicle.vin}
+          >
+            VIN {vehicle.vin}
+          </p>
+        ) : null}
 
       </div>
 

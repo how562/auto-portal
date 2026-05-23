@@ -41,7 +41,28 @@ export type InventoryLifestyle =
   | "budget"
   | "first-vehicle"
   | "fuel-efficient";
-export type InventorySort = "match" | "value" | "newest";
+/**
+ * Underlying sort vocabulary shared by customer and admin code paths.
+ *
+ * Customer-facing UI exposes a friendly subset:
+ *   `merchandised` (shown as "Featured"), `value`, `newest`.
+ *
+ * Admin tools also expose the merchandising operations:
+ *   `merchandised`, `photos`, `needs-attention`, `newest-added`.
+ *
+ * The admin labels ("Best Merchandised", "Most Photos", "Needs
+ * Attention", "Newest Added") are NEVER rendered to shoppers — see
+ * `CUSTOMER_SORT_OPTIONS` and `ADMIN_SORT_OPTIONS` in
+ * `lib/inventoryDiscovery.ts`. `match` is kept as a legacy alias.
+ */
+export type InventorySort =
+  | "merchandised"
+  | "photos"
+  | "needs-attention"
+  | "newest-added"
+  | "value"
+  | "newest"
+  | "match";
 
 export interface InventoryFilters {
   condition: InventoryCondition;
@@ -52,13 +73,15 @@ export interface InventoryFilters {
   sort: InventorySort;
 }
 
+export const DEFAULT_INVENTORY_SORT: InventorySort = "merchandised";
+
 export const DEFAULT_INVENTORY_FILTERS: InventoryFilters = {
   condition: "all",
   budget: "all",
   bodyStyle: "all",
   lifestyle: "all",
   storeId: "all",
-  sort: "match",
+  sort: DEFAULT_INVENTORY_SORT,
 };
 
 const LIFESTYLE_TO_INTENT: Record<
@@ -150,22 +173,106 @@ export function filterInventoryVehicles(
   return sortInventoryVehicles(result, filters.sort);
 }
 
+function imageCount(v: Vehicle): number {
+  if (typeof v.image_count === "number") return v.image_count;
+  if (Array.isArray(v.image_urls)) return v.image_urls.length;
+  return v.primary_image_url ? 1 : 0;
+}
+
+function hasImages(v: Vehicle): boolean {
+  if (typeof v.has_images === "boolean") return v.has_images;
+  return imageCount(v) > 0;
+}
+
+function qualityScore(v: Vehicle): number {
+  return typeof v.data_quality_score === "number" ? v.data_quality_score : 0;
+}
+
+function arrivalTimestamp(v: Vehicle): number {
+  const raw = v.imported_at ?? v.created_at ?? null;
+  if (!raw) return 0;
+  const t = Date.parse(raw);
+  return Number.isFinite(t) ? t : 0;
+}
+
+function compareNumberDesc(a: number, b: number): number {
+  return b - a;
+}
+
+/** `null`/missing prices fall to the bottom on DESC NULLS LAST. */
+function priceForDescNullsLast(v: Vehicle): number {
+  return typeof v.internet_price === "number" ? v.internet_price : -Infinity;
+}
+
+/**
+ * Client-side sort.
+ *
+ * The default `merchandised` order matches the admin merchandising
+ * spec exactly: has_images DESC, image_count DESC, data_quality_score
+ * DESC, internet_price DESC NULLS LAST. Customer-friendly sorts
+ * (`value`, `newest`) keep imageless vehicles at the bottom.
+ * `needs-attention` (admin only) is the only view that intentionally
+ * surfaces low-quality rows first.
+ */
 export function sortInventoryVehicles(
   vehicles: Vehicle[],
   sort: InventorySort,
 ): Vehicle[] {
   const copy = [...vehicles];
+
   switch (sort) {
+    case "merchandised":
+    case "match":
+      return copy.sort((a, b) => {
+        const imgDiff = Number(hasImages(b)) - Number(hasImages(a));
+        if (imgDiff !== 0) return imgDiff;
+        const countDiff = compareNumberDesc(imageCount(a), imageCount(b));
+        if (countDiff !== 0) return countDiff;
+        const scoreDiff = compareNumberDesc(qualityScore(a), qualityScore(b));
+        if (scoreDiff !== 0) return scoreDiff;
+        return priceForDescNullsLast(b) - priceForDescNullsLast(a);
+      });
+
+    case "photos":
+      return copy.sort((a, b) => {
+        const countDiff = compareNumberDesc(imageCount(a), imageCount(b));
+        if (countDiff !== 0) return countDiff;
+        const scoreDiff = compareNumberDesc(qualityScore(a), qualityScore(b));
+        if (scoreDiff !== 0) return scoreDiff;
+        return priceForDescNullsLast(b) - priceForDescNullsLast(a);
+      });
+
+    case "needs-attention":
+      return copy.sort((a, b) => {
+        const imgDiff = Number(hasImages(a)) - Number(hasImages(b));
+        if (imgDiff !== 0) return imgDiff;
+        const scoreDiff = qualityScore(a) - qualityScore(b);
+        if (scoreDiff !== 0) return scoreDiff;
+        const countDiff = imageCount(a) - imageCount(b);
+        if (countDiff !== 0) return countDiff;
+        return (b.year ?? 0) - (a.year ?? 0);
+      });
+
+    case "newest-added":
+      return copy.sort((a, b) => arrivalTimestamp(b) - arrivalTimestamp(a));
+
     case "value":
       return copy.sort((a, b) => {
+        const imgDiff = Number(hasImages(b)) - Number(hasImages(a));
+        if (imgDiff !== 0) return imgDiff;
         const priceA = a.internet_price ?? 1e9;
         const priceB = b.internet_price ?? 1e9;
         if (priceA !== priceB) return priceA - priceB;
         return (b.year ?? 0) - (a.year ?? 0);
       });
+
     case "newest":
-      return copy.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-    case "match":
+      return copy.sort((a, b) => {
+        const imgDiff = Number(hasImages(b)) - Number(hasImages(a));
+        if (imgDiff !== 0) return imgDiff;
+        return (b.year ?? 0) - (a.year ?? 0);
+      });
+
     default:
       return copy;
   }
@@ -333,7 +440,7 @@ export function filtersToSearchParams(
   if (filters.bodyStyle !== "all") params.set("body", filters.bodyStyle);
   if (filters.lifestyle !== "all") params.set("lifestyle", filters.lifestyle);
   if (filters.storeId !== "all") params.set("store", filters.storeId);
-  if (filters.sort !== "match") params.set("sort", filters.sort);
+  if (filters.sort !== DEFAULT_INVENTORY_SORT) params.set("sort", filters.sort);
   if (page && page > 1) params.set("page", String(page));
   return params;
 }
@@ -392,14 +499,46 @@ function isLifestyle(v: string | null): v is InventoryLifestyle {
     v === "fuel-efficient"
   );
 }
-function isSort(v: string | null): v is InventorySort {
-  return v === "match" || v === "value" || v === "newest";
+/**
+ * Customer-facing sort values exposed in the shopper UI. Admin
+ * merchandising sorts (`photos`, `needs-attention`, `newest-added`)
+ * are intentionally absent — they're back-office concepts and must
+ * not appear in customer URLs or dropdowns.
+ */
+type CustomerInventorySort = Extract<
+  InventorySort,
+  "merchandised" | "value" | "newest" | "match"
+>;
+
+function isCustomerSort(v: string | null): v is CustomerInventorySort {
+  return v === "merchandised" || v === "value" || v === "newest" || v === "match";
 }
 
+/**
+ * Parse a sort value coming from a customer URL.
+ *
+ * Admin merchandising sorts collapse back to the silent default
+ * (`merchandised`) so shoppers can't accidentally land on a
+ * "Needs Attention" view by sharing or hand-editing a URL. Legacy
+ * aliases continue to map for backward compatibility.
+ */
 function normalizeSort(v: string | null): InventorySort {
   if (v === "price-asc" || v === "price-desc") return "value";
-  if (isSort(v)) return v;
-  return "match";
+  if (
+    v === "photos" ||
+    v === "most-photos" ||
+    v === "needs-attention" ||
+    v === "needs_attention" ||
+    v === "newest-added" ||
+    v === "newest_added" ||
+    v === "added" ||
+    v === "best-merchandised" ||
+    v === "best_merchandised"
+  ) {
+    return "merchandised";
+  }
+  if (isCustomerSort(v)) return v;
+  return DEFAULT_INVENTORY_SORT;
 }
 
 /** Map homepage lifestyle choice to inventory URL */

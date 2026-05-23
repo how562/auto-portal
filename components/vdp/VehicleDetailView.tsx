@@ -8,8 +8,9 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 import {
   formatMileage,
-  formatPrice,
+  formatVehiclePrice,
   formatVehicleTitle,
+  getEffectiveVehiclePrice,
 } from "@/lib/format";
 import { buildWhyItMayFit } from "@/lib/vehicleFitCopy";
 import type { Store, Vehicle, VehicleDetail } from "@/lib/types";
@@ -45,9 +46,10 @@ export function VehicleDetailView({
   const { t } = useLanguage();
   const title = formatVehicleTitle(vehicle);
   const fitParagraphs = buildWhyItMayFit(vehicle);
+  const effectivePrice = getEffectiveVehiclePrice(vehicle);
   const storeLabel = store
     ? [store.name, store.city, store.state].filter(Boolean).join(" · ")
-    : null;
+    : vehicle.dealer_name ?? null;
 
   function similarInventoryHref(): string {
     const text = (vehicle.body_style ?? "").toLowerCase();
@@ -115,10 +117,10 @@ export function VehicleDetailView({
                 <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div>
                     <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      {t("vdp.price")}
+                      {effectivePrice.source === "msrp" ? "MSRP" : t("vdp.price")}
                     </dt>
                     <dd className="mt-1 text-lg font-semibold">
-                      {formatPrice(vehicle.internet_price)}
+                      {formatVehiclePrice(vehicle)}
                     </dd>
                   </div>
                   <div>
@@ -163,8 +165,8 @@ export function VehicleDetailView({
               </h2>
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <HighlightCard
-                  label="Price"
-                  value={formatPrice(vehicle.internet_price)}
+                  label={effectivePrice.source === "msrp" ? "MSRP" : "Price"}
+                  value={formatVehiclePrice(vehicle)}
                 />
                 <HighlightCard
                   label="Mileage"

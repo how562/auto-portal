@@ -188,8 +188,32 @@ export function chunkVehicles<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-export const SORT_OPTIONS = [
-  { value: "match" as const, label: "Best Match" },
-  { value: "value" as const, label: "Best Value" },
-  { value: "newest" as const, label: "Newest Arrivals" },
+/**
+ * Admin-only merchandising sort controls.
+ *
+ * These names ("Best Merchandised", "Most Photos", "Needs Attention",
+ * "Newest Added") describe how the back office prioritizes inventory and
+ * are NEVER shown to customers. The `merchandised` order is still applied
+ * silently as the default for customer-facing pages so the highest-quality
+ * listings surface first — customers just don't see the admin label.
+ */
+export const ADMIN_SORT_OPTIONS = [
+  { value: "merchandised" as const, label: "Best Merchandised" },
+  { value: "photos" as const, label: "Most Photos" },
+  { value: "needs-attention" as const, label: "Needs Attention" },
+  { value: "newest-added" as const, label: "Newest Added" },
+];
+
+/**
+ * Customer-facing sort options. Plain consumer language only — no
+ * back-office merchandising vocabulary.
+ *
+ * The `merchandised` value is exposed under the friendly "Featured" label
+ * so it can remain the default ordering, but the underlying admin
+ * scoring stays hidden from shoppers.
+ */
+export const CUSTOMER_SORT_OPTIONS = [
+  { value: "merchandised" as const, i18nKey: "inventory.sort.featured" as const },
+  { value: "value" as const, i18nKey: "inventory.sort.bestValue" as const },
+  { value: "newest" as const, i18nKey: "inventory.sort.newest" as const },
 ];

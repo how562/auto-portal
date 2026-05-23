@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   content: [
@@ -8,6 +9,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Gopadel", ...defaultTheme.fontFamily.sans],
+      },
+      letterSpacing: {
+        refined: "-0.01em",
+      },
       borderRadius: {
         DEFAULT: "6px",
         sm: "6px",

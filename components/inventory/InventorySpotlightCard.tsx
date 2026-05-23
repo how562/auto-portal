@@ -17,9 +17,9 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 
 import {
 
-  formatPrice,
-
   formatVehicleLabel,
+
+  formatVehiclePrice,
 
   formatVehicleTitle,
 
@@ -152,18 +152,32 @@ export function InventorySpotlightCard({
 
           <p className="text-2xl font-semibold leading-none tracking-tight text-[var(--ink)] sm:text-3xl">
 
-            {formatPrice(vehicle.internet_price)}
+            {formatVehiclePrice(vehicle)}
 
           </p>
 
-          {vehicle.stock_number ? (
+          {vehicle.stock_number || vehicle.dealer_name ? (
 
             <p className="text-xs text-[var(--muted)]">
 
-              Stock #{vehicle.stock_number}
+              {[
+                vehicle.stock_number ? `Stock #${vehicle.stock_number}` : null,
+                vehicle.dealer_name,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
 
             </p>
 
+          ) : null}
+
+          {vehicle.vin ? (
+            <p
+              className="select-text font-mono text-[10px] uppercase tracking-wider text-[var(--muted)]"
+              title={vehicle.vin}
+            >
+              VIN {vehicle.vin}
+            </p>
           ) : null}
 
 

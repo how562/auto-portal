@@ -44,7 +44,9 @@ function isTopPickSlot(value: string): value is TopPickSlotId {
 }
 
 function hasImage(vehicle: Vehicle): boolean {
-  return Boolean(vehicle.primary_image_url?.trim());
+  if (vehicle.primary_image_url?.trim()) return true;
+  return Array.isArray(vehicle.image_urls)
+    && vehicle.image_urls.some((url) => typeof url === "string" && url.trim().length > 0);
 }
 
 function unusedPool(vehicles: Vehicle[], used: Set<string>): Vehicle[] {

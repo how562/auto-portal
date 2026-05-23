@@ -68,6 +68,25 @@ function chunk<T>(items: T[], size: number): T[][] {
   return batches;
 }
 
+async function fetchStoreNameLookup(
+  supabase: SupabaseClient,
+): Promise<Map<string, string>> {
+  const lookup = new Map<string, string>();
+  const { data, error } = await supabase
+    .from("stores")
+    .select("id, name");
+
+  if (error || !data) return lookup;
+
+  for (const row of data as Array<{ id: string; name: string | null }>) {
+    const name = row.name?.trim().toLowerCase();
+    if (name && row.id && !lookup.has(name)) {
+      lookup.set(name, row.id);
+    }
+  }
+  return lookup;
+}
+
 export async function runHomenetInventoryImport(
   supabase: SupabaseClient,
 ): Promise<HomenetImportSummary> {
@@ -76,6 +95,7 @@ export async function runHomenetInventoryImport(
 
   const downloaded = await downloadNewestTxtFile(sftpConfig);
   const parsed = parseDealerSendFile(downloaded.content);
+  const storeIdByDealerName = await fetchStoreNameLookup(supabase);
 
   const mappedRows: HomenetVehicleRow[] = [];
   const errors: HomenetImportError[] = [];
@@ -85,6 +105,7 @@ export async function runHomenetInventoryImport(
       const mapped = mapDealerSendRow(raw, {
         defaultStoreId,
         importSource: "homenet_dealer_send",
+        storeIdByDealerName,
       });
       if (!mapped) {
         errors.push({

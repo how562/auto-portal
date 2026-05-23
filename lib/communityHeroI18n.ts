@@ -1,6 +1,4 @@
-import {
-  parseCommunityHeroFromPageSection,
-} from "./communityHero";
+import { parseCommunityHeroFromPageSection } from "./communityHeroParse";
 import { COMMUNITY_HERO_FALLBACK } from "./communityHeroFallback";
 import { localizePageSection } from "./cmsSectionI18n";
 import { createTranslator } from "./i18n/translations";

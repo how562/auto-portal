@@ -12,9 +12,9 @@ import { VehicleImage } from "@/components/vehicle/VehicleImage";
 import {
 
   formatMileage,
-  formatPrice,
-
   formatVehicleLabel,
+
+  formatVehiclePrice,
 
   formatVehicleTitle,
 
@@ -77,6 +77,13 @@ export function DiscoveryVehicleCard({
 
     .filter(Boolean)
 
+    .join(" · ");
+
+  const footnote = [
+    vehicle.stock_number ? `#${vehicle.stock_number}` : null,
+    vehicle.dealer_name,
+  ]
+    .filter(Boolean)
     .join(" · ");
 
 
@@ -143,12 +150,25 @@ export function DiscoveryVehicleCard({
 
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <p className="text-xl font-semibold leading-none tracking-tight text-[var(--ink)]">
-            {formatPrice(vehicle.internet_price)}
+            {formatVehiclePrice(vehicle)}
           </p>
           <p className="text-sm text-[var(--muted)]">
             {formatMileage(vehicle.mileage)}
           </p>
         </div>
+
+        {footnote ? (
+          <p className="text-xs text-[var(--muted)]">{footnote}</p>
+        ) : null}
+
+        {vehicle.vin ? (
+          <p
+            className="select-text font-mono text-[10px] uppercase tracking-wider text-[var(--muted)]"
+            title={vehicle.vin}
+          >
+            VIN {vehicle.vin}
+          </p>
+        ) : null}
 
 
 

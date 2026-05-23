@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCta } from "@/components/cta/CtaProvider";
 import { VehicleImage } from "@/components/vehicle/VehicleImage";
 import {
-  formatPrice,
+  formatVehiclePrice,
   formatVehicleTitle,
   vehicleDetailPath,
 } from "@/lib/format";
@@ -46,7 +46,7 @@ export function TopPickCard({ pick }: TopPickCardProps) {
         </Link>
 
         <p className="mt-3 text-xl font-semibold leading-none tracking-tight text-[var(--ink)]">
-          {formatPrice(vehicle.internet_price)}
+          {formatVehiclePrice(vehicle)}
         </p>
 
         <div className="mt-4">

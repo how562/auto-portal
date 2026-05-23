@@ -32,17 +32,12 @@ const LUXURY_MAKES = [
 
 export type PlaceholderTheme = "truck" | "suv" | "sedan" | "luxury" | "default";
 
-export function getVehicleImageUrl(
-  vehicle: Pick<Vehicle, "primary_image_url">,
-): string | null {
-  const raw = vehicle.primary_image_url;
+function normalizeImageUrl(raw: unknown): string | null {
   if (raw == null) return null;
-
   const trimmed = String(raw).trim();
   if (!trimmed || INVALID_URL_VALUES.has(trimmed.toLowerCase())) {
     return null;
   }
-
   if (
     !trimmed.startsWith("http://") &&
     !trimmed.startsWith("https://") &&
@@ -50,13 +45,34 @@ export function getVehicleImageUrl(
   ) {
     return null;
   }
-
   return trimmed;
+}
+
+/**
+ * Resolve the best image for a vehicle:
+ *   1. `primary_image_url`
+ *   2. first entry of `image_urls`
+ *   3. `null` (caller renders the placeholder)
+ */
+export function getVehicleImageUrl(
+  vehicle: Pick<Vehicle, "primary_image_url" | "image_urls">,
+): string | null {
+  const primary = normalizeImageUrl(vehicle.primary_image_url);
+  if (primary) return primary;
+
+  const list = vehicle.image_urls;
+  if (Array.isArray(list)) {
+    for (const candidate of list) {
+      const normalized = normalizeImageUrl(candidate);
+      if (normalized) return normalized;
+    }
+  }
+  return null;
 }
 
 /** Returns a valid image URL, or null when a placeholder should be shown. */
 export function getVehicleImage(
-  vehicle: Pick<Vehicle, "primary_image_url">,
+  vehicle: Pick<Vehicle, "primary_image_url" | "image_urls">,
 ): string | null {
   return getVehicleImageUrl(vehicle);
 }

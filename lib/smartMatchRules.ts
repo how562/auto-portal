@@ -8,11 +8,11 @@ import type { SmartMatchRuleCondition } from "./smartMatchRulesTypes";
 import { getSupabase } from "./supabase";
 
 const RULE_SELECT =
-  "id, lifestyle_key, priority, label_en, label_es, body_styles, makes, model_keywords, trim_keywords, min_price, max_price, condition";
+  "id, lifestyle, priority, label_en, label_es, body_styles, makes, model_keywords, trim_keywords, min_price, max_price, condition";
 
 interface SmartMatchRuleRow {
   id: string;
-  lifestyle_key: string;
+  lifestyle: string;
   priority: number;
   label_en?: string | null;
   label_es?: string | null;
@@ -83,7 +83,7 @@ function parseNumber(value: unknown): number | null {
 export function normalizeSmartMatchRuleRow(
   row: SmartMatchRuleRow,
 ): SmartMatchRule | null {
-  const lifestyleKey = row.lifestyle_key?.trim().toLowerCase();
+  const lifestyleKey = row.lifestyle?.trim().toLowerCase();
   if (!lifestyleKey || !isLifestyleKey(lifestyleKey)) return null;
 
   return {
