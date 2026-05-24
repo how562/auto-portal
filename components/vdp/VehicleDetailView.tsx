@@ -11,7 +11,6 @@ import { VdpSimilarVehicles } from "@/components/vdp/VdpSimilarVehicles";
 import { VdpTrustBand } from "@/components/vdp/VdpTrustBand";
 import { VdpVinCopy } from "@/components/vdp/VdpVinCopy";
 import { VehiclePricingPanel } from "@/components/vdp/VehiclePricingPanel";
-import { VehicleVdpCtaBar } from "@/components/vdp/VehicleVdpCtaBar";
 import { btnSecondaryMd } from "@/lib/buttonClasses";
 import {
   formatConditionLabel,
@@ -31,6 +30,7 @@ import {
   buildVdpKeyHighlights,
   buildVdpQuickFacts,
 } from "@/lib/vdpDisplay";
+import type { PricingMathboxConfigRow } from "@/lib/pricingMathboxTypes";
 import type { VdpCtaSettingRow } from "@/lib/vdpCtaTypes";
 import type { Store, Vehicle, VehicleDetail } from "@/lib/types";
 
@@ -39,9 +39,10 @@ interface VehicleDetailViewProps {
   store: Store | null;
   similar: Vehicle[];
   vdpCtaSettings: VdpCtaSettingRow[];
+  mathboxConfig: PricingMathboxConfigRow[];
 }
 
-function VdpHeroOverlay({
+function VdpTitleHeader({
   vehicle,
   badgeLabel,
   badgeKind,
@@ -56,43 +57,43 @@ function VdpHeroOverlay({
   const isCallForPrice = priceText === NO_PRICE_LABEL;
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[var(--ink)]/88 via-[var(--ink)]/35 to-transparent p-5 sm:p-8">
-      <div className="pointer-events-auto max-w-3xl">
-        {badgeKind && badgeLabel ? (
-          <span className="mb-3 inline-block">
-            <VehicleHighlightBadge
-              badge={badgeKind}
-              label={badgeLabel}
-              inline
-              className="shadow-md"
-            />
+    <header className="mt-6">
+      {badgeKind && badgeLabel ? (
+        <span className="mb-3 inline-block">
+          <VehicleHighlightBadge
+            badge={badgeKind}
+            label={badgeLabel}
+            inline
+            className="shadow-sm"
+          />
+        </span>
+      ) : null}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold)]">
+        {formatConditionLabel(vehicle.condition)}
+      </p>
+      <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-[var(--ink)] sm:text-3xl lg:text-4xl">
+        {title}
+      </h1>
+      {vehicle.trim ? (
+        <p className="mt-1.5 text-base text-[var(--muted)] sm:text-lg">
+          {vehicle.trim}
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap items-end gap-3 lg:hidden">
+        <p
+          className={`font-semibold leading-none tracking-tight text-[var(--ink)] ${
+            isCallForPrice ? "text-xl text-[var(--muted)]" : "text-2xl sm:text-3xl"
+          }`}
+        >
+          {priceText}
+        </p>
+        {savings != null ? (
+          <span className="mb-0.5 rounded-full bg-[var(--gold)]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink)]">
+            Save {formatPrice(savings)}
           </span>
         ) : null}
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold)]">
-          {formatConditionLabel(vehicle.condition)}
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-          {title}
-        </h1>
-        {vehicle.trim ? (
-          <p className="mt-1.5 text-base text-white/75 sm:text-lg">{vehicle.trim}</p>
-        ) : null}
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <p
-            className={`font-semibold leading-none tracking-tight text-white ${
-              isCallForPrice ? "text-xl text-white/80" : "text-3xl sm:text-4xl"
-            }`}
-          >
-            {priceText}
-          </p>
-          {savings != null ? (
-            <span className="mb-1 rounded-full bg-[var(--gold)]/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink)]">
-              Save {formatPrice(savings)}
-            </span>
-          ) : null}
-        </div>
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -132,11 +133,11 @@ export function VehicleDetailView({
   store,
   similar,
   vdpCtaSettings,
+  mathboxConfig,
 }: VehicleDetailViewProps) {
   const { t, locale } = useLanguage();
   const catalog = useSmartMatchRulesCatalog();
   const title = formatVehicleTitle(vehicle);
-  const storeId = store?.id ?? vehicle.store_id ?? null;
   const fitParagraphs = buildWhyItMayFit(vehicle);
   const descriptionParagraphs = buildVdpDescriptionParagraphs(
     vehicle,
@@ -173,50 +174,40 @@ export function VehicleDetailView({
           <span className="font-medium text-[var(--ink)]">{title}</span>
         </nav>
 
-        {/* SECTION 1: Hero */}
-        <section className="relative mt-6 overflow-hidden rounded-lg border border-[var(--line-dark)]/80 bg-[var(--ink)] shadow-[0_20px_60px_-24px_rgba(21,42,71,0.35)]">
-          <div className="aspect-[16/9] max-h-[min(72vh,520px)] w-full sm:aspect-[2/1]">
-            <VehicleImage
-              vehicle={vehicle}
-              placeholderSize="hero"
-              fetchPriority="high"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <VdpHeroOverlay
-            vehicle={vehicle}
-            badgeKind={presentation.badge}
-            badgeLabel={badgeLabel}
-          />
-        </section>
+        <VdpTitleHeader
+          vehicle={vehicle}
+          badgeKind={presentation.badge}
+          badgeLabel={badgeLabel}
+        />
 
-        {/* SECTION 2: Pricing panel + content grid */}
-        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_min(100%,22rem)] lg:items-start">
-          <aside className="order-first lg:order-2 lg:col-start-2 lg:row-start-1">
+        {/* Above-the-fold: image + conversion panel */}
+        <section className="mt-5 grid gap-6 lg:mt-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,22rem)] lg:items-start lg:gap-8">
+          <div className="min-w-0">
+            <div className="overflow-hidden rounded-lg border border-[var(--line-dark)]/80 bg-[var(--ink)] shadow-[var(--shadow-tight)]">
+              <div className="aspect-[4/3] max-h-[min(52vh,380px)] w-full sm:max-h-[400px]">
+                <VehicleImage
+                  vehicle={vehicle}
+                  placeholderSize="hero"
+                  fetchPriority="high"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          <aside className="min-w-0 lg:col-start-2 lg:row-start-1">
             <VehiclePricingPanel
               vehicle={vehicle}
               store={store}
               vdpCtaSettings={vdpCtaSettings}
+              mathboxConfig={mathboxConfig}
             />
           </aside>
+        </section>
 
-          <div className="order-2 min-w-0 lg:order-1 lg:col-start-1 lg:row-start-1">
-            {/* Compact sticky CTA bar — mobile/tablet only; desktop uses sidebar panel */}
-            <div className="sticky top-[4.5rem] z-30 rounded-lg border border-[var(--line-dark)]/80 bg-white/95 p-3 shadow-[0_8px_32px_-12px_rgba(21,42,71,0.15)] backdrop-blur-md sm:top-20 sm:p-4 lg:hidden">
-              <VehicleVdpCtaBar
-                vehicle={vehicle}
-                store={store}
-                storeId={storeId}
-                vdpCtaSettings={vdpCtaSettings}
-                layout="bar"
-              />
-            </div>
-
-            <div id="vehicle-overview" className="mt-8 space-y-12 sm:space-y-14 lg:mt-0">
-          {/* SECTION 3: Quick info */}
+        <div id="vehicle-overview" className="mt-10 space-y-12 sm:space-y-14">
           <VdpQuickInfoStrip vehicle={vehicle} />
 
-          {/* SECTION 4: Match context */}
           {presentation.chips.length > 0 ? (
             <section className="rounded-lg border border-[var(--line-dark)]/80 bg-white px-5 py-6 shadow-[var(--shadow-tight)] sm:px-8 sm:py-7">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold)]">
@@ -240,7 +231,6 @@ export function VehicleDetailView({
             </section>
           ) : null}
 
-          {/* SECTION 5: Description + highlights */}
           <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
             <div className="rounded-lg border border-[var(--line-dark)]/80 bg-white p-6 shadow-[var(--shadow-tight)] sm:p-8">
               <h2 className="text-xl font-semibold tracking-tight text-[var(--ink)] sm:text-2xl">
@@ -288,34 +278,6 @@ export function VehicleDetailView({
             </div>
           </section>
 
-          {/* SECTION 6: Secondary CTA */}
-          <section className="rounded-lg border border-[var(--line-dark)]/80 bg-white px-5 py-6 shadow-[var(--shadow-tight)] sm:px-8 sm:py-8">
-            <h2 className="text-lg font-semibold tracking-tight text-[var(--ink)]">
-              {t("vdp.readyToConnect")}
-            </h2>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              {t("vdp.trustCopy")}
-            </p>
-            <div className="mt-5">
-              <VehicleVdpCtaBar
-                vehicle={vehicle}
-                store={store}
-                storeId={storeId}
-                vdpCtaSettings={vdpCtaSettings}
-                layout="stack"
-              />
-            </div>
-            {store?.phone ? (
-              <a
-                href={`tel:${store.phone.replace(/\D/g, "")}`}
-                className="mt-4 inline-block text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
-              >
-                {t("vdp.call", undefined, { phone: store.phone })}
-              </a>
-            ) : null}
-          </section>
-
-          {/* SECTION 7: Similar vehicles */}
           <Suspense
             fallback={
               <div className="h-32 animate-pulse rounded-lg bg-[var(--cream-dark)]" />
@@ -324,15 +286,12 @@ export function VehicleDetailView({
             <VdpSimilarVehicles vehicle={vehicle} similar={similar} />
           </Suspense>
 
-          {/* SECTION 8: Trust */}
           <VdpTrustBand />
 
           <div className="flex flex-wrap gap-3 border-t border-[var(--line-dark)] pt-8">
             <Link href="/inventory" className={btnSecondaryMd}>
               {t("vdp.backToInventory")}
             </Link>
-          </div>
-            </div>
           </div>
         </div>
       </div>

@@ -5,55 +5,35 @@ import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
 import { VehicleMathBox } from "@/components/vdp/VehicleMathBox";
 import { VehicleVdpCtaBar } from "@/components/vdp/VehicleVdpCtaBar";
-import { formatPrice, formatVehicleLabel, formatVehiclePrice } from "@/lib/format";
-import { buildVehiclePricingBreakdown } from "@/lib/vdpPricing";
+import { formatVehicleLabel, formatVehiclePrice } from "@/lib/format";
 import type { VdpCtaSettingRow } from "@/lib/vdpCtaTypes";
+import type { PricingMathboxConfigRow } from "@/lib/pricingMathboxTypes";
 import type { Store, VehicleDetail } from "@/lib/types";
 
 interface VehiclePricingPanelProps {
   vehicle: VehicleDetail;
   store: Store | null;
   vdpCtaSettings: VdpCtaSettingRow[];
+  mathboxConfig: PricingMathboxConfigRow[];
 }
 
 export function VehiclePricingPanel({
   vehicle,
   store,
   vdpCtaSettings,
+  mathboxConfig,
 }: VehiclePricingPanelProps) {
   const { t } = useLanguage();
   const { openVdpLead } = useLeadCapture();
   const contactTeam = useCta("contact_team");
-  const breakdown = buildVehiclePricingBreakdown(vehicle);
   const storeId = store?.id ?? vehicle.store_id ?? null;
   const label = formatVehicleLabel(vehicle);
+  const headerPrice = formatVehiclePrice(vehicle);
 
   return (
-    <div className="card-framer overflow-hidden p-0 lg:sticky lg:top-24">
-      <div className="border-b border-[var(--line)] bg-white px-5 py-5 sm:px-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
-          {t("vdp.readyToConnect")}
-        </p>
-        <p className="mt-2 text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-4xl">
-          {breakdown.hasPrice && breakdown.finalPrice != null
-            ? formatPrice(breakdown.finalPrice)
-            : formatVehiclePrice(vehicle)}
-        </p>
-        {breakdown.hasPrice ? (
-          <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">
-            {t(
-              "vdp.math.priceMicrocopy",
-              "Includes estimated doc fee. Tax, title, and license extra.",
-            )}
-          </p>
-        ) : null}
-        <p className="mt-2 text-sm text-[var(--muted)]">
-          {t("vdp.stock", undefined, { number: vehicle.stock_number ?? "—" })}
-        </p>
-      </div>
-
+    <div className="card-framer flex flex-col overflow-hidden p-0 lg:sticky lg:top-24">
       <div className="bg-white px-5 py-5 sm:px-6">
-        <VehicleMathBox vehicle={vehicle} />
+        <VehicleMathBox vehicle={vehicle} mathboxConfig={mathboxConfig} />
       </div>
 
       <div className="border-t border-[var(--line)] bg-white px-5 py-5 sm:px-6">
@@ -64,6 +44,21 @@ export function VehiclePricingPanel({
           vdpCtaSettings={vdpCtaSettings}
           layout="stack"
         />
+      </div>
+
+      <div className="border-t border-[var(--line)] bg-white px-5 py-5 sm:px-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
+          {t("vdp.readyToConnect")}
+        </p>
+        <p className="mt-2 text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+          {headerPrice}
+        </p>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          {t("vdp.stock", undefined, { number: vehicle.stock_number ?? "—" })}
+        </p>
+        <p className="mt-4 text-sm leading-relaxed text-[var(--muted)]">
+          {t("vdp.trustCopy")}
+        </p>
 
         {store?.phone ? (
           <a
@@ -89,10 +84,6 @@ export function VehiclePricingPanel({
             {contactTeam.label}
           </button>
         )}
-
-        <p className="mt-5 text-center text-xs leading-relaxed text-[var(--muted)]">
-          {t("vdp.trustCopy")}
-        </p>
       </div>
     </div>
   );

@@ -71,7 +71,7 @@ export const PORTAL_VEHICLE_SELECT =
   "id, store_id, vin, year, make, model, trim, condition, body_style, internet_price, msrp, sale_price, mileage, stock_number, primary_image_url, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";
 
 export const VEHICLE_DETAIL_SELECT =
-  "id, store_id, vin, stock_number, condition, year, make, model, trim, body_style, exterior_color, interior_color, mileage, internet_price, msrp, sale_price, primary_image_url, image_urls, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";
+  "id, store_id, vin, stock_number, condition, year, make, model, trim, body_style, exterior_color, interior_color, mileage, internet_price, msrp, sale_price, primary_image_url, image_urls, dealer_name, image_count, has_images, data_quality_score, source_raw, created_at, imported_at";
 
 const PORTAL_VEHICLE_LIMIT = 80;
 const SIMILAR_VEHICLE_LIMIT = 8;

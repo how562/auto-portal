@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { CMS_ADMIN_COOKIE, getAdminSecret, isValidAdminSecret } from "@/lib/adminAuth";
 
+function isAdminProtectedPath(pathname: string): boolean {
+  return pathname.startsWith("/admin") || pathname === "/mathbox-settings";
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (!pathname.startsWith("/admin")) {
+  if (!isAdminProtectedPath(pathname)) {
     return NextResponse.next();
   }
   if (pathname.startsWith("/admin/login")) {
@@ -27,5 +31,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/mathbox-settings"],
 };

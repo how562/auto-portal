@@ -62,6 +62,8 @@ export interface VehicleDetail extends Vehicle {
   store_id: string | null;
   image_urls: string[] | null;
   dealer_name: string | null;
+  /** Full HomeNet row preserved at import time (pricing/incentive keys). */
+  source_raw?: Record<string, unknown> | null;
 }
 
 export interface Store {

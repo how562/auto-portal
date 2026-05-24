@@ -266,14 +266,21 @@ const en = {
   "vdp.math.eyebrow": "Price breakdown",
   "vdp.math.msrp": "MSRP",
   "vdp.math.dealerDiscount": "Dealer Discount",
+  "vdp.math.internetPrice": "Internet Price",
+  "vdp.math.salePrice": "Selling Price",
+  "vdp.math.yourPrice": "Your Price",
+  "vdp.math.incentivesUnavailable":
+    "Additional offers may be available. See dealer for details.",
   "vdp.math.conditionalOffers": "Conditional Offers",
+  "vdp.math.conditionalDisclaimer":
+    "Eligibility for conditional offers is confirmed at signing.",
   "vdp.math.docFee": "Doc Fee",
   "vdp.math.finalPrice": "Final Price",
   "vdp.math.otherOffers": "Other offers you may qualify for",
   "vdp.math.microcopy":
     "Price shown before tax, title, and license. Eligibility for conditional offers is confirmed at signing.",
   "vdp.math.disclaimer":
-    "All pricing is subject to change. Conditional incentives require proof of eligibility and may not combine. Doc fee is an estimate; final amount set by the selling store.",
+    "All pricing is subject to change. Conditional incentives require proof of eligibility and may not combine.",
   "vdp.math.callForPriceBody":
     "Contact our team for current pricing and any incentives you may qualify for.",
   "vdp.math.priceMicrocopy":
@@ -619,14 +626,21 @@ const es: Record<keyof typeof en, string> = {
   "vdp.math.eyebrow": "Desglose de precio",
   "vdp.math.msrp": "MSRP",
   "vdp.math.dealerDiscount": "Descuento del concesionario",
+  "vdp.math.internetPrice": "Precio en internet",
+  "vdp.math.salePrice": "Precio de venta",
+  "vdp.math.yourPrice": "Tu precio",
+  "vdp.math.incentivesUnavailable":
+    "Pueden haber ofertas adicionales. Consulta al concesionario.",
   "vdp.math.conditionalOffers": "Ofertas condicionales",
+  "vdp.math.conditionalDisclaimer":
+    "La elegibilidad de ofertas condicionales se confirma al firmar.",
   "vdp.math.docFee": "Cargo de documentación",
   "vdp.math.finalPrice": "Precio final",
   "vdp.math.otherOffers": "Otras ofertas para las que podrías calificar",
   "vdp.math.microcopy":
     "Precio antes de impuestos, título y placas. La elegibilidad de ofertas condicionales se confirma al firmar.",
   "vdp.math.disclaimer":
-    "Precios sujetos a cambio. Los incentivos condicionales requieren comprobante y pueden no combinarse. El cargo de documentación es estimado; el monto final lo define la tienda.",
+    "Precios sujetos a cambio. Los incentivos condicionales requieren comprobante y pueden no combinarse.",
   "vdp.math.callForPriceBody":
     "Contacta a nuestro equipo para precios actuales e incentivos disponibles.",
   "vdp.math.priceMicrocopy":

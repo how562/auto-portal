@@ -4,6 +4,7 @@ import { PortalHeader } from "@/components/layout/PortalHeader";
 import { VehicleDetailView } from "@/components/vdp/VehicleDetailView";
 import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { formatMetadataTitle, formatVehicleLabel } from "@/lib/format";
+import { fetchPricingMathboxConfig } from "@/lib/fetchPricingMathboxConfig";
 import { fetchVdpCtaSettings } from "@/lib/fetchVdpCtaSettings";
 import {
   fetchSimilarVehicles,
@@ -39,10 +40,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const [store, similar, vdpCtaSettings] = await Promise.all([
+  const [store, similar, vdpCtaSettings, mathboxConfig] = await Promise.all([
     vehicle.store_id ? fetchStoreById(vehicle.store_id) : Promise.resolve(null),
     fetchSimilarVehicles(vehicle),
     fetchVdpCtaSettings(),
+    fetchPricingMathboxConfig(),
   ]);
 
   return (
@@ -53,6 +55,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         store={store}
         similar={similar}
         vdpCtaSettings={vdpCtaSettings}
+        mathboxConfig={mathboxConfig}
       />
     </>
   );

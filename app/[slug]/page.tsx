@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CMSSectionRenderer } from "@/components/cms/CMSSectionRenderer";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
@@ -21,6 +21,10 @@ export async function generateMetadata({
 }: CMSPageProps): Promise<Metadata> {
   const { slug } = params;
 
+  if (slug === "mathbox-settings") {
+    return { title: "Math Box Settings" };
+  }
+
   if (RESERVED_CMS_SLUGS.has(slug)) {
     return {};
   }
@@ -38,6 +42,10 @@ export async function generateMetadata({
 
 export default async function CMSPage({ params }: CMSPageProps) {
   const { slug } = params;
+
+  if (slug === "mathbox-settings") {
+    redirect("/admin/mathbox-settings");
+  }
 
   if (RESERVED_CMS_SLUGS.has(slug)) {
     notFound();

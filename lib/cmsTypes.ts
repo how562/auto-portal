@@ -74,6 +74,7 @@ export const RESERVED_CMS_SLUGS = new Set([
   "inventory",
   "admin",
   "api",
+  "mathbox-settings",
   "_next",
   "favicon.ico",
 ]);

@@ -1,6 +1,7 @@
 "use client";
 
 import { VehiclePricingPanel } from "@/components/vdp/VehiclePricingPanel";
+import { getDefaultPricingMathboxConfig } from "@/lib/buildPricingMathbox";
 import { getDefaultVdpCtaSettings } from "@/lib/vdpCta";
 import type { Store, VehicleDetail } from "@/lib/types";
 
@@ -16,6 +17,7 @@ export function VehicleLeadPanel({ vehicle, store }: VehicleLeadPanelProps) {
       vehicle={vehicle}
       store={store}
       vdpCtaSettings={getDefaultVdpCtaSettings()}
+      mathboxConfig={getDefaultPricingMathboxConfig()}
     />
   );
 }
