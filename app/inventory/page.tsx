@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { InventoryPageClient } from "@/components/inventory/InventoryPageClient";
 import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import {
@@ -52,6 +51,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
       return {
         vehicles,
         stores,
+        filters,
         loadError: null as string | null,
         page,
         totalCount: vehicles.length,
@@ -72,6 +72,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
     return {
       vehicles: result.vehicles,
       stores,
+      filters,
       loadError: null as string | null,
       page: result.page,
       totalCount: result.totalCount,
@@ -81,6 +82,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
     return {
       vehicles: [],
       stores: [],
+      filters,
       loadError:
         error instanceof Error ? error.message : "Failed to load inventory",
       page: 1,
@@ -93,25 +95,25 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
 export default async function InventoryPage({
   searchParams,
 }: InventoryPageProps) {
-  const { vehicles, stores, loadError, page, totalCount, serverPaginated } =
-    await loadInventory(searchParams);
+  const {
+    vehicles,
+    stores,
+    filters,
+    loadError,
+    page,
+    totalCount,
+    serverPaginated,
+  } = await loadInventory(searchParams);
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[var(--cream)] pt-20 text-[var(--muted)]">
-          Loading inventory…
-        </div>
-      }
-    >
-      <InventoryPageClient
-        vehicles={vehicles}
-        stores={stores}
-        loadError={loadError}
-        page={page}
-        totalCount={totalCount}
-        serverPaginated={serverPaginated}
-      />
-    </Suspense>
+    <InventoryPageClient
+      vehicles={vehicles}
+      stores={stores}
+      initialFilters={filters}
+      loadError={loadError}
+      page={page}
+      totalCount={totalCount}
+      serverPaginated={serverPaginated}
+    />
   );
 }

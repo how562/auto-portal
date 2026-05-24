@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ActiveFilterChips } from "@/components/inventory/ActiveFilterChips";
 import { GuidedRefinement } from "@/components/inventory/GuidedRefinement";
+import { InventoryCampaignBanner } from "@/components/inventory/InventoryCampaignBanner";
+import { InventoryCommandIntro } from "@/components/inventory/InventoryCommandIntro";
 import { InventoryMatchResults } from "@/components/inventory/InventoryMatchResults";
+import { InventoryMissionControl } from "@/components/inventory/InventoryMissionControl";
 import { InventoryMoreFiltersDrawer } from "@/components/inventory/InventoryMoreFiltersDrawer";
-import { InventoryQuickFilters } from "@/components/inventory/InventoryQuickFilters";
 import { LifeRefinementChips } from "@/components/inventory/LifeRefinementChips";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
@@ -18,7 +20,6 @@ import {
 } from "@/lib/inventoryDiscovery";
 import {
   DEFAULT_INVENTORY_FILTERS,
-  buildInventorySubtitle,
   filterInventoryVehicles,
   filtersToSearchParams,
   getLifeCategoryHeader,
@@ -26,51 +27,68 @@ import {
   getLifeRefinementChips,
   getRefinementSuggestions,
   paginateInventoryResults,
-  parseInventoryPage,
-  searchParamsToFilters,
   type InventoryFilters,
 } from "@/lib/inventorySearch";
+import type { InventoryViewMode } from "@/lib/inventoryView";
+import { getStoredViewMode, storeViewMode } from "@/lib/inventoryView";
 import { INVENTORY_PAGE_SIZE } from "@/lib/vehicles";
 import type { Store, Vehicle } from "@/lib/types";
 
 interface InventoryPageClientProps {
   vehicles: Vehicle[];
   stores: Store[];
+  initialFilters: InventoryFilters;
   loadError: string | null;
   page: number;
   totalCount: number;
   serverPaginated: boolean;
+  /** Optional CMS banner — omit to collapse the slot. */
+  bannerImageUrl?: string | null;
+}
+
+function applyMakeModelFilter(
+  items: Vehicle[],
+  makeFilter: string,
+  modelFilter: string,
+): Vehicle[] {
+  let result = items;
+  if (makeFilter !== "all") {
+    result = result.filter((vehicle) => vehicle.make === makeFilter);
+  }
+  if (modelFilter !== "all") {
+    result = result.filter((vehicle) => vehicle.model === modelFilter);
+  }
+  return result;
 }
 
 export function InventoryPageClient({
   vehicles,
   stores,
+  initialFilters,
   loadError,
   page,
   totalCount,
   serverPaginated,
+  bannerImageUrl = null,
 }: InventoryPageClientProps) {
   const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialFilters = useMemo(
-    () => searchParamsToFilters(new URLSearchParams(searchParams.toString())),
-    [searchParams],
-  );
   const [filters, setFilters] = useState<InventoryFilters>(initialFilters);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [makeFilter, setMakeFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<InventoryViewMode>("grid");
 
   useEffect(() => {
-    setFilters(
-      searchParamsToFilters(new URLSearchParams(searchParams.toString())),
-    );
-  }, [searchParams]);
+    setFilters(initialFilters);
+  }, [initialFilters]);
 
-  const currentPage = useMemo(
-    () => parseInventoryPage(searchParams.get("page")) || page,
-    [searchParams, page],
-  );
+  useEffect(() => {
+    setViewMode(getStoredViewMode());
+  }, []);
+
+  const currentPage = page;
 
   const syncUrl = useCallback(
     (next: InventoryFilters, nextPage = 1) => {
@@ -107,30 +125,53 @@ export function InventoryPageClient({
 
   const clearAll = useCallback(() => {
     setFilters(DEFAULT_INVENTORY_FILTERS);
+    setMakeFilter("all");
+    setModelFilter("all");
     syncUrl(DEFAULT_INVENTORY_FILTERS);
   }, [syncUrl]);
+
+  const handleMakeChange = useCallback((make: string) => {
+    setMakeFilter(make);
+    setModelFilter("all");
+  }, []);
+
+  const handleViewMode = useCallback((mode: InventoryViewMode) => {
+    setViewMode(mode);
+    storeViewMode(mode);
+  }, []);
 
   const filteredResults = useMemo(() => {
     if (serverPaginated) return vehicles;
     return filterInventoryVehicles(vehicles, filters, smartMatchCatalog);
   }, [vehicles, filters, smartMatchCatalog, serverPaginated]);
 
+  const makeModelFiltered = useMemo(
+    () => applyMakeModelFilter(filteredResults, makeFilter, modelFilter),
+    [filteredResults, makeFilter, modelFilter],
+  );
+
   const pagedResults = useMemo(() => {
     if (serverPaginated) {
+      const items = applyMakeModelFilter(vehicles, makeFilter, modelFilter);
       return {
-        items: vehicles,
-        totalCount,
+        items,
+        totalCount:
+          makeFilter !== "all" || modelFilter !== "all"
+            ? items.length
+            : totalCount,
         page: currentPage,
         totalPages: Math.max(1, Math.ceil(totalCount / INVENTORY_PAGE_SIZE)),
       };
     }
-    return paginateInventoryResults(filteredResults, currentPage);
+    return paginateInventoryResults(makeModelFiltered, currentPage);
   }, [
     serverPaginated,
     vehicles,
-    filteredResults,
+    makeModelFiltered,
     totalCount,
     currentPage,
+    makeFilter,
+    modelFilter,
   ]);
 
   const buildPageHref = useCallback(
@@ -142,10 +183,6 @@ export function InventoryPageClient({
     [filters],
   );
 
-  const subtitle = useMemo(
-    () => buildInventorySubtitle(filters, t, locale),
-    [filters, t, locale],
-  );
   const lifeHeader = useMemo(
     () => getLifeCategoryHeader(filters, locale),
     [filters, locale],
@@ -168,54 +205,59 @@ export function InventoryPageClient({
   );
   const moreFilterCount = countMoreFilters(filters);
 
+  const displayCount = pagedResults.totalCount;
+
   return (
     <>
       <PortalHeader />
-      <div className="min-h-screen bg-[var(--cream)] pt-20 sm:pt-24">
-        <div className="portal-container py-10 sm:py-14">
-          <header className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              {t("inventory.guidedDiscovery")}
-            </p>
-            <h1 className="mt-3 headline-stack text-4xl sm:text-5xl lg:text-[3.25rem]">
-              {lifeHeader?.title ?? t("inventory.findYourMatch")}
-            </h1>
-            <p className="mt-4 text-lg leading-relaxed text-[var(--muted)]">
-              {lifeHeader?.subtitle ?? subtitle}
-            </p>
-          </header>
+      <div className="min-h-screen bg-[var(--cream)] pt-[4.75rem] sm:pt-20">
+        <InventoryCampaignBanner imageUrl={bannerImageUrl} />
 
-          <div className="mt-10 space-y-5">
-            {lifeRefinementChips.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-                  {t("inventory.refineMatch")}
-                </p>
+        <div className="portal-container space-y-4 pb-10 pt-3 sm:space-y-5 sm:pb-12 sm:pt-4">
+          <InventoryCommandIntro
+            vehicleCount={displayCount}
+            lifeTitle={lifeHeader?.title}
+          />
+
+          <InventoryMissionControl
+            filters={filters}
+            vehicles={vehicles}
+            makeFilter={makeFilter}
+            modelFilter={modelFilter}
+            moreFilterCount={moreFilterCount}
+            viewMode={viewMode}
+            onChange={updateFilters}
+            onMakeChange={handleMakeChange}
+            onModelChange={setModelFilter}
+            onOpenMore={() => setMoreFiltersOpen(true)}
+            onReset={clearAll}
+            onSortChange={(sort) => updateFilters({ sort })}
+            onViewModeChange={handleViewMode}
+          />
+
+          {(lifeRefinementChips.length > 0 ||
+            activeChips.length > 0 ||
+            suggestions.length > 0) && (
+            <div className="space-y-3 rounded-lg border border-[var(--line)] bg-white px-3 py-3 shadow-tight sm:px-4">
+              {lifeRefinementChips.length > 0 ? (
                 <LifeRefinementChips
                   chips={lifeRefinementChips}
                   onApply={updateFilters}
                 />
-              </div>
-            ) : null}
+              ) : null}
 
-            <ActiveFilterChips
-              chips={activeChips}
-              onRemove={applyFilterPatch}
-              onClearAll={clearAll}
-            />
+              <ActiveFilterChips
+                chips={activeChips}
+                onRemove={applyFilterPatch}
+                onClearAll={clearAll}
+              />
 
-            <InventoryQuickFilters
-              filters={filters}
-              onChange={updateFilters}
-              onOpenMore={() => setMoreFiltersOpen(true)}
-              moreFilterCount={moreFilterCount}
-            />
-
-            <GuidedRefinement
-              suggestions={suggestions}
-              onApply={updateFilters}
-            />
-          </div>
+              <GuidedRefinement
+                suggestions={suggestions}
+                onApply={updateFilters}
+              />
+            </div>
+          )}
 
           <InventoryMoreFiltersDrawer
             open={moreFiltersOpen}
@@ -226,13 +268,13 @@ export function InventoryPageClient({
           />
 
           {loadError ? (
-            <p className="mt-12 rounded-md border border-red-200 bg-red-50 px-6 py-4 text-red-700">
+            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {loadError}
             </p>
           ) : null}
 
           {!loadError && pagedResults.totalCount === 0 ? (
-            <div className="mt-14 rounded-md border border-dashed border-[var(--line-dark)] bg-white px-8 py-20 text-center">
+            <div className="rounded-lg border border-dashed border-[var(--line-dark)] bg-white px-6 py-14 text-center shadow-tight">
               <p className="text-lg font-semibold text-[var(--ink)]">
                 {lifeEmptyState?.title ?? t("inventory.noMatchesTitle")}
               </p>
@@ -242,7 +284,7 @@ export function InventoryPageClient({
               <button
                 type="button"
                 onClick={clearAll}
-                className={`mt-8 ${btnPrimaryMd}`}
+                className={`mt-6 ${btnPrimaryMd}`}
               >
                 {t("inventory.resetDiscovery")}
               </button>
@@ -257,7 +299,7 @@ export function InventoryPageClient({
               totalPages={pagedResults.totalPages}
               buildPageHref={buildPageHref}
               filters={filters}
-              onSortChange={(sort) => updateFilters({ sort })}
+              viewMode={viewMode}
             />
           ) : null}
         </div>

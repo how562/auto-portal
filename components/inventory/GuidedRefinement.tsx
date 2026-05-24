@@ -20,17 +20,16 @@ export function GuidedRefinement({
 
   return (
     <div>
-      <p className="text-sm font-semibold text-[var(--ink)]">
+      <p className="text-xs font-semibold text-[var(--ink)]">
         {t("inventory.refineMatch")}
       </p>
-      <p className="mt-1 text-xs text-[var(--muted)]">{t("inventory.refineHint")}</p>
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-2 flex flex-wrap gap-2">
         {suggestions.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => onApply(s.patch)}
-            className={`${btnSecondarySm} hover:border-[var(--gold)]`}
+            className={`${btnSecondarySm} border-[var(--line)] text-xs hover:border-[var(--gold)]`}
           >
             {s.label}
           </button>
