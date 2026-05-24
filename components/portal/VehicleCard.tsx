@@ -21,6 +21,9 @@ import {
 
 } from "@/lib/format";
 
+import { MatchReasonChips } from "@/components/match/MatchReasonChips";
+import { VehicleHighlightBadge } from "@/components/match/VehicleHighlightBadge";
+import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
 import type { Vehicle } from "@/lib/types";
 
 import { btnCardPrimary, btnCardSecondary } from "@/lib/buttonClasses";
@@ -45,7 +48,11 @@ interface VehicleCardProps {
 
   matchLabel?: string;
 
-  matchReason?: string | null;
+  matchChips?: string[];
+
+  highlightBadge?: BadgeKind | null;
+
+  highlightBadgeLabel?: string;
 
   variant?: "editorial" | "rail";
 
@@ -59,7 +66,11 @@ export function VehicleCard({
 
   matchLabel,
 
-  matchReason,
+  matchChips,
+
+  highlightBadge,
+
+  highlightBadgeLabel,
 
   variant = "rail",
 
@@ -107,14 +118,15 @@ export function VehicleCard({
 
         />
 
-        {matchLabel ? (
-
+        {highlightBadge && highlightBadgeLabel ? (
+          <VehicleHighlightBadge
+            badge={highlightBadge}
+            label={highlightBadgeLabel}
+          />
+        ) : matchLabel ? (
           <span className="absolute left-3 top-3 rounded-md bg-[var(--ink)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-
             {matchLabel}
-
           </span>
-
         ) : null}
 
       </Link>
@@ -159,10 +171,8 @@ export function VehicleCard({
 
         </div>
 
-        {matchReason ? (
-          <p className="mt-2 text-xs leading-snug text-[var(--muted)] line-clamp-2">
-            {matchReason}
-          </p>
+        {matchChips && matchChips.length > 0 ? (
+          <MatchReasonChips chips={matchChips} className="mt-2" />
         ) : null}
 
         <div className="mt-3 flex flex-col gap-2">

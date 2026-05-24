@@ -157,18 +157,25 @@ const INVENTORY_BODY_TO_MATCH: Record<InventoryBodyStyle, MatchBodyStyle> = {
   van: "van",
 };
 
-function inventoryFiltersToMatch(
+export function toInventoryMatchFilters(
   filters: InventoryFilters,
-  skipLifestyle = false,
-): InventoryMatchFilters {
+): {
+  matchFilters: InventoryMatchFilters;
+  useLifeFilters: boolean;
+} {
+  const useLifeFilters =
+    filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle);
   return {
-    lifestyle: skipLifestyle
-      ? "any"
-      : INVENTORY_LIFESTYLE_TO_MATCH[filters.lifestyle],
-    budget: INVENTORY_BUDGET_TO_MATCH[filters.budget],
-    condition: INVENTORY_CONDITION_TO_MATCH[filters.condition],
-    body_style: INVENTORY_BODY_TO_MATCH[filters.bodyStyle],
-    store_id: filters.storeId !== "all" ? filters.storeId : undefined,
+    useLifeFilters,
+    matchFilters: {
+      lifestyle: useLifeFilters
+        ? "any"
+        : INVENTORY_LIFESTYLE_TO_MATCH[filters.lifestyle],
+      budget: INVENTORY_BUDGET_TO_MATCH[filters.budget],
+      condition: INVENTORY_CONDITION_TO_MATCH[filters.condition],
+      body_style: INVENTORY_BODY_TO_MATCH[filters.bodyStyle],
+      store_id: filters.storeId !== "all" ? filters.storeId : undefined,
+    },
   };
 }
 
@@ -186,15 +193,18 @@ export function budgetToHomepageRange(
   return "any";
 }
 
-export function filterInventoryVehicles(
+export interface InventoryFilterMeta {
+  /** True when Smart Match widened results — show a soft “similar picks” label. */
+  similarPicks: boolean;
+}
+
+export function filterInventoryVehiclesWithMeta(
   vehicles: Vehicle[],
   filters: InventoryFilters,
   smartMatchCatalog?: SmartMatchRulesCatalog,
-): Vehicle[] {
+): { vehicles: Vehicle[]; meta: InventoryFilterMeta } {
   const catalog = smartMatchCatalog ?? FALLBACK_SMART_MATCH_CATALOG;
-  const useLifeFilters =
-    filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle);
-  const matchFilters = inventoryFiltersToMatch(filters, useLifeFilters);
+  const { matchFilters, useLifeFilters } = toInventoryMatchFilters(filters);
 
   const hasSmartMatchSelection =
     matchFilters.lifestyle !== "any" ||
@@ -203,8 +213,11 @@ export function filterInventoryVehicles(
     matchFilters.body_style !== "any";
 
   let result: Vehicle[];
+  let similarPicks = false;
   if (hasSmartMatchSelection) {
-    result = getSmartMatchResults(vehicles, matchFilters, catalog).vehicles;
+    const smartMatch = getSmartMatchResults(vehicles, matchFilters, catalog);
+    result = smartMatch.vehicles;
+    similarPicks = smartMatch.fallbackUsed;
   } else {
     result = filterVehiclesByIntent(vehicles, matchFilters, catalog);
   }
@@ -242,7 +255,19 @@ export function filterInventoryVehicles(
     }
   }
 
-  return sortInventoryVehicles(result, filters.sort);
+  return {
+    vehicles: sortInventoryVehicles(result, filters.sort),
+    meta: { similarPicks },
+  };
+}
+
+export function filterInventoryVehicles(
+  vehicles: Vehicle[],
+  filters: InventoryFilters,
+  smartMatchCatalog?: SmartMatchRulesCatalog,
+): Vehicle[] {
+  return filterInventoryVehiclesWithMeta(vehicles, filters, smartMatchCatalog)
+    .vehicles;
 }
 
 function imageCount(v: Vehicle): number {

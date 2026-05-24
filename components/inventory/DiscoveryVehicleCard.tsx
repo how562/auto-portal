@@ -34,6 +34,9 @@ import {
 
 } from "@/lib/cardClasses";
 
+import { MatchReasonChips } from "@/components/match/MatchReasonChips";
+import { VehicleHighlightBadge } from "@/components/match/VehicleHighlightBadge";
+import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
 import type { Vehicle } from "@/lib/types";
 
 
@@ -43,6 +46,12 @@ interface DiscoveryVehicleCardProps {
   vehicle: Vehicle;
 
   matchLabel?: string;
+
+  matchChips?: string[];
+
+  highlightBadge?: BadgeKind | null;
+
+  highlightBadgeLabel?: string;
 
   microcopy: string;
 
@@ -55,6 +64,12 @@ export function DiscoveryVehicleCard({
   vehicle,
 
   matchLabel,
+
+  matchChips,
+
+  highlightBadge,
+
+  highlightBadgeLabel,
 
   microcopy,
 
@@ -104,14 +119,15 @@ export function DiscoveryVehicleCard({
 
         />
 
-        {matchLabel ? (
-
+        {highlightBadge && highlightBadgeLabel ? (
+          <VehicleHighlightBadge
+            badge={highlightBadge}
+            label={highlightBadgeLabel}
+          />
+        ) : matchLabel ? (
           <span className="absolute left-3 top-3 rounded-md border border-[var(--line-dark)] bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ink)]">
-
             {matchLabel}
-
           </span>
-
         ) : null}
 
         {meta ? (
@@ -144,7 +160,11 @@ export function DiscoveryVehicleCard({
 
           ) : null}
 
-          <p className="text-sm text-[var(--muted)]">{microcopy}</p>
+          {matchChips && matchChips.length > 0 ? (
+            <MatchReasonChips chips={matchChips} className="mt-1.5" />
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{microcopy}</p>
+          )}
 
         </Link>
 

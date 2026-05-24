@@ -344,7 +344,7 @@ export function vehicleMatchesLifestyle(
   return vehicleMatchesSmartMatchRule(normalized, rule);
 }
 
-function vehicleMatchesLifestyleKey(
+export function vehicleMatchesLifestyleKey(
   vehicle: NormalizedVehicle,
   lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog,

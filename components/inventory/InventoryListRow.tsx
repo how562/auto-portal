@@ -26,6 +26,9 @@ import { btnCardPrimary, btnCardSecondary } from "@/lib/buttonClasses";
 
 import { cardListImage, cardListRow } from "@/lib/cardClasses";
 
+import { MatchReasonChips } from "@/components/match/MatchReasonChips";
+import { VehicleHighlightBadge } from "@/components/match/VehicleHighlightBadge";
+import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
 import type { Vehicle } from "@/lib/types";
 
 
@@ -35,6 +38,12 @@ interface InventoryListRowProps {
   vehicle: Vehicle;
 
   matchLabel?: string;
+
+  matchChips?: string[];
+
+  highlightBadge?: BadgeKind | null;
+
+  highlightBadgeLabel?: string;
 
   microcopy: string;
 
@@ -47,6 +56,12 @@ export function InventoryListRow({
   vehicle,
 
   matchLabel,
+
+  matchChips,
+
+  highlightBadge,
+
+  highlightBadgeLabel,
 
   microcopy,
 
@@ -89,14 +104,16 @@ export function InventoryListRow({
 
         />
 
-        {matchLabel ? (
-
+        {highlightBadge && highlightBadgeLabel ? (
+          <VehicleHighlightBadge
+            badge={highlightBadge}
+            label={highlightBadgeLabel}
+            className="left-2 top-2 max-w-[calc(100%-1rem)] truncate px-2 py-0.5 text-[9px]"
+          />
+        ) : matchLabel ? (
           <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--ink)]">
-
             {matchLabel}
-
           </span>
-
         ) : null}
 
       </Link>
@@ -123,7 +140,11 @@ export function InventoryListRow({
 
         {meta ? <p className="text-xs text-[var(--muted)]">{meta}</p> : null}
 
-        <p className="text-xs text-[var(--muted)]">{microcopy}</p>
+        {matchChips && matchChips.length > 0 ? (
+          <MatchReasonChips chips={matchChips} />
+        ) : (
+          <p className="text-xs text-[var(--muted)]">{microcopy}</p>
+        )}
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-0.5">
           <p className="text-lg font-semibold leading-none text-[var(--ink)]">

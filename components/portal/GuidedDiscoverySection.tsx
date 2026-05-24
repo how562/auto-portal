@@ -11,10 +11,14 @@ import { useDiscovery } from "@/components/portal/DiscoveryContext";
 import {
   buildInventoryUrl,
   filtersFromShopperSelection,
-  getMatchReason,
   getSmartMatchResults,
 } from "@/lib/inventoryMatch";
 import { getMatchLabel } from "@/lib/matchLabels";
+import {
+  getHighlightBadgeLabel,
+  getSimilarPicksHeading,
+  getVehicleMatchPresentationForShopper,
+} from "@/lib/matchReasons";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { BudgetRange, ShopperIntent, Vehicle } from "@/lib/types";
 import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
@@ -138,6 +142,10 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
 
   const matchLabel = getMatchLabel(intent, t);
   const showResults = hasIntent;
+  const similarPicks = matchResult.fallbackUsed;
+  const resultsHeading = similarPicks
+    ? getSimilarPicksHeading(locale)
+    : resultsTitle;
 
   const step1Options = STEP1_IDS.map((id) => ({
     id,
@@ -286,10 +294,12 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
                 <>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
-                      {resultsTitle}
+                      {resultsHeading}
                     </p>
                     <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
-                      {resultsBody}
+                      {similarPicks
+                        ? t("discovery.similarPicksIntro")
+                        : resultsBody}
                     </p>
                   </div>
 
@@ -308,20 +318,34 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
                   ) : (
                     <>
                       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                        {previewMatches.map((vehicle) => (
-                          <VehicleCard
-                            key={vehicle.id}
-                            vehicle={vehicle}
-                            matchLabel={matchLabel}
-                            matchReason={getMatchReason(
+                        {previewMatches.map((vehicle) => {
+                          const presentation =
+                            getVehicleMatchPresentationForShopper(
                               vehicle,
+                              intent,
                               matchFilters,
-                              locale,
                               smartMatchCatalog,
-                            )}
-                            variant="rail"
-                          />
-                        ))}
+                              locale,
+                            );
+                          return (
+                            <VehicleCard
+                              key={vehicle.id}
+                              vehicle={vehicle}
+                              matchLabel={matchLabel}
+                              matchChips={presentation.chips}
+                              highlightBadge={presentation.badge}
+                              highlightBadgeLabel={
+                                presentation.badge
+                                  ? getHighlightBadgeLabel(
+                                      presentation.badge,
+                                      locale,
+                                    )
+                                  : undefined
+                              }
+                              variant="rail"
+                            />
+                          );
+                        })}
                       </div>
 
                       <div className="mt-8 flex flex-col items-stretch gap-3 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-between">

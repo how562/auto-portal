@@ -27,6 +27,9 @@ import {
 
 } from "@/lib/format";
 
+import { MatchReasonChips } from "@/components/match/MatchReasonChips";
+import { VehicleHighlightBadge } from "@/components/match/VehicleHighlightBadge";
+import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
 import type { Vehicle } from "@/lib/types";
 
 
@@ -36,6 +39,12 @@ interface InventorySpotlightCardProps {
   vehicle: Vehicle;
 
   matchLabel?: string;
+
+  matchChips?: string[];
+
+  highlightBadge?: BadgeKind | null;
+
+  highlightBadgeLabel?: string;
 
   microcopy: string;
 
@@ -48,6 +57,12 @@ export function InventorySpotlightCard({
   vehicle,
 
   matchLabel,
+
+  matchChips,
+
+  highlightBadge,
+
+  highlightBadgeLabel,
 
   microcopy,
 
@@ -100,22 +115,16 @@ export function InventorySpotlightCard({
 
           />
 
-          {matchLabel ? (
-
-            <span className="absolute left-4 top-4 rounded-md bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ink)]">
-
-              Top match · {matchLabel}
-
-            </span>
-
+          {highlightBadge && highlightBadgeLabel ? (
+            <VehicleHighlightBadge
+              badge={highlightBadge}
+              label={highlightBadgeLabel}
+              className="left-4 top-4 px-3 py-1"
+            />
           ) : (
-
             <span className="absolute left-4 top-4 rounded-md bg-[var(--gold)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-
-              Top match
-
+              {matchLabel ? `Top match · ${matchLabel}` : "Top match"}
             </span>
-
           )}
 
         </Link>
@@ -148,7 +157,11 @@ export function InventorySpotlightCard({
 
           {meta ? <p className="text-sm text-[var(--muted)]">{meta}</p> : null}
 
-          <p className="text-sm text-[var(--muted)]">{microcopy}</p>
+          {matchChips && matchChips.length > 0 ? (
+            <MatchReasonChips chips={matchChips} className="mt-1" />
+          ) : (
+            <p className="text-sm text-[var(--muted)]">{microcopy}</p>
+          )}
 
           <p className="text-2xl font-semibold leading-none tracking-tight text-[var(--ink)] sm:text-3xl">
 

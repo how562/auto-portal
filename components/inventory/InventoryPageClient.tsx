@@ -20,7 +20,7 @@ import {
 } from "@/lib/inventoryDiscovery";
 import {
   DEFAULT_INVENTORY_FILTERS,
-  filterInventoryVehicles,
+  filterInventoryVehiclesWithMeta,
   filtersToSearchParams,
   getLifeCategoryHeader,
   getLifeEmptyStateCopy,
@@ -140,14 +140,21 @@ export function InventoryPageClient({
     storeViewMode(mode);
   }, []);
 
-  const filteredResults = useMemo(() => {
-    if (serverPaginated) return vehicles;
-    return filterInventoryVehicles(vehicles, filters, smartMatchCatalog);
+  const { filteredVehicles, similarPicks } = useMemo(() => {
+    if (serverPaginated) {
+      return { filteredVehicles: vehicles, similarPicks: false };
+    }
+    const { vehicles: filtered, meta } = filterInventoryVehiclesWithMeta(
+      vehicles,
+      filters,
+      smartMatchCatalog,
+    );
+    return { filteredVehicles: filtered, similarPicks: meta.similarPicks };
   }, [vehicles, filters, smartMatchCatalog, serverPaginated]);
 
   const makeModelFiltered = useMemo(
-    () => applyMakeModelFilter(filteredResults, makeFilter, modelFilter),
-    [filteredResults, makeFilter, modelFilter],
+    () => applyMakeModelFilter(filteredVehicles, makeFilter, modelFilter),
+    [filteredVehicles, makeFilter, modelFilter],
   );
 
   const pagedResults = useMemo(() => {
@@ -300,6 +307,7 @@ export function InventoryPageClient({
               buildPageHref={buildPageHref}
               filters={filters}
               viewMode={viewMode}
+              similarPicks={similarPicks}
             />
           ) : null}
         </div>

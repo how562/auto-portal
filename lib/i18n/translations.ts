@@ -35,6 +35,8 @@ const en = {
   "discovery.vehiclesSurfaced": "{count} vehicles surfaced",
   "discovery.matchesIntro":
     "Based on what matters to you, here are a few vehicles to consider.",
+  "discovery.similarPicksIntro":
+    "A few close matches from our group inventory—you can refine anytime.",
   "discovery.tunedFor": "Tuned for {label} · live group inventory",
   "discovery.noMatches":
     "We're still matching inventory — try adjusting your filters.",
@@ -347,6 +349,8 @@ const es: Record<keyof typeof en, string> = {
   "discovery.vehiclesSurfaced": "{count} vehículos encontrados",
   "discovery.matchesIntro":
     "Según lo que más te importa, estas son algunas opciones para considerar.",
+  "discovery.similarPicksIntro":
+    "Algunas opciones cercanas de nuestro inventario—puedes afinar cuando quieras.",
   "discovery.tunedFor": "Afinado para {label} · inventario en vivo",
   "discovery.noMatches":
     "Aún estamos buscando opciones — intenta ajustar tus filtros.",
