@@ -2,10 +2,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseDealerSendFile } from "./dealerSendParse";
 import { mapDealerSendRow, type HomenetVehicleRow } from "./dealerSendMap";
 import {
-  downloadNewestTxtFile,
+  downloadAllInventoryFiles,
   getSftpEnvDebug,
   readSftpConfigFromEnv,
+  type DownloadedInventoryFile,
 } from "./sftpInventory";
+import {
+  buildStoreLookupTables,
+  isResolvedStoreMapping,
+  resolveStoreForFile,
+  type StoreLookupTables,
+  type StoreMappingSource,
+} from "./storeMapping";
 
 const UPSERT_BATCH_SIZE = 50;
 
@@ -15,18 +23,33 @@ export interface HomenetImportError {
   import_key?: string;
 }
 
-export interface HomenetImportSummary {
+export interface HomenetFileImportSummary {
   ok: boolean;
   fileName: string;
   remotePath: string;
+  skipped: boolean;
+  skipReason?: string;
+  storeId?: string;
+  storeName?: string;
+  storeMappingSource?: StoreMappingSource;
   delimiter: string;
   headerCount: number;
   rowsProcessed: number;
   mapped: number;
-  skipped: number;
+  skippedRows: number;
   upserted: number;
   errors: HomenetImportError[];
-  /** Present when the import aborts before or during processing. */
+}
+
+export interface HomenetImportSummary {
+  ok: boolean;
+  filesProcessed: number;
+  filesSkipped: number;
+  filesSucceeded: number;
+  filesFailed: number;
+  totalUpserted: number;
+  files: HomenetFileImportSummary[];
+  /** Present when the import aborts before processing any file. */
   error?: string;
   /** Temporary safe SFTP env debug (failed imports only; never includes the password). */
   sftpHost?: string;
@@ -47,16 +70,29 @@ export function createFailedImportSummary(
   return {
     ok: false,
     error: message,
-    fileName: partial.fileName ?? "",
-    remotePath: partial.remotePath ?? "",
-    delimiter: partial.delimiter ?? "",
-    headerCount: partial.headerCount ?? 0,
-    rowsProcessed: partial.rowsProcessed ?? 0,
-    mapped: partial.mapped ?? 0,
-    skipped: partial.skipped ?? 0,
-    upserted: partial.upserted ?? 0,
-    errors: partial.errors ?? [{ row: 0, message }],
+    filesProcessed: partial.filesProcessed ?? 0,
+    filesSkipped: partial.filesSkipped ?? 0,
+    filesSucceeded: partial.filesSucceeded ?? 0,
+    filesFailed: partial.filesFailed ?? 0,
+    totalUpserted: partial.totalUpserted ?? 0,
+    files: partial.files ?? [{ ...emptyFileSummary(), skipped: true, skipReason: message, errors: [{ row: 0, message }] }],
     ...(debug ?? {}),
+  };
+}
+
+function emptyFileSummary(): HomenetFileImportSummary {
+  return {
+    ok: false,
+    fileName: "",
+    remotePath: "",
+    skipped: false,
+    delimiter: "",
+    headerCount: 0,
+    rowsProcessed: 0,
+    mapped: 0,
+    skippedRows: 0,
+    upserted: 0,
+    errors: [],
   };
 }
 
@@ -73,7 +109,7 @@ function storeVinKey(storeId: string, vin: string): string {
   return `${storeId}\0${vin}`;
 }
 
-function hasStoreVinConflictKey(
+function hasStoreVinKey(
   row: HomenetVehicleRow,
 ): row is HomenetVehicleRow & { store_id: string; vin: string } {
   return Boolean(row.store_id?.trim() && row.vin?.trim());
@@ -89,6 +125,7 @@ function toMergeUpdate(row: HomenetVehicleRow) {
     image_count: row.image_count,
     has_images: row.has_images,
     data_quality_score: row.data_quality_score,
+    dealer_name: row.dealer_name,
     updated_at: new Date().toISOString(),
   };
 }
@@ -100,8 +137,18 @@ async function upsertVehicleBatch(
   const errors: HomenetImportError[] = [];
   let upserted = 0;
 
-  const keyedRows = batch.filter(hasStoreVinConflictKey);
-  const unkeyedRows = batch.filter((row) => !hasStoreVinConflictKey(row));
+  const keyedRows = batch.filter(hasStoreVinKey);
+  const unkeyedRows = batch.filter((row) => !hasStoreVinKey(row));
+
+  for (const row of unkeyedRows) {
+    errors.push({
+      row: 0,
+      import_key: row.import_key,
+      message: !row.store_id?.trim()
+        ? "Missing store_id — row skipped"
+        : "Missing VIN — row skipped (upsert requires store_id + vin)",
+    });
+  }
 
   if (keyedRows.length > 0) {
     const orFilter = keyedRows
@@ -182,56 +229,71 @@ async function upsertVehicleBatch(
     }
   }
 
-  if (unkeyedRows.length > 0) {
-    const { data, error } = await supabase
-      .from("vehicles")
-      .insert(unkeyedRows)
-      .select("id");
-
-    if (error) {
-      for (const row of unkeyedRows) {
-        errors.push({
-          row: 0,
-          import_key: row.import_key,
-          message: `Insert failed: ${error.message}`,
-        });
-      }
-    } else {
-      upserted += data?.length ?? unkeyedRows.length;
-    }
-  }
-
   return { upserted, errors };
 }
 
-async function fetchStoreNameLookup(
+async function fetchStoreLookup(
   supabase: SupabaseClient,
-): Promise<Map<string, string>> {
-  const lookup = new Map<string, string>();
-  const { data, error } = await supabase
-    .from("stores")
-    .select("id, name");
+): Promise<StoreLookupTables> {
+  const { data, error } = await supabase.from("stores").select("id, name");
 
-  if (error || !data) return lookup;
-
-  for (const row of data as Array<{ id: string; name: string | null }>) {
-    const name = row.name?.trim().toLowerCase();
-    if (name && row.id && !lookup.has(name)) {
-      lookup.set(name, row.id);
-    }
+  if (error || !data) {
+    throw new Error(`Failed to load stores for import mapping: ${error?.message ?? "unknown"}`);
   }
-  return lookup;
+
+  return buildStoreLookupTables(
+    (data ?? []) as Array<{ id: string; name: string | null }>,
+  );
 }
 
-export async function runHomenetInventoryImport(
+async function importSingleInventoryFile(
   supabase: SupabaseClient,
-): Promise<HomenetImportSummary> {
-  const sftpConfig = readSftpConfigFromEnv();
-  const defaultStoreId = process.env.HOMENET_DEFAULT_STORE_ID?.trim() || null;
+  downloaded: DownloadedInventoryFile,
+  storeLookup: StoreLookupTables,
+): Promise<HomenetFileImportSummary> {
+  const base: HomenetFileImportSummary = {
+    ...emptyFileSummary(),
+    fileName: downloaded.fileName,
+    remotePath: downloaded.remotePath,
+  };
 
-  const downloaded = await downloadNewestTxtFile(sftpConfig);
-  const parsed = parseDealerSendFile(downloaded.content);
-  const storeIdByDealerName = await fetchStoreNameLookup(supabase);
+  let parsed;
+  try {
+    parsed = parseDealerSendFile(downloaded.content);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to parse DealerSend file";
+    return {
+      ...base,
+      ok: false,
+      errors: [{ row: 0, message }],
+    };
+  }
+
+  base.delimiter = parsed.delimiter;
+  base.headerCount = parsed.headers.length;
+  base.rowsProcessed = parsed.rows.length;
+
+  const storeMapping = resolveStoreForFile(
+    downloaded.fileName,
+    parsed.rows,
+    storeLookup,
+  );
+
+  if (!isResolvedStoreMapping(storeMapping)) {
+    return {
+      ...base,
+      ok: false,
+      skipped: true,
+      skipReason: storeMapping.reason,
+      errors: [{ row: 0, message: storeMapping.reason }],
+    };
+  }
+
+  const storeName =
+    storeMapping.storeName ||
+    storeLookup.storeNameById.get(storeMapping.storeId) ||
+    "";
 
   const mappedRows: HomenetVehicleRow[] = [];
   const errors: HomenetImportError[] = [];
@@ -239,10 +301,10 @@ export async function runHomenetInventoryImport(
   parsed.rows.forEach((raw, index) => {
     try {
       const mapped = mapDealerSendRow(raw, {
-        defaultStoreId,
+        forcedStoreId: storeMapping.storeId,
         importSource: "homenet_dealer_send",
-        storeIdByDealerName,
       });
+
       if (!mapped) {
         errors.push({
           row: index + 2,
@@ -250,6 +312,16 @@ export async function runHomenetInventoryImport(
         });
         return;
       }
+
+      if (mapped.store_id !== storeMapping.storeId) {
+        errors.push({
+          row: index + 2,
+          import_key: mapped.import_key,
+          message: "Row store_id mismatch — row skipped to avoid cross-store mixing",
+        });
+        return;
+      }
+
       mappedRows.push(mapped);
     } catch (error: unknown) {
       errors.push({
@@ -261,23 +333,74 @@ export async function runHomenetInventoryImport(
   });
 
   let upserted = 0;
-
   for (const batch of chunk(mappedRows, UPSERT_BATCH_SIZE)) {
     const result = await upsertVehicleBatch(supabase, batch);
     upserted += result.upserted;
     errors.push(...result.errors);
   }
 
+  const skippedRows = parsed.rows.length - mappedRows.length;
+  const ok = upserted > 0 || (mappedRows.length > 0 && errors.length === 0);
+
   return {
-    ok: errors.length === 0 || upserted > 0,
-    fileName: downloaded.fileName,
-    remotePath: downloaded.remotePath,
-    delimiter: parsed.delimiter,
-    headerCount: parsed.headers.length,
-    rowsProcessed: parsed.rows.length,
+    ...base,
+    ok,
+    storeId: storeMapping.storeId,
+    storeName,
+    storeMappingSource: storeMapping.source,
     mapped: mappedRows.length,
-    skipped: parsed.rows.length - mappedRows.length,
+    skippedRows,
     upserted,
     errors: errors.slice(0, 100),
   };
+}
+
+function aggregateFileSummaries(
+  files: HomenetFileImportSummary[],
+): HomenetImportSummary {
+  const filesSkipped = files.filter((file) => file.skipped).length;
+  const filesSucceeded = files.filter((file) => file.ok && !file.skipped).length;
+  const filesFailed = files.filter(
+    (file) => !file.skipped && !file.ok,
+  ).length;
+  const totalUpserted = files.reduce((sum, file) => sum + file.upserted, 0);
+
+  return {
+    ok:
+      files.length > 0 &&
+      filesFailed === 0 &&
+      filesSkipped < files.length &&
+      (filesSucceeded > 0 || totalUpserted > 0),
+    filesProcessed: files.length,
+    filesSkipped,
+    filesSucceeded,
+    filesFailed,
+    totalUpserted,
+    files,
+  };
+}
+
+export async function runHomenetInventoryImport(
+  supabase: SupabaseClient,
+): Promise<HomenetImportSummary> {
+  return runHomenetMultiFileInventoryImport(supabase);
+}
+
+/** Multi-dealer SFTP import — processes every .csv/.txt in SFTP_PATH. */
+export async function runHomenetMultiFileInventoryImport(
+  supabase: SupabaseClient,
+): Promise<HomenetImportSummary> {
+  const sftpConfig = readSftpConfigFromEnv();
+  const downloadedFiles = await downloadAllInventoryFiles(sftpConfig);
+  const storeLookup = await fetchStoreLookup(supabase);
+
+  const fileSummaries: HomenetFileImportSummary[] = [];
+
+  for (const downloaded of downloadedFiles) {
+    fileSummaries.push(
+      await importSingleInventoryFile(supabase, downloaded, storeLookup),
+    );
+  }
+
+  return aggregateFileSummaries(fileSummaries);
 }

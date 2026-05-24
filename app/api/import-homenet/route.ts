@@ -2,12 +2,19 @@ import { NextResponse } from "next/server";
 import { getImportSecret, isImportAuthorized } from "@/lib/import/importAuth";
 import {
   createFailedImportSummary,
-  runHomenetInventoryImport,
+  runHomenetMultiFileInventoryImport,
+  type HomenetImportSummary,
 } from "@/lib/import/homenetImport";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
+/** Bump when the import API response contract changes (helps verify deploys). */
+const IMPORT_API_VERSION = 2;
+
 /**
  * HomeNet DealerSend inventory import (server-only).
+ *
+ * Downloads every .csv and .txt file in SFTP_PATH, maps each file to a store,
+ * and upserts vehicles by (store_id, vin). Returns a per-file summary.
  *
  * Local test:
  *   curl "http://localhost:3000/api/import-homenet?secret=YOUR_IMPORT_SECRET"
@@ -18,7 +25,29 @@ import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
+
+function buildImportApiResponse(summary: HomenetImportSummary) {
+  return {
+    importVersion: IMPORT_API_VERSION,
+    ok: summary.ok,
+    filesProcessed: summary.filesProcessed,
+    filesSkipped: summary.filesSkipped,
+    filesSucceeded: summary.filesSucceeded,
+    filesFailed: summary.filesFailed,
+    totalUpserted: summary.totalUpserted,
+    files: summary.files,
+    ...(summary.error ? { error: summary.error } : {}),
+    ...(summary.sftpHost ? { sftpHost: summary.sftpHost } : {}),
+    ...(summary.sftpPort ? { sftpPort: summary.sftpPort } : {}),
+    ...(summary.sftpUser ? { sftpUser: summary.sftpUser } : {}),
+    ...(summary.hasPassword != null ? { hasPassword: summary.hasPassword } : {}),
+    ...(summary.passwordLength != null
+      ? { passwordLength: summary.passwordLength }
+      : {}),
+    ...(summary.sftpPath ? { sftpPath: summary.sftpPath } : {}),
+  };
+}
 
 export async function GET(request: Request) {
   if (!getImportSecret()) {
@@ -47,13 +76,18 @@ export async function GET(request: Request) {
 
   try {
     const supabase = getSupabaseAdmin();
-    const summary = await runHomenetInventoryImport(supabase);
-    return NextResponse.json(summary, { status: summary.ok ? 200 : 207 });
+    const summary = await runHomenetMultiFileInventoryImport(supabase);
+    return NextResponse.json(buildImportApiResponse(summary), {
+      status: summary.ok ? 200 : 207,
+    });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "HomeNet import failed";
-    return NextResponse.json(createFailedImportSummary(message), {
-      status: 500,
-    });
+    return NextResponse.json(
+      buildImportApiResponse(createFailedImportSummary(message)),
+      {
+        status: 500,
+      },
+    );
   }
 }

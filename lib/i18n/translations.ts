@@ -248,6 +248,43 @@ const en = {
   "vdp.browseSimilar": "Browse similar →",
   "vdp.backToInventory": "← Back to Inventory",
   "vdp.browseSimilarVehicles": "Browse similar vehicles",
+  "vdp.overview": "Overview",
+  "vdp.browseInventory": "Browse inventory",
+  "vdp.similarYouMayLike": "Similar vehicles you may like",
+  "vdp.similarYouMayLikeBody":
+    "Curated from live group inventory—compare a few close matches without starting over.",
+  "vdp.match.eyebrow": "Smart Match",
+  "vdp.match.headline": "Why this vehicle fits you",
+  "vdp.match.body":
+    "Based on how you shop and what this vehicle offers—here is what stood out.",
+  "vdp.cta.calculatePayment": "Calculate My Payment",
+  "vdp.cta.valueTrade": "Value My Trade",
+  "vdp.cta.ePrice": "Get E-Price",
+  "vdp.cta.unlockSavings": "Unlock Savings",
+  "vdp.cta.whyLease": "Why Lease",
+  "vdp.cta.exploreDetails": "Explore Details",
+  "vdp.math.eyebrow": "Price breakdown",
+  "vdp.math.msrp": "MSRP",
+  "vdp.math.dealerDiscount": "Dealer Discount",
+  "vdp.math.conditionalOffers": "Conditional Offers",
+  "vdp.math.docFee": "Doc Fee",
+  "vdp.math.finalPrice": "Final Price",
+  "vdp.math.otherOffers": "Other offers you may qualify for",
+  "vdp.math.microcopy":
+    "Price shown before tax, title, and license. Eligibility for conditional offers is confirmed at signing.",
+  "vdp.math.disclaimer":
+    "All pricing is subject to change. Conditional incentives require proof of eligibility and may not combine. Doc fee is an estimate; final amount set by the selling store.",
+  "vdp.math.callForPriceBody":
+    "Contact our team for current pricing and any incentives you may qualify for.",
+  "vdp.math.priceMicrocopy":
+    "Includes estimated doc fee. Tax, title, and license extra.",
+  "vdp.trust.inspected": "Vehicle inspected",
+  "vdp.trust.inspectedBody": "Every listing is reviewed before it reaches you.",
+  "vdp.trust.fees": "No hidden fees",
+  "vdp.trust.feesBody": "Straightforward pricing guidance from our team.",
+  "vdp.trust.confidence": "Backed by Cavender Confidence",
+  "vdp.trust.confidenceBody":
+    "A group-wide standard for how we serve drivers.",
   "vdp.notFoundTitle": "Vehicle not found",
   "vdp.notFoundBody":
     "This vehicle may no longer be available. Browse live inventory across our group.",
@@ -564,6 +601,43 @@ const es: Record<keyof typeof en, string> = {
   "vdp.browseSimilar": "Ver similares →",
   "vdp.backToInventory": "← Volver al inventario",
   "vdp.browseSimilarVehicles": "Ver vehículos similares",
+  "vdp.overview": "Resumen",
+  "vdp.browseInventory": "Ver inventario",
+  "vdp.similarYouMayLike": "Vehículos similares que te pueden gustar",
+  "vdp.similarYouMayLikeBody":
+    "Seleccionados del inventario en vivo—compara opciones cercanas sin empezar de cero.",
+  "vdp.match.eyebrow": "Smart Match",
+  "vdp.match.headline": "Por qué este vehículo encaja contigo",
+  "vdp.match.body":
+    "Según cómo compras y lo que ofrece este vehículo—esto es lo que destacó.",
+  "vdp.cta.calculatePayment": "Calcular mi pago",
+  "vdp.cta.valueTrade": "Valuar mi auto",
+  "vdp.cta.ePrice": "Obtener e-precio",
+  "vdp.cta.unlockSavings": "Desbloquear ahorros",
+  "vdp.cta.whyLease": "Por qué arrendar",
+  "vdp.cta.exploreDetails": "Ver detalles",
+  "vdp.math.eyebrow": "Desglose de precio",
+  "vdp.math.msrp": "MSRP",
+  "vdp.math.dealerDiscount": "Descuento del concesionario",
+  "vdp.math.conditionalOffers": "Ofertas condicionales",
+  "vdp.math.docFee": "Cargo de documentación",
+  "vdp.math.finalPrice": "Precio final",
+  "vdp.math.otherOffers": "Otras ofertas para las que podrías calificar",
+  "vdp.math.microcopy":
+    "Precio antes de impuestos, título y placas. La elegibilidad de ofertas condicionales se confirma al firmar.",
+  "vdp.math.disclaimer":
+    "Precios sujetos a cambio. Los incentivos condicionales requieren comprobante y pueden no combinarse. El cargo de documentación es estimado; el monto final lo define la tienda.",
+  "vdp.math.callForPriceBody":
+    "Contacta a nuestro equipo para precios actuales e incentivos disponibles.",
+  "vdp.math.priceMicrocopy":
+    "Incluye cargo de documentación estimado. Impuestos, título y placas aparte.",
+  "vdp.trust.inspected": "Vehículo inspeccionado",
+  "vdp.trust.inspectedBody": "Cada anuncio se revisa antes de publicarse.",
+  "vdp.trust.fees": "Sin cargos ocultos",
+  "vdp.trust.feesBody": "Orientación de precios clara de nuestro equipo.",
+  "vdp.trust.confidence": "Respaldado por Cavender Confidence",
+  "vdp.trust.confidenceBody":
+    "Un estándar de grupo en cómo servimos a los conductores.",
   "vdp.notFoundTitle": "Vehículo no encontrado",
   "vdp.notFoundBody":
     "Este vehículo puede ya no estar disponible. Explora inventario en vivo en todo el grupo.",

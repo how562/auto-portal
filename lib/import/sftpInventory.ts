@@ -130,7 +130,82 @@ function selectInventoryFile<T extends { name: string; modifyTime?: number }>(
   return candidates[0];
 }
 
-/** List .txt/.csv files in SFTP_PATH and download the selected inventory file. */
+function sortInventoryFiles<T extends { name: string; modifyTime?: number }>(
+  files: T[],
+): T[] {
+  return [...files].sort((a, b) => {
+    const byName = a.name.localeCompare(b.name, undefined, {
+      sensitivity: "base",
+    });
+    if (byName !== 0) return byName;
+    const aTime = a.modifyTime ?? 0;
+    const bTime = b.modifyTime ?? 0;
+    return bTime - aTime;
+  });
+}
+
+async function downloadInventoryFile(
+  client: SftpClient,
+  remotePath: string,
+  entry: { name: string; modifyTime?: number },
+): Promise<DownloadedInventoryFile> {
+  const remoteFilePath = joinRemotePath(remotePath, entry.name);
+  const buffer = await client.get(remoteFilePath);
+  const content = Buffer.isBuffer(buffer)
+    ? buffer.toString("utf8")
+    : String(buffer);
+
+  return {
+    fileName: entry.name,
+    remotePath: remoteFilePath,
+    modifiedAt: entry.modifyTime ?? null,
+    content,
+  };
+}
+
+/** List .txt/.csv files in SFTP_PATH and download all inventory files. */
+export async function downloadAllInventoryFiles(
+  config: SftpConfig,
+): Promise<DownloadedInventoryFile[]> {
+  const client = new SftpClient();
+
+  try {
+    const password = process.env.SFTP_PASSWORD!.trim();
+    const username = process.env.SFTP_USER!.trim();
+
+    await client.connect({
+      host: process.env.SFTP_HOST!.trim(),
+      port: Number(process.env.SFTP_PORT || 22),
+      username,
+      password,
+      authHandler: createSftpAuthHandler(username, password),
+    });
+
+    const listing = await client.list(config.remotePath);
+    const inventoryFiles = sortInventoryFiles(
+      listing.filter(
+        (entry) => entry.type === "-" && isInventoryFileName(entry.name),
+      ),
+    );
+
+    if (inventoryFiles.length === 0) {
+      throw new Error(
+        `No .txt or .csv files found in SFTP path: ${config.remotePath}`,
+      );
+    }
+
+    const downloads: DownloadedInventoryFile[] = [];
+    for (const entry of inventoryFiles) {
+      downloads.push(await downloadInventoryFile(client, config.remotePath, entry));
+    }
+
+    return downloads;
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+}
+
+/** @deprecated Prefer downloadAllInventoryFiles for multi-dealer SFTP folders. */
 export async function downloadNewestTxtFile(
   config: SftpConfig,
 ): Promise<DownloadedInventoryFile> {
@@ -160,18 +235,7 @@ export async function downloadNewestTxtFile(
     }
 
     const selected = selectInventoryFile(inventoryFiles);
-    const remoteFilePath = joinRemotePath(config.remotePath, selected.name);
-    const buffer = await client.get(remoteFilePath);
-    const content = Buffer.isBuffer(buffer)
-      ? buffer.toString("utf8")
-      : String(buffer);
-
-    return {
-      fileName: selected.name,
-      remotePath: remoteFilePath,
-      modifiedAt: selected.modifyTime ?? null,
-      content,
-    };
+    return downloadInventoryFile(client, config.remotePath, selected);
   } finally {
     await client.end().catch(() => undefined);
   }

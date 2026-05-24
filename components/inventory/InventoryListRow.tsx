@@ -1,254 +1,106 @@
 "use client";
 
-
-
 import Link from "next/link";
-
 import { useCta } from "@/components/cta/CtaProvider";
 import { useLeadCapture } from "@/components/portal/LeadCaptureContext";
-
-import { VehicleImage } from "@/components/vehicle/VehicleImage";
-
 import {
-
-  formatMileage,
-  formatVehicleLabel,
-
-  formatVehiclePrice,
-
-  formatVehicleTitle,
-
-  vehicleDetailPath,
-
-} from "@/lib/format";
-
+  VehicleListingHeading,
+  VehicleListingImageLink,
+  VehicleListingMeta,
+  VehicleListingPrice,
+  VehicleListingVin,
+  vehicleListingShellRow,
+} from "@/components/vehicle/VehicleListingBlocks";
+import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
+import { formatVehicleLabel, vehicleDetailPath } from "@/lib/format";
+import type { Vehicle } from "@/lib/types";
 import { btnCardPrimary, btnCardSecondary } from "@/lib/buttonClasses";
 
-import { cardListImage, cardListRow } from "@/lib/cardClasses";
-
-import { MatchReasonChips } from "@/components/match/MatchReasonChips";
-import { VehicleHighlightBadge } from "@/components/match/VehicleHighlightBadge";
-import type { VehicleHighlightBadge as BadgeKind } from "@/lib/matchReasons";
-import type { Vehicle } from "@/lib/types";
-
-
-
 interface InventoryListRowProps {
-
   vehicle: Vehicle;
-
   matchLabel?: string;
-
   matchChips?: string[];
-
   highlightBadge?: BadgeKind | null;
-
   highlightBadgeLabel?: string;
-
   microcopy: string;
-
 }
 
-
-
 export function InventoryListRow({
-
   vehicle,
-
   matchLabel,
-
   matchChips,
-
   highlightBadge,
-
   highlightBadgeLabel,
-
   microcopy,
-
 }: InventoryListRowProps) {
-
   const { openLead } = useLeadCapture();
   const detailsLink = useCta("details_link");
   const saveShortlist = useCta("save_shortlist");
   const checkCompact = useCta("check_compact");
 
-  const title = formatVehicleTitle(vehicle);
-
   const label = formatVehicleLabel(vehicle);
-
   const detailHref = vehicleDetailPath(vehicle.id);
 
-
-
-  const meta = [vehicle.body_style, vehicle.condition, vehicle.dealer_name]
-
-    .filter(Boolean)
-
-    .join(" · ");
-
-
-
   return (
+    <article className={vehicleListingShellRow}>
+      <VehicleListingImageLink
+        vehicle={vehicle}
+        href={detailHref}
+        aspectClass="aspect-[16/10] w-full sm:aspect-auto sm:h-[7.75rem] sm:w-[12.4rem]"
+        placeholderSize="sm"
+        highlightBadge={highlightBadge}
+        highlightBadgeLabel={highlightBadgeLabel}
+        matchLabel={matchLabel}
+        badgeClassName="left-2 top-2 px-2 py-0.5 text-[8px]"
+        className="shrink-0 sm:rounded-md"
+      />
 
-    <article className={cardListRow}>
-
-      <Link href={detailHref} className={cardListImage}>
-
-        <VehicleImage
-
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+        <VehicleListingHeading
           vehicle={vehicle}
-
-          placeholderSize="sm"
-
-          className="h-full w-full object-cover"
-
+          href={detailHref}
+          size="sm"
+          matchChips={matchChips}
+          microcopy={matchChips?.length ? undefined : microcopy}
         />
-
-        {highlightBadge && highlightBadgeLabel ? (
-          <VehicleHighlightBadge
-            badge={highlightBadge}
-            label={highlightBadgeLabel}
-            className="left-2 top-2 max-w-[calc(100%-1rem)] truncate px-2 py-0.5 text-[9px]"
-          />
-        ) : matchLabel ? (
-          <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--ink)]">
-            {matchLabel}
-          </span>
-        ) : null}
-
-      </Link>
-
-
-
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-
-        <Link href={detailHref} className="block">
-
-          <h3 className="text-base font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-lg">
-
-            {title}
-
-          </h3>
-
-          {vehicle.trim ? (
-
-            <p className="truncate text-sm text-[var(--muted)]">{vehicle.trim}</p>
-
-          ) : null}
-
-        </Link>
-
-        {meta ? <p className="text-xs text-[var(--muted)]">{meta}</p> : null}
-
-        {matchChips && matchChips.length > 0 ? (
-          <MatchReasonChips chips={matchChips} />
-        ) : (
-          <p className="text-xs text-[var(--muted)]">{microcopy}</p>
-        )}
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-0.5">
-          <p className="text-lg font-semibold leading-none text-[var(--ink)]">
-            {formatVehiclePrice(vehicle)}
-          </p>
-          <p className="text-sm text-[var(--muted)]">
-            {formatMileage(vehicle.mileage)}
-          </p>
-
-          {vehicle.stock_number ? (
-
-            <p className="text-xs text-[var(--muted)]">
-
-              #{vehicle.stock_number}
-
-            </p>
-
-          ) : null}
-
-        </div>
-
-        {vehicle.vin ? (
-          <p
-            className="mt-1 select-text font-mono text-[10px] uppercase tracking-wider text-[var(--muted)]"
-            title={vehicle.vin}
-          >
-            VIN {vehicle.vin}
-          </p>
-        ) : null}
-
+        <VehicleListingPrice vehicle={vehicle} size="sm" />
+        <VehicleListingMeta vehicle={vehicle} showDealer />
+        <VehicleListingVin vehicle={vehicle} />
       </div>
 
-
-
-      <div className="flex shrink-0 flex-col justify-center gap-2 sm:w-40">
-
-        <Link href={detailHref} className={btnCardPrimary}>
-
+      <div className="flex shrink-0 flex-col justify-center gap-2 sm:w-[9.5rem]">
+        <Link href={detailHref} className={`${btnCardPrimary} w-full text-center`}>
           {detailsLink.label}
-
         </Link>
-
-        <div className="flex gap-2">
-
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-1">
           <button
-
             type="button"
-
             onClick={() =>
-
               openLead({
-
                 action: "shortlist",
-
                 vehicle,
-
                 shopperIntent: `Add to shortlist: ${label}`,
-
               })
-
             }
-
-            className={`flex-1 ${btnCardSecondary}`}
-
+            className={btnCardSecondary}
           >
-
             {saveShortlist.label}
-
           </button>
-
           <button
-
             type="button"
-
             onClick={() =>
-
               openLead({
-
                 action: "availability",
-
                 vehicle,
-
                 shopperIntent: `Check availability for ${label}`,
-
               })
-
             }
-
-            className={`flex-1 ${btnCardSecondary}`}
-
+            className={btnCardSecondary}
           >
-
             {checkCompact.label}
-
           </button>
-
         </div>
-
       </div>
-
     </article>
-
   );
-
 }
-
-

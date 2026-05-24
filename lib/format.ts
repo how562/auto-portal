@@ -66,6 +66,29 @@ export function formatVehiclePrice(
     : formatPrice(effective.amount);
 }
 
+/** Savings when MSRP exceeds internet price (customer-facing badge only). */
+export function getVehicleSavingsAmount(
+  vehicle: Pick<Vehicle, "internet_price" | "msrp">,
+): number | null {
+  if (
+    isUsablePrice(vehicle.internet_price) &&
+    isUsablePrice(vehicle.msrp) &&
+    vehicle.msrp > vehicle.internet_price
+  ) {
+    return vehicle.msrp - vehicle.internet_price;
+  }
+  return null;
+}
+
+export function formatConditionLabel(condition: string | null | undefined): string {
+  if (!condition?.trim()) return "—";
+  const c = condition.trim().toLowerCase();
+  if (c.includes("cert")) return "Certified";
+  if (c === "new") return "New";
+  if (c === "used") return "Pre-owned";
+  return condition.trim();
+}
+
 export function formatMileage(value: number | null): string {
   if (value === null) return "—";
   return new Intl.NumberFormat("en-US").format(value) + " mi";

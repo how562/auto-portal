@@ -201,6 +201,21 @@ function isUuid(value: string): boolean {
   );
 }
 
+/** Read store-identifying fields from a raw feed row (for file-level mapping). */
+export function readRowStoreHints(raw: Record<string, string>): {
+  storeIdFromFeed: string | null;
+  dealerName: string | null;
+} {
+  const lookup = buildHeaderLookup(raw);
+  const storeFromFile = pickField(lookup, "store_id");
+  const dealerName = pickField(lookup, "dealer_name") || null;
+  return {
+    storeIdFromFeed:
+      storeFromFile && isUuid(storeFromFile) ? storeFromFile : null,
+    dealerName,
+  };
+}
+
 export function buildImportKey(vin: string, stockNumber: string): string | null {
   const v = vin.trim().toLowerCase();
   const s = stockNumber.trim().toLowerCase();
@@ -211,6 +226,11 @@ export function buildImportKey(vin: string, stockNumber: string): string | null 
 export interface MapDealerSendRowOptions {
   defaultStoreId?: string | null;
   importSource?: string;
+  /**
+   * When set, every row in the file uses this store — prevents cross-store mixing
+   * during multi-dealer SFTP imports.
+   */
+  forcedStoreId?: string | null;
   /**
    * Optional lookup keyed by lowercased dealer name. When `DealerName` matches
    * an entry, that store_id is preferred over `defaultStoreId`.
@@ -237,10 +257,11 @@ export function mapDealerSendRow(
     ? options.storeIdByDealerName?.get(dealerName.trim().toLowerCase()) ?? null
     : null;
   const store_id =
-    (storeFromFile && isUuid(storeFromFile) ? storeFromFile : null) ||
-    dealerLookupId ||
-    options.defaultStoreId ||
-    null;
+    options.forcedStoreId ??
+    ((storeFromFile && isUuid(storeFromFile) ? storeFromFile : null) ||
+      dealerLookupId ||
+      options.defaultStoreId ||
+      null);
 
   const statusRaw = pickField(lookup, "status");
   const status =
