@@ -102,3 +102,54 @@ export function computeVehicleQuality(
     data_quality_score: score,
   };
 }
+
+export interface MerchandisingSortVehicle {
+  internet_price?: number | null;
+  msrp?: number | null;
+  year?: number | null;
+  image_urls?: string[] | null;
+  primary_image_url?: string | null;
+  image_count?: number | null;
+  has_images?: boolean | null;
+  data_quality_score?: number | null;
+}
+
+function merchandisingImageCount(v: MerchandisingSortVehicle): number {
+  if (typeof v.image_count === "number") return v.image_count;
+  if (Array.isArray(v.image_urls)) return v.image_urls.length;
+  return v.primary_image_url ? 1 : 0;
+}
+
+function merchandisingHasImages(v: MerchandisingSortVehicle): boolean {
+  if (typeof v.has_images === "boolean") return v.has_images;
+  return merchandisingImageCount(v) > 0;
+}
+
+function merchandisingQualityScore(v: MerchandisingSortVehicle): number {
+  return typeof v.data_quality_score === "number" ? v.data_quality_score : 0;
+}
+
+function merchandisingPriceDesc(v: MerchandisingSortVehicle): number {
+  return typeof v.internet_price === "number" ? v.internet_price : -Infinity;
+}
+
+/** Default Smart Match / merchandised ordering for matched vehicle lists. */
+export function sortVehiclesByMerchandisingQuality<
+  T extends MerchandisingSortVehicle,
+>(vehicles: T[]): T[] {
+  return [...vehicles].sort((a, b) => {
+    const imgDiff =
+      Number(merchandisingHasImages(b)) - Number(merchandisingHasImages(a));
+    if (imgDiff !== 0) return imgDiff;
+
+    const countDiff =
+      merchandisingImageCount(b) - merchandisingImageCount(a);
+    if (countDiff !== 0) return countDiff;
+
+    const scoreDiff =
+      merchandisingQualityScore(b) - merchandisingQualityScore(a);
+    if (scoreDiff !== 0) return scoreDiff;
+
+    return merchandisingPriceDesc(b) - merchandisingPriceDesc(a);
+  });
+}

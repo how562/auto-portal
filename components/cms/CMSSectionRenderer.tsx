@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
 import { localizePageSections } from "@/lib/cmsSectionI18n";
@@ -51,6 +52,8 @@ function CmsLink({
   label: string;
   variant?: "primary" | "secondary" | "light";
 }) {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const className =
     variant === "primary"
       ? btnPrimaryMd
@@ -58,16 +61,43 @@ function CmsLink({
         ? btnLightMd
         : btnSecondaryMd;
 
-  if (href.startsWith("/")) {
+  const trimmed = href.trim();
+
+  if (trimmed.startsWith("#")) {
+    const targetId = trimmed.slice(1);
+    if (isHome) {
+      return (
+        <button
+          type="button"
+          onClick={() =>
+            document.getElementById(targetId)?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+          className={className}
+        >
+          {label}
+        </button>
+      );
+    }
     return (
-      <Link href={href} className={className}>
+      <Link href={`/${trimmed}`} className={className}>
+        {label}
+      </Link>
+    );
+  }
+
+  if (trimmed.startsWith("/")) {
+    return (
+      <Link href={trimmed} className={className}>
         {label}
       </Link>
     );
   }
 
   return (
-    <a href={href} className={className} rel="noopener noreferrer">
+    <a href={trimmed} className={className} rel="noopener noreferrer">
       {label}
     </a>
   );

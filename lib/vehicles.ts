@@ -1,5 +1,7 @@
 import { getSupabase } from "./supabase";
 import type { InventorySort } from "./inventorySearch";
+import type { InventoryFilters } from "./inventorySearch";
+import { applyServerInventoryFilters } from "./inventoryServerFilters";
 import type { Store, Vehicle, VehicleDetail } from "./types";
 
 interface OrderSpec {
@@ -65,7 +67,7 @@ function orderingFor(sort: InventorySort): OrderSpec[] {
 export const INVENTORY_PAGE_SIZE = 20;
 
 export const PORTAL_VEHICLE_SELECT =
-  "id, store_id, vin, year, make, model, trim, condition, body_style, internet_price, msrp, sale_price, mileage, stock_number, primary_image_url, image_urls, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";
+  "id, store_id, vin, year, make, model, trim, condition, body_style, internet_price, msrp, sale_price, mileage, stock_number, primary_image_url, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";
 
 export const VEHICLE_DETAIL_SELECT =
   "id, store_id, vin, stock_number, condition, year, make, model, trim, body_style, exterior_color, interior_color, mileage, internet_price, msrp, sale_price, primary_image_url, image_urls, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";
@@ -85,6 +87,7 @@ export async function fetchInventoryVehiclesPage(
   page = 1,
   pageSize = INVENTORY_PAGE_SIZE,
   sort: InventorySort = "merchandised",
+  filters?: InventoryFilters,
 ): Promise<InventoryPageResult> {
   const supabase = getSupabase();
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
@@ -95,6 +98,10 @@ export async function fetchInventoryVehiclesPage(
     .from("vehicles")
     .select(PORTAL_VEHICLE_SELECT, { count: "exact" })
     .eq("status", "active");
+
+  if (filters) {
+    query = applyServerInventoryFilters(query, filters);
+  }
 
   for (const spec of orderingFor(sort)) {
     query = query.order(spec.column, {

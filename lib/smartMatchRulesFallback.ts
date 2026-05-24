@@ -5,13 +5,13 @@ import type {
 } from "./smartMatchRulesTypes";
 
 function rule(
-  lifestyleKey: SmartMatchLifestyleKey,
+  lifestyle: SmartMatchLifestyleKey,
   priority: number,
-  partial: Omit<SmartMatchRule, "id" | "lifestyleKey" | "priority">,
+  partial: Omit<SmartMatchRule, "id" | "lifestyle" | "priority">,
 ): SmartMatchRule {
   return {
-    id: `fallback-${lifestyleKey}`,
-    lifestyleKey,
+    id: `fallback-${lifestyle}`,
+    lifestyle,
     priority,
     ...partial,
   };
@@ -57,19 +57,8 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     condition: null,
   }),
   rule("luxury", 30, {
-    labelEn: "Premium pricing in a luxury band",
-    labelEs: "Precio en rango de lujo",
-    bodyStyles: [],
-    makes: [],
-    modelKeywords: [],
-    trimKeywords: [],
-    minPrice: 45000,
-    maxPrice: null,
-    condition: null,
-  }),
-  rule("luxury", 31, {
-    labelEn: "Premium brand or elevated trim",
-    labelEs: "Marca premium o versión elevada",
+    labelEn: "Premium brand, elevated trim, or luxury-band pricing",
+    labelEs: "Marca premium, versión elevada o precio en rango de lujo",
     bodyStyles: [],
     makes: [
       "cadillac",
@@ -87,7 +76,7 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     ],
     modelKeywords: ["premium", "platinum", "denali", "escalade"],
     trimKeywords: [],
-    minPrice: null,
+    minPrice: 45000,
     maxPrice: null,
     condition: null,
   }),
@@ -102,7 +91,7 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     maxPrice: 30000,
     condition: null,
   }),
-  rule("first", 50, {
+  rule("first-vehicle", 50, {
     labelEn: "Approachable pre-owned option for a first vehicle",
     labelEs: "Seminuevo accesible ideal como primer vehículo",
     bodyStyles: [],
@@ -113,7 +102,7 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     maxPrice: 40000,
     condition: "used",
   }),
-  rule("efficient", 60, {
+  rule("fuel-efficient", 60, {
     labelEn: "Hybrid, electric, or fuel-efficient daily driver",
     labelEs: "Híbrido, eléctrico o eficiente para el día a día",
     bodyStyles: ["hatch", "sedan"],
@@ -135,7 +124,7 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     maxPrice: 35000,
     condition: null,
   }),
-  rule("weekend", 70, {
+  rule("weekend-ready", 70, {
     labelEn: "Adventure-ready SUV or truck for weekends and road trips",
     labelEs: "SUV o camioneta lista para aventuras y viajes",
     bodyStyles: ["suv", "truck", "pickup", "crossover"],
@@ -155,7 +144,7 @@ const FALLBACK_RULES: SmartMatchRule[] = [
     maxPrice: null,
     condition: null,
   }),
-  rule("everyday", 80, {
+  rule("everyday-drive", 80, {
     labelEn: "Comfortable, efficient daily driver",
     labelEs: "Conductor diario cómodo y eficiente",
     bodyStyles: ["sedan", "crossover", "suv", "hatch", "compact"],
@@ -171,13 +160,13 @@ const FALLBACK_RULES: SmartMatchRule[] = [
 export function buildFallbackSmartMatchCatalog(): SmartMatchRulesCatalog {
   const catalog = {} as SmartMatchRulesCatalog;
   for (const row of FALLBACK_RULES) {
-    if (!catalog[row.lifestyleKey]) {
-      catalog[row.lifestyleKey] = [];
+    if (!catalog[row.lifestyle]) {
+      catalog[row.lifestyle] = [];
     }
-    catalog[row.lifestyleKey].push(row);
+    catalog[row.lifestyle].push(row);
   }
-  for (const key of Object.keys(catalog) as SmartMatchLifestyleKey[]) {
-    catalog[key].sort((a, b) => a.priority - b.priority);
+  for (const lifestyle of Object.keys(catalog) as SmartMatchLifestyleKey[]) {
+    catalog[lifestyle].sort((a, b) => a.priority - b.priority);
   }
   return catalog;
 }

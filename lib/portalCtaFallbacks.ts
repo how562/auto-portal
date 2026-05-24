@@ -74,7 +74,7 @@ export const PORTAL_CTA_FALLBACKS: PortalCtaMap = {
   commitment_learn_more: {
     label: "Learn More",
     labelEs: "Conocer más",
-    url: "/about",
+    url: "/cavender-commitment",
   },
   commitment_browse_vehicles: {
     label: "See Available Vehicles",

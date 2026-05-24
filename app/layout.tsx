@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { BRAND_NAME, BRAND_TITLE_SUFFIX } from "@/lib/brand";
-import { fetchPortalNavigation } from "@/lib/navigation";
-import { fetchPortalCtaSettings } from "@/lib/portalCtas";
+import { fetchPortalLinkSettings } from "@/lib/managedLinks";
 import { fetchPortalTextSettings } from "@/lib/portalTextSettings";
 import { fetchSmartMatchRules } from "@/lib/smartMatchRules";
 import "./globals.css";
@@ -17,9 +16,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [navigation, ctas, portalTexts, smartMatchRules] = await Promise.all([
-    fetchPortalNavigation(),
-    fetchPortalCtaSettings(),
+  const [{ navigation, ctas }, portalTexts, smartMatchRules] = await Promise.all([
+    fetchPortalLinkSettings(),
     fetchPortalTextSettings(),
     fetchSmartMatchRules(),
   ]);

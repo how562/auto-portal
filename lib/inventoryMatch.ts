@@ -3,18 +3,59 @@ import {
   type LifeCategoryId,
 } from "./lifeFilters";
 import type { Locale } from "./i18n/types";
+import { getEffectivePrice } from "./effectivePrice";
+import { getLifestyleFriendlyLabel } from "./smartMatchLifestyle";
 import { FALLBACK_SMART_MATCH_CATALOG } from "./smartMatchRulesFallback";
 import type {
   SmartMatchLifestyleKey,
   SmartMatchRule,
+  SmartMatchRuleMode,
   SmartMatchRulesCatalog,
 } from "./smartMatchRulesTypes";
+import { sortVehiclesByMerchandisingQuality } from "./vehicleQuality";
 import type {
   BudgetRange,
   ConditionFilter,
   ShopperIntent,
   Vehicle,
 } from "./types";
+
+/**
+ * Homepage discovery matching contract
+ *
+ * Shop by Life (broad):
+ * - Lifestyle smart_match_rules only (OR across rules for that lifestyle)
+ * - No budget / condition / body narrowing for counts
+ *
+ * Smart Match / Refine Your Fit (narrow):
+ * - Applies filters in priority order: condition → budget → lifestyle rules
+ * - Progressive fallback when zero matches but inventory exists (homepage only)
+ *
+ * Source of truth: Supabase `smart_match_rules` catalog from SmartMatchRulesProvider.
+ * FALLBACK_SMART_MATCH_CATALOG only when Supabase returns zero active rules.
+ */
+
+const isDev = process.env.NODE_ENV === "development";
+
+function logMatchDebug(
+  event: string,
+  payload: Record<string, unknown>,
+): void {
+  if (!isDev) return;
+  console.log(`[inventoryMatch:${event}]`, payload);
+}
+
+function countCatalogRules(catalog: SmartMatchRulesCatalog): number {
+  return (Object.values(catalog) as SmartMatchRule[][]).reduce(
+    (sum, rules) => sum + rules.length,
+    0,
+  );
+}
+
+function isFallbackCatalog(catalog: SmartMatchRulesCatalog): boolean {
+  const rules = (Object.values(catalog) as SmartMatchRule[][]).flat();
+  return rules.length > 0 && rules.every((rule) => rule.id.startsWith("fallback-"));
+}
 
 /** Canonical lifestyle keys for matching (internal). */
 export type MatchLifestyle =
@@ -145,7 +186,7 @@ export function normalizeVehicle(vehicle: Vehicle): NormalizedVehicle {
     body_style: body_style.toLowerCase(),
     condition,
     conditionNorm: normalizeCondition(condition),
-    price: vehicle.internet_price,
+    price: getEffectivePrice(vehicle),
     mileage:
       typeof record.mileage === "number" && Number.isFinite(record.mileage)
         ? record.mileage
@@ -176,50 +217,84 @@ function matchesRuleCondition(
   return vehicle.conditionNorm === condition;
 }
 
+function applyRuleMode(
+  rule: SmartMatchRule,
+  mode: SmartMatchRuleMode,
+): SmartMatchRule {
+  switch (mode) {
+    case "strict":
+      return rule;
+    case "noCondition":
+      return { ...rule, condition: null };
+    case "noPriceNoCondition":
+      return { ...rule, condition: null, minPrice: null, maxPrice: null };
+    case "identityOnly":
+      return {
+        ...rule,
+        condition: null,
+        minPrice: null,
+        maxPrice: null,
+      };
+    default:
+      return rule;
+  }
+}
+
 /**
- * Vehicle matches a single DB/fallback rule.
- * Empty rule fields are ignored (forgiving). Non-empty fields are AND-ed.
+ * Vehicle matches a Supabase smart_match_rules row.
+ * Empty rule fields are ignored. Price uses effective price (internet → msrp).
  */
 export function vehicleMatchesSmartMatchRule(
   vehicle: NormalizedVehicle,
   rule: SmartMatchRule,
+  mode: SmartMatchRuleMode = "strict",
 ): boolean {
-  if (rule.bodyStyles.length > 0) {
-    const ok = rule.bodyStyles.some(
-      (style) =>
-        vehicle.body_style.includes(style) ||
-        vehicle.searchText.includes(style),
+  const activeRule = applyRuleMode(rule, mode);
+
+  if (activeRule.bodyStyles.length > 0) {
+    const ok = activeRule.bodyStyles.some((style) =>
+      vehicle.body_style.includes(style),
     );
     if (!ok) return false;
   }
 
-  if (rule.makes.length > 0) {
-    const ok = rule.makes.some(
-      (make) =>
-        vehicle.make.includes(make) || vehicle.searchText.includes(make),
-    );
-    if (!ok) return false;
+  const identityChecks: Array<{ active: boolean; ok: boolean }> = [
+    {
+      active: activeRule.makes.length > 0,
+      ok: activeRule.makes.some(
+        (make) =>
+          vehicle.make.includes(make) || vehicle.searchText.includes(make),
+      ),
+    },
+    {
+      active: activeRule.modelKeywords.length > 0,
+      ok: textMatchesAny(
+        `${vehicle.model} ${vehicle.searchText}`,
+        activeRule.modelKeywords,
+      ),
+    },
+    {
+      active: activeRule.trimKeywords.length > 0,
+      ok: textMatchesAny(
+        `${vehicle.trim} ${vehicle.searchText}`,
+        activeRule.trimKeywords,
+      ),
+    },
+  ];
+  const activeIdentity = identityChecks.filter((check) => check.active);
+  if (activeIdentity.length > 0 && !activeIdentity.some((check) => check.ok)) {
+    return false;
   }
 
-  if (rule.modelKeywords.length > 0) {
-    const modelHaystack = `${vehicle.model} ${vehicle.searchText}`;
-    if (!textMatchesAny(modelHaystack, rule.modelKeywords)) return false;
+  if (activeRule.minPrice != null && vehicle.price != null) {
+    if (vehicle.price < activeRule.minPrice) return false;
   }
 
-  if (rule.trimKeywords.length > 0) {
-    const trimHaystack = `${vehicle.trim} ${vehicle.searchText}`;
-    if (!textMatchesAny(trimHaystack, rule.trimKeywords)) return false;
+  if (activeRule.maxPrice != null && vehicle.price != null) {
+    if (vehicle.price > activeRule.maxPrice) return false;
   }
 
-  if (rule.minPrice != null && vehicle.price != null) {
-    if (vehicle.price < rule.minPrice) return false;
-  }
-
-  if (rule.maxPrice != null && vehicle.price != null) {
-    if (vehicle.price > rule.maxPrice) return false;
-  }
-
-  if (!matchesRuleCondition(vehicle, rule.condition)) return false;
+  if (!matchesRuleCondition(vehicle, activeRule.condition)) return false;
 
   return true;
 }
@@ -231,14 +306,59 @@ function getRulesForLifestyle(
   return catalog[lifestyle] ?? [];
 }
 
-function vehicleMatchesLifestyle(
+/** Active rules catalog (Supabase-backed or full fallback when DB has zero rules). */
+export function getActiveSmartMatchRules(
+  rules: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
+): SmartMatchRulesCatalog {
+  const activeRulesCount = countCatalogRules(rules);
+  logMatchDebug("activeRules", {
+    activeRulesCount,
+    fallbackCatalog: isFallbackCatalog(rules),
+  });
+  return rules;
+}
+
+export function getRuleForLifestyle(
+  lifestyle: SmartMatchLifestyleKey,
+  rules: SmartMatchRulesCatalog,
+): SmartMatchRule[] {
+  return getRulesForLifestyle(getActiveSmartMatchRules(rules), lifestyle);
+}
+
+/** Vehicle matches a single lifestyle rule (case-insensitive; empty rule fields ignored). */
+export function vehicleMatchesLifestyle(
+  vehicle: Vehicle | NormalizedVehicle,
+  rule: SmartMatchRule,
+): boolean {
+  const normalized =
+    "searchText" in vehicle ? vehicle : normalizeVehicle(vehicle);
+  return vehicleMatchesSmartMatchRule(normalized, rule);
+}
+
+function vehicleMatchesLifestyleKey(
   vehicle: NormalizedVehicle,
   lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog,
+  mode: SmartMatchRuleMode = "strict",
 ): boolean {
-  const rules = getRulesForLifestyle(catalog, lifestyle);
-  if (rules.length === 0) return false;
-  return rules.some((rule) => vehicleMatchesSmartMatchRule(vehicle, rule));
+  const lifestyleRules = getRuleForLifestyle(lifestyle, catalog);
+  if (lifestyleRules.length === 0) return false;
+  return lifestyleRules.some((rule) =>
+    vehicleMatchesSmartMatchRule(vehicle, rule, mode),
+  );
+}
+
+function filterVehiclesByLifestyleRules(
+  vehicles: Vehicle[],
+  lifestyle: SmartMatchLifestyleKey,
+  catalog: SmartMatchRulesCatalog,
+  mode: SmartMatchRuleMode,
+): Vehicle[] {
+  const matched = vehicles.filter((vehicle) => {
+    const normalized = normalizeVehicle(vehicle);
+    return vehicleMatchesLifestyleKey(normalized, lifestyle, catalog, mode);
+  });
+  return sortVehiclesByMerchandisingQuality(matched);
 }
 
 function getFirstMatchingRule(
@@ -246,8 +366,8 @@ function getFirstMatchingRule(
   lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog,
 ): SmartMatchRule | null {
-  const rules = getRulesForLifestyle(catalog, lifestyle);
-  return rules.find((rule) => vehicleMatchesSmartMatchRule(vehicle, rule)) ?? null;
+  const rules = getRuleForLifestyle(lifestyle, catalog);
+  return rules.find((rule) => vehicleMatchesLifestyle(vehicle, rule)) ?? null;
 }
 
 function matchesBodyStyle(
@@ -286,9 +406,26 @@ function matchesBodyStyle(
 }
 
 function matchesBudget(vehicle: NormalizedVehicle, budget: MatchBudget): boolean {
+  return vehicleMatchesBudget(vehicle, budget);
+}
+
+function matchesCondition(
+  vehicle: NormalizedVehicle,
+  condition: MatchCondition,
+): boolean {
+  return vehicleMatchesCondition(vehicle, condition);
+}
+
+/** Budget filter — missing effective price does not disqualify (forgiving). */
+export function vehicleMatchesBudget(
+  vehicle: Vehicle | NormalizedVehicle,
+  budget: MatchBudget,
+): boolean {
   if (budget === "any") return true;
-  const price = vehicle.price;
-  if (price === null || price <= 0) return false;
+  const normalized =
+    "searchText" in vehicle ? vehicle : normalizeVehicle(vehicle);
+  const price = normalized.price;
+  if (price === null || price <= 0) return true;
   switch (budget) {
     case "under-25k":
       return price < 25000;
@@ -305,21 +442,26 @@ function matchesBudget(vehicle: NormalizedVehicle, budget: MatchBudget): boolean
   }
 }
 
-function matchesCondition(
-  vehicle: NormalizedVehicle,
+/** Condition filter — unknown condition does not disqualify (forgiving). */
+export function vehicleMatchesCondition(
+  vehicle: Vehicle | NormalizedVehicle,
   condition: MatchCondition,
 ): boolean {
   if (condition === "any") return true;
-  if (condition === "cpo") return vehicle.conditionNorm === "cpo";
-  return vehicle.conditionNorm === condition;
+  const normalized =
+    "searchText" in vehicle ? vehicle : normalizeVehicle(vehicle);
+  if (normalized.conditionNorm === "other") return true;
+  if (condition === "cpo") return normalized.conditionNorm === "cpo";
+  return normalized.conditionNorm === condition;
 }
 
-/** Lifestyle predicate from Supabase rules (or merged fallback catalog). */
+/** Lifestyle predicate from Supabase rules (or fallback when DB has zero rules). */
 export function getLifestyleFilter(
   lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
 ): LifestylePredicate {
-  return (vehicle) => vehicleMatchesLifestyle(vehicle, lifestyle, catalog);
+  const activeRules = getActiveSmartMatchRules(catalog);
+  return (vehicle) => vehicleMatchesLifestyleKey(vehicle, lifestyle, activeRules);
 }
 
 function activeFilters(filters: InventoryMatchFilters): Required<
@@ -334,37 +476,65 @@ function activeFilters(filters: InventoryMatchFilters): Required<
   };
 }
 
-/** Filter vehicles using shared lifestyle, budget, condition, body, and store rules. */
+function vehicleMatchesSmartMatchFilters(
+  normalized: NormalizedVehicle,
+  filters: InventoryMatchFilters,
+  catalog: SmartMatchRulesCatalog,
+): boolean {
+  const { lifestyle, budget, condition, body_style } = activeFilters(filters);
+
+  // Priority: condition → budget → lifestyle rules → optional explicit body
+  if (condition !== "any" && !vehicleMatchesCondition(normalized, condition)) {
+    return false;
+  }
+  if (budget !== "any" && !vehicleMatchesBudget(normalized, budget)) {
+    return false;
+  }
+  if (
+    lifestyle !== "any" &&
+    !vehicleMatchesLifestyleKey(normalized, lifestyle, catalog)
+  ) {
+    return false;
+  }
+  if (body_style !== "any" && !matchesBodyStyle(normalized, body_style)) {
+    return false;
+  }
+
+  return true;
+}
+
+/** Filter vehicles using shared lifestyle, budget, condition, and store rules. */
 export function filterVehiclesByIntent(
   vehicles: Vehicle[],
   filters: InventoryMatchFilters,
   catalog: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
 ): Vehicle[] {
-  const { lifestyle, budget, condition, body_style, store_id } =
-    activeFilters(filters);
+  const activeRules = getActiveSmartMatchRules(catalog);
+  const { lifestyle, budget, condition, store_id } = activeFilters(filters);
 
-  const impliedBody =
-    lifestyle !== "any" ? LIFESTYLE_DEFAULT_BODY[lifestyle] : undefined;
-  const bodyFilter = body_style !== "any" ? body_style : impliedBody ?? "any";
+  logMatchDebug("filter", {
+    activeRulesCount: countCatalogRules(activeRules),
+    selectedLifestyle: lifestyle,
+    selectedBudget: budget,
+    selectedCondition: condition,
+  });
 
-  return vehicles.filter((vehicle) => {
+  const matched = vehicles.filter((vehicle) => {
     const normalized = normalizeVehicle(vehicle);
 
     if (store_id && store_id !== "all" && normalized.store_id !== store_id) {
       return false;
     }
-    if (
-      lifestyle !== "any" &&
-      !vehicleMatchesLifestyle(normalized, lifestyle, catalog)
-    ) {
-      return false;
-    }
-    if (!matchesBudget(normalized, budget)) return false;
-    if (!matchesCondition(normalized, condition)) return false;
-    if (!matchesBodyStyle(normalized, bodyFilter)) return false;
 
-    return true;
+    return vehicleMatchesSmartMatchFilters(normalized, filters, activeRules);
   });
+
+  logMatchDebug("filterResult", {
+    matchedVehicleCount: matched.length,
+    fallbackUsed: false,
+  });
+
+  return sortVehiclesByMerchandisingQuality(matched);
 }
 
 const URL_LIFESTYLE: Record<SmartMatchLifestyleKey, string> = {
@@ -372,10 +542,10 @@ const URL_LIFESTYLE: Record<SmartMatchLifestyleKey, string> = {
   work: "work",
   luxury: "luxury",
   budget: "budget",
-  first: "first-vehicle",
-  efficient: "fuel-efficient",
-  weekend: "weekend-ready",
-  everyday: "everyday-drive",
+  "first-vehicle": "first-vehicle",
+  "fuel-efficient": "fuel-efficient",
+  "weekend-ready": "weekend-ready",
+  "everyday-drive": "everyday-drive",
 };
 
 /** Build /inventory URL query from match filters (inventory page compatible). */
@@ -463,10 +633,12 @@ export function getMatchReason(
       lifestyle,
       catalog,
     );
-    if (matchedRule) {
-      const label = ruleMatchLabel(matchedRule, locale);
-      if (label) reasons.push(label);
-    }
+  const friendly = getLifestyleFriendlyLabel(lifestyle, locale);
+  reasons.push(
+    matchedRule
+      ? ruleMatchLabel(matchedRule, locale) ?? friendly
+      : friendly,
+  );
   }
 
   if (budget !== "any" && matchesBudget(normalized, budget)) {
@@ -501,8 +673,8 @@ const SHOPPER_TO_LIFESTYLE: Record<
   "work-truck": "work",
   luxury: "luxury",
   "under-30k": "budget",
-  "first-time": "first",
-  "fuel-efficient": "efficient",
+  "first-time": "first-vehicle",
+  "fuel-efficient": "fuel-efficient",
 };
 
 const HOMEPAGE_BUDGET_TO_MATCH: Record<BudgetRange, MatchBudget> = {
@@ -555,10 +727,10 @@ const SHOP_BY_LIFE_TO_LIFESTYLE: Record<
   work: "work",
   luxury: "luxury",
   budget: "budget",
-  "first-vehicle": "first",
-  "fuel-efficient": "efficient",
-  "weekend-ready": "weekend",
-  "everyday-drive": "everyday",
+  "first-vehicle": "first-vehicle",
+  "fuel-efficient": "fuel-efficient",
+  "weekend-ready": "weekend-ready",
+  "everyday-drive": "everyday-drive",
 };
 
 export function filtersFromShopByLife(
@@ -588,9 +760,177 @@ export function countVehiclesForShopByLife(
   choice: ShopByLifeChoice,
   catalog: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
 ): number {
-  return filterVehiclesByIntent(
-    vehicles,
-    filtersFromShopByLife(choice),
-    catalog,
-  ).length;
+  return getShopByLifeCount(vehicles, choice, catalog);
 }
+
+/** Shop by Life count — lifestyle smart_match_rules only (broad, forgiving). */
+export function getShopByLifeCount(
+  vehicles: Vehicle[],
+  choice: ShopByLifeChoice,
+  rules: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
+): number {
+  const lifestyle = SHOP_BY_LIFE_TO_LIFESTYLE[choice];
+  const activeRules = getActiveSmartMatchRules(rules);
+
+  logMatchDebug("shopByLife", {
+    activeRulesCount: countCatalogRules(activeRules),
+    selectedLifestyle: lifestyle,
+    selectedBudget: "any",
+    selectedCondition: "any",
+  });
+
+  const matched = vehicles.filter((vehicle) => {
+    const normalized = normalizeVehicle(vehicle);
+    return vehicleMatchesLifestyleKey(normalized, lifestyle, activeRules);
+  });
+
+  logMatchDebug("shopByLifeResult", {
+    matchedVehicleCount: matched.length,
+    fallbackUsed: false,
+  });
+
+  return matched.length;
+}
+
+export interface SmartMatchResults {
+  vehicles: Vehicle[];
+  fallbackUsed: boolean;
+  matchedCount: number;
+}
+
+/**
+ * Smart Match results with progressive fallback when filters return zero
+ * but active inventory exists (homepage Refine Your Fit + inventory SRP).
+ *
+ * Fallback order:
+ * 1. strict filters + strict rule
+ * 2. drop shopper condition filter
+ * 3. drop shopper budget filter
+ * 4. drop rule condition
+ * 5. drop rule price bounds
+ * 6. rule identity/body only
+ * 7. best merchandised active inventory
+ */
+export function getSmartMatchResults(
+  vehicles: Vehicle[],
+  filters: InventoryMatchFilters,
+  rules: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
+): SmartMatchResults {
+  const activeRules = getActiveSmartMatchRules(rules);
+  const { lifestyle, budget, condition } = activeFilters(filters);
+
+  logMatchDebug("smartMatch", {
+    activeRulesCount: countCatalogRules(activeRules),
+    selectedLifestyle: lifestyle,
+    selectedBudget: budget,
+    selectedCondition: condition,
+  });
+
+  const strict = sortVehiclesByMerchandisingQuality(
+    filterVehiclesByIntent(vehicles, filters, activeRules),
+  );
+  if (strict.length > 0 || vehicles.length === 0) {
+    logMatchDebug("smartMatchResult", {
+      matchedVehicleCount: strict.length,
+      fallbackUsed: false,
+      fallbackStep: "strict",
+    });
+    return {
+      vehicles: strict,
+      fallbackUsed: false,
+      matchedCount: strict.length,
+    };
+  }
+
+  if (condition !== "any") {
+    const withoutCondition = sortVehiclesByMerchandisingQuality(
+      filterVehiclesByIntent(
+        vehicles,
+        { ...filters, condition: "any" },
+        activeRules,
+      ),
+    );
+    if (withoutCondition.length > 0) {
+      logMatchDebug("smartMatchResult", {
+        matchedVehicleCount: withoutCondition.length,
+        fallbackUsed: true,
+        fallbackStep: "dropFilterCondition",
+      });
+      return {
+        vehicles: withoutCondition,
+        fallbackUsed: true,
+        matchedCount: withoutCondition.length,
+      };
+    }
+  }
+
+  if (budget !== "any") {
+    const withoutBudget = sortVehiclesByMerchandisingQuality(
+      filterVehiclesByIntent(
+        vehicles,
+        { ...filters, budget: "any", condition: "any" },
+        activeRules,
+      ),
+    );
+    if (withoutBudget.length > 0) {
+      logMatchDebug("smartMatchResult", {
+        matchedVehicleCount: withoutBudget.length,
+        fallbackUsed: true,
+        fallbackStep: "dropFilterBudget",
+      });
+      return {
+        vehicles: withoutBudget,
+        fallbackUsed: true,
+        matchedCount: withoutBudget.length,
+      };
+    }
+  }
+
+  if (lifestyle !== "any") {
+    const ruleRelaxSteps: SmartMatchRuleMode[] = [
+      "noCondition",
+      "noPriceNoCondition",
+      "identityOnly",
+    ];
+
+    for (const mode of ruleRelaxSteps) {
+      const relaxed = filterVehiclesByLifestyleRules(
+        vehicles,
+        lifestyle,
+        activeRules,
+        mode,
+      );
+      if (relaxed.length > 0) {
+        logMatchDebug("smartMatchResult", {
+          matchedVehicleCount: relaxed.length,
+          fallbackUsed: true,
+          fallbackStep: mode,
+        });
+        return {
+          vehicles: relaxed,
+          fallbackUsed: true,
+          matchedCount: relaxed.length,
+        };
+      }
+    }
+  }
+
+  const allInventory = sortVehiclesByMerchandisingQuality(vehicles);
+
+  logMatchDebug("smartMatchResult", {
+    matchedVehicleCount: allInventory.length,
+    fallbackUsed: true,
+    fallbackStep: "merchandisedInventory",
+  });
+
+  return {
+    vehicles: allInventory,
+    fallbackUsed: true,
+    matchedCount: allInventory.length,
+  };
+}
+
+export { getLifestyleFriendlyLabel } from "./smartMatchLifestyle";
+
+/** Alias for buildInventoryUrl — shared discovery → inventory deep link. */
+export const buildInventoryUrlFromMatch = buildInventoryUrl;

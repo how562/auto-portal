@@ -3,16 +3,17 @@ export type SmartMatchLifestyleKey =
   | "work"
   | "luxury"
   | "budget"
-  | "first"
-  | "efficient"
-  | "weekend"
-  | "everyday";
+  | "first-vehicle"
+  | "fuel-efficient"
+  | "weekend-ready"
+  | "everyday-drive";
 
 export type SmartMatchRuleCondition = "new" | "used" | "cpo";
 
 export interface SmartMatchRule {
   id: string;
-  lifestyleKey: SmartMatchLifestyleKey;
+  /** Matches `smart_match_rules.lifestyle` (unique rule identifier). */
+  lifestyle: SmartMatchLifestyleKey;
   priority: number;
   labelEn: string | null;
   labelEs: string | null;
@@ -24,6 +25,13 @@ export interface SmartMatchRule {
   maxPrice: number | null;
   condition: SmartMatchRuleCondition | null;
 }
+
+/** How strictly a Supabase rule is applied when matching vehicles. */
+export type SmartMatchRuleMode =
+  | "strict"
+  | "noCondition"
+  | "noPriceNoCondition"
+  | "identityOnly";
 
 /** Active rules grouped by lifestyle, each list sorted by priority ascending. */
 export type SmartMatchRulesCatalog = Record<

@@ -25,6 +25,7 @@ export interface FooterNavLink {
   label_es?: string | null;
   href?: string;
   linkKind?: NavLinkKind;
+  action?: LeadAction;
   opensInNewTab?: boolean;
 }
 

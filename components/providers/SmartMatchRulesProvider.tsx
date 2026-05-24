@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { FALLBACK_SMART_MATCH_CATALOG } from "@/lib/smartMatchRulesFallback";
+import { mergeSmartMatchCatalogWithFallback } from "@/lib/smartMatchRulesMerge";
 import type { SmartMatchRulesCatalog } from "@/lib/smartMatchRulesTypes";
 
 const SmartMatchRulesContext = createContext<SmartMatchRulesCatalog | null>(
@@ -15,7 +16,10 @@ export function SmartMatchRulesProvider({
   catalog: SmartMatchRulesCatalog;
   children: ReactNode;
 }) {
-  const value = useMemo(() => catalog, [catalog]);
+  const value = useMemo(
+    () => mergeSmartMatchCatalogWithFallback(catalog),
+    [catalog],
+  );
   return (
     <SmartMatchRulesContext.Provider value={value}>
       {children}

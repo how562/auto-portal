@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Store } from "@/lib/types";
 
 interface StoreBrandStripProps {
@@ -27,8 +28,9 @@ export function StoreBrandStrip({ stores }: StoreBrandStripProps) {
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           {stores.map((store) => (
-            <div
+            <Link
               key={store.id}
+              href="/locations"
               className="flex min-w-[140px] flex-col items-center rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-6 py-5 transition-colors duration-200 hover:border-[var(--ink)]/35 sm:px-7 sm:py-6"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-md bg-[var(--ink)] text-sm font-bold text-white">
@@ -42,7 +44,7 @@ export function StoreBrandStrip({ stores }: StoreBrandStripProps) {
                   {[store.city, store.state].filter(Boolean).join(", ")}
                 </p>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       </div>

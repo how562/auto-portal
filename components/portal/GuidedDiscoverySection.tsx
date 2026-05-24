@@ -10,9 +10,9 @@ import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRule
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
 import {
   buildInventoryUrl,
-  filterVehiclesByIntent,
   filtersFromShopperSelection,
   getMatchReason,
+  getSmartMatchResults,
 } from "@/lib/inventoryMatch";
 import { getMatchLabel } from "@/lib/matchLabels";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -119,10 +119,12 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
     [intent, budget, condition],
   );
 
-  const matches = useMemo(
-    () => filterVehiclesByIntent(vehicles, matchFilters, smartMatchCatalog),
+  const matchResult = useMemo(
+    () => getSmartMatchResults(vehicles, matchFilters, smartMatchCatalog),
     [vehicles, matchFilters, smartMatchCatalog],
   );
+
+  const matches = matchResult.vehicles;
 
   const previewMatches = useMemo(
     () => matches.slice(0, PREVIEW_LIMIT),

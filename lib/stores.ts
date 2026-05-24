@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { getSupabase } from "./supabase";
 import type { Store } from "./types";
 
-export async function fetchStores(): Promise<Store[]> {
+export const fetchStores = cache(async (): Promise<Store[]> => {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
@@ -14,4 +15,4 @@ export async function fetchStores(): Promise<Store[]> {
   }
 
   return (data ?? []) as Store[];
-}
+});

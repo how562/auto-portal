@@ -86,9 +86,10 @@ export function CavenderCommitmentSection({
   );
 
   const headlineLines = content.headline.split(/\n+/).filter(Boolean);
-  const primaryHref = content.primaryCtaHref ?? learnMoreCta.url ?? "#";
+  const primaryHref =
+    content.primaryCtaHref ?? learnMoreCta.url ?? "/cavender-commitment";
   const secondaryHref =
-    content.secondaryCtaHref ?? browseVehiclesCta.url ?? "#";
+    content.secondaryCtaHref ?? browseVehiclesCta.url ?? "/inventory";
   const primaryBtn = `${btnPrimaryMd} inline-flex w-full min-h-[3rem] shrink-0 px-6 sm:w-auto`;
   const secondaryBtn = `${btnSecondaryMd} inline-flex w-full min-h-[3rem] shrink-0 px-6 sm:w-auto`;
 

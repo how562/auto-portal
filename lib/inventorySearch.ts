@@ -4,6 +4,7 @@ import {
   buildInventoryUrl,
   filterVehiclesByIntent,
   filtersFromShopperSelection,
+  getSmartMatchResults,
   type InventoryMatchFilters,
   type MatchBodyStyle,
   type MatchBudget,
@@ -22,6 +23,7 @@ import {
   type LifeCategoryId,
 } from "./lifeFilters";
 import { getMatchLabel } from "./matchLabels";
+import { FALLBACK_SMART_MATCH_CATALOG } from "./smartMatchRulesFallback";
 import type { SmartMatchRulesCatalog } from "./smartMatchRulesTypes";
 import type {
   BudgetRange,
@@ -29,6 +31,7 @@ import type {
   ShopperIntent,
   Vehicle,
 } from "./types";
+import { sortVehiclesByMerchandisingQuality } from "./vehicleQuality";
 
 export type InventoryCondition = "all" | "new" | "used" | "cpo";
 export type InventoryBudget =
@@ -118,10 +121,10 @@ const INVENTORY_LIFESTYLE_TO_MATCH: Record<InventoryLifestyle, MatchLifestyle> =
   work: "work",
   luxury: "luxury",
   budget: "budget",
-  "first-vehicle": "first",
-  "fuel-efficient": "efficient",
-  "weekend-ready": "weekend",
-  "everyday-drive": "everyday",
+  "first-vehicle": "first-vehicle",
+  "fuel-efficient": "fuel-efficient",
+  "weekend-ready": "weekend-ready",
+  "everyday-drive": "everyday-drive",
 };
 
 const INVENTORY_BUDGET_TO_MATCH: Record<InventoryBudget, MatchBudget> = {
@@ -186,34 +189,50 @@ export function filterInventoryVehicles(
   filters: InventoryFilters,
   smartMatchCatalog?: SmartMatchRulesCatalog,
 ): Vehicle[] {
-  const useLifeFilters = filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle);
+  const catalog = smartMatchCatalog ?? FALLBACK_SMART_MATCH_CATALOG;
+  const useLifeFilters =
+    filters.lifestyle !== "all" && isLifeCategoryId(filters.lifestyle);
+  const matchFilters = inventoryFiltersToMatch(filters, useLifeFilters);
 
-  let result = filterVehiclesByIntent(
-    vehicles,
-    inventoryFiltersToMatch(filters, useLifeFilters),
-    smartMatchCatalog,
-  );
+  const hasSmartMatchSelection =
+    matchFilters.lifestyle !== "any" ||
+    matchFilters.budget !== "any" ||
+    matchFilters.condition !== "any" ||
+    matchFilters.body_style !== "any";
+
+  let result: Vehicle[];
+  if (hasSmartMatchSelection) {
+    result = getSmartMatchResults(vehicles, matchFilters, catalog).vehicles;
+  } else {
+    result = filterVehiclesByIntent(vehicles, matchFilters, catalog);
+  }
 
   if (useLifeFilters) {
-    result = result.filter((vehicle) => {
-      if (
-        !vehicleMatchesLifeCategory(
+    const categoryId = filters.lifestyle as LifeCategoryId;
+    let lifeFiltered = result.filter((vehicle) =>
+      vehicleMatchesLifeCategory(vehicle, categoryId, catalog),
+    );
+
+    if (lifeFiltered.length === 0 && vehicles.length > 0) {
+      lifeFiltered = vehicles.filter((vehicle) =>
+        vehicleMatchesLifeCategory(vehicle, categoryId, catalog),
+      );
+    }
+
+    result = lifeFiltered;
+
+    if (filters.lifeRefinement) {
+      const refined = result.filter((vehicle) =>
+        vehicleMatchesLifeRefinement(
           vehicle,
-          filters.lifestyle as LifeCategoryId,
-          smartMatchCatalog,
-        )
-      ) {
-        return false;
+          categoryId,
+          filters.lifeRefinement!,
+        ),
+      );
+      if (refined.length > 0) {
+        result = refined;
       }
-      if (filters.lifeRefinement) {
-        return vehicleMatchesLifeRefinement(
-          vehicle,
-          filters.lifestyle as LifeCategoryId,
-          filters.lifeRefinement,
-        );
-      }
-      return true;
-    });
+    }
   }
 
   return sortInventoryVehicles(result, filters.sort);
@@ -269,15 +288,7 @@ export function sortInventoryVehicles(
   switch (sort) {
     case "merchandised":
     case "match":
-      return copy.sort((a, b) => {
-        const imgDiff = Number(hasImages(b)) - Number(hasImages(a));
-        if (imgDiff !== 0) return imgDiff;
-        const countDiff = compareNumberDesc(imageCount(a), imageCount(b));
-        if (countDiff !== 0) return countDiff;
-        const scoreDiff = compareNumberDesc(qualityScore(a), qualityScore(b));
-        if (scoreDiff !== 0) return scoreDiff;
-        return priceForDescNullsLast(b) - priceForDescNullsLast(a);
-      });
+      return sortVehiclesByMerchandisingQuality(copy);
 
     case "photos":
       return copy.sort((a, b) => {
@@ -493,6 +504,11 @@ export function hasActiveInventoryFilters(filters: InventoryFilters): boolean {
     filters.lifeRefinement != null ||
     filters.storeId !== "all"
   );
+}
+
+/** Lifestyle / life-refinement filters need the full catalog for smart-match scoring. */
+export function needsSmartMatchFiltering(filters: InventoryFilters): boolean {
+  return filters.lifestyle !== "all" || filters.lifeRefinement != null;
 }
 
 export function parseInventoryPage(value: string | null | undefined): number {

@@ -107,3 +107,7 @@ export function useDiscovery() {
   }
   return ctx;
 }
+
+export function useOptionalDiscovery(): DiscoveryState | null {
+  return useContext(DiscoveryContext);
+}

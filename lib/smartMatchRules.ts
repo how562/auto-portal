@@ -1,10 +1,15 @@
 import { FALLBACK_SMART_MATCH_CATALOG } from "./smartMatchRulesFallback";
+import {
+  SMART_MATCH_LIFESTYLE_KEYS,
+  normalizeSmartMatchLifestyleKey,
+} from "./smartMatchLifestyle";
 import type {
   SmartMatchLifestyleKey,
   SmartMatchRule,
   SmartMatchRulesCatalog,
 } from "./smartMatchRulesTypes";
 import type { SmartMatchRuleCondition } from "./smartMatchRulesTypes";
+import { mergeSmartMatchCatalogWithFallback } from "./smartMatchRulesMerge";
 import { getSupabase } from "./supabase";
 
 const RULE_SELECT =
@@ -23,21 +28,6 @@ interface SmartMatchRuleRow {
   min_price?: number | null;
   max_price?: number | null;
   condition?: string | null;
-}
-
-const LIFESTYLE_KEYS = new Set<string>([
-  "family",
-  "work",
-  "luxury",
-  "budget",
-  "first",
-  "efficient",
-  "weekend",
-  "everyday",
-]);
-
-function isLifestyleKey(value: string): value is SmartMatchLifestyleKey {
-  return LIFESTYLE_KEYS.has(value);
 }
 
 function parseStringArray(value: unknown): string[] {
@@ -85,12 +75,12 @@ function parseNumber(value: unknown): number | null {
 export function normalizeSmartMatchRuleRow(
   row: SmartMatchRuleRow,
 ): SmartMatchRule | null {
-  const lifestyleKey = row.lifestyle?.trim().toLowerCase();
-  if (!lifestyleKey || !isLifestyleKey(lifestyleKey)) return null;
+  const lifestyle = normalizeSmartMatchLifestyleKey(row.lifestyle);
+  if (!lifestyle) return null;
 
   return {
     id: String(row.id),
-    lifestyleKey,
+    lifestyle,
     priority: typeof row.priority === "number" ? row.priority : 0,
     labelEn: row.label_en?.trim() || null,
     labelEs: row.label_es?.trim() || null,
@@ -115,38 +105,18 @@ export function buildSmartMatchCatalog(
     .sort((a, b) => a.priority - b.priority);
 
   for (const rule of normalized) {
-    catalog[rule.lifestyleKey].push(rule);
+    catalog[rule.lifestyle].push(rule);
   }
 
-  return mergeWithFallback(catalog);
+  return catalog;
 }
 
 function buildEmptyCatalog(): SmartMatchRulesCatalog {
-  return {
-    family: [],
-    work: [],
-    luxury: [],
-    budget: [],
-    first: [],
-    efficient: [],
-    weekend: [],
-    everyday: [],
-  };
-}
-
-/** Ensure every lifestyle has at least fallback rules when DB rows are missing. */
-function mergeWithFallback(
-  fromDb: SmartMatchRulesCatalog,
-): SmartMatchRulesCatalog {
-  const merged = buildEmptyCatalog();
-  const keys = Object.keys(merged) as SmartMatchLifestyleKey[];
-
-  for (const key of keys) {
-    merged[key] =
-      fromDb[key].length > 0 ? fromDb[key] : FALLBACK_SMART_MATCH_CATALOG[key];
+  const catalog = {} as SmartMatchRulesCatalog;
+  for (const key of SMART_MATCH_LIFESTYLE_KEYS) {
+    catalog[key] = [];
   }
-
-  return merged;
+  return catalog;
 }
 
 function isMissingTableError(error: { message?: string; code?: string }): boolean {
@@ -173,7 +143,9 @@ async function fetchRuleRows(): Promise<SmartMatchRuleRow[] | null> {
 
   if (isMissingTableError(error)) return null;
 
-  console.warn(`smart_match_rules: ${error.message}`);
+  if (process.env.NODE_ENV === "development") {
+    console.warn(`smart_match_rules: ${error.message}`);
+  }
   return null;
 }
 
@@ -184,8 +156,16 @@ export async function fetchSmartMatchRules(): Promise<SmartMatchRulesCatalog> {
     if (!rows || rows.length === 0) {
       return FALLBACK_SMART_MATCH_CATALOG;
     }
-    return buildSmartMatchCatalog(rows);
+    return mergeSmartMatchCatalogWithFallback(buildSmartMatchCatalog(rows));
   } catch {
     return FALLBACK_SMART_MATCH_CATALOG;
   }
+}
+
+export function getPrimaryRuleForLifestyle(
+  catalog: SmartMatchRulesCatalog,
+  lifestyle: SmartMatchLifestyleKey,
+): SmartMatchRule | null {
+  const rules = catalog[lifestyle] ?? [];
+  return rules.length > 0 ? rules[0] : null;
 }

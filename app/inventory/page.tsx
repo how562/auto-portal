@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { InventoryPageClient } from "@/components/inventory/InventoryPageClient";
-import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import {
   hasActiveInventoryFilters,
+  needsSmartMatchFiltering,
   parseInventoryPage,
   searchParamsToFilters,
 } from "@/lib/inventorySearch";
@@ -41,13 +41,14 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
 
   const filters = searchParamsToFilters(params);
   const page = parseInventoryPage(readParam(searchParams, "page"));
-  const useClientPagination = hasActiveInventoryFilters(filters);
+  const useClientPagination = needsSmartMatchFiltering(filters);
 
   try {
-    const stores = await fetchStores();
-
     if (useClientPagination) {
-      const vehicles = await fetchInventoryVehicles(filters.sort);
+      const [stores, vehicles] = await Promise.all([
+        fetchStores(),
+        fetchInventoryVehicles(filters.sort),
+      ]);
       return {
         vehicles,
         stores,
@@ -58,11 +59,15 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
       };
     }
 
-    const result = await fetchInventoryVehiclesPage(
-      page,
-      INVENTORY_PAGE_SIZE,
-      filters.sort,
-    );
+    const [stores, result] = await Promise.all([
+      fetchStores(),
+      fetchInventoryVehiclesPage(
+        page,
+        INVENTORY_PAGE_SIZE,
+        filters.sort,
+        hasActiveInventoryFilters(filters) ? filters : undefined,
+      ),
+    ]);
 
     return {
       vehicles: result.vehicles,
@@ -92,23 +97,21 @@ export default async function InventoryPage({
     await loadInventory(searchParams);
 
   return (
-    <LeadCaptureProvider>
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center bg-[var(--cream)] pt-20 text-[var(--muted)]">
-            Loading inventory…
-          </div>
-        }
-      >
-        <InventoryPageClient
-          vehicles={vehicles}
-          stores={stores}
-          loadError={loadError}
-          page={page}
-          totalCount={totalCount}
-          serverPaginated={serverPaginated}
-        />
-      </Suspense>
-    </LeadCaptureProvider>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[var(--cream)] pt-20 text-[var(--muted)]">
+          Loading inventory…
+        </div>
+      }
+    >
+      <InventoryPageClient
+        vehicles={vehicles}
+        stores={stores}
+        loadError={loadError}
+        page={page}
+        totalCount={totalCount}
+        serverPaginated={serverPaginated}
+      />
+    </Suspense>
   );
 }

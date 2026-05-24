@@ -14,9 +14,8 @@ const en = {
   "nav.closeMenu": "Close menu",
 
   "hero.eyebrow": "Cavender Commitment",
-  "hero.headline1": "People First.",
-  "hero.headline2": "Community Driven.",
-  "hero.headline3": "Cars That Give Back.",
+  "hero.headline1": "Cavender Confidence.",
+  "hero.headline2": "Driven by Impact.",
   "hero.body":
     "At Cavender Auto Group, every vehicle we sell supports the people and causes that make our communities stronger. Together, we're driving more than change — we're building a better tomorrow.",
   "hero.startJourney": "Start Your Journey",
@@ -312,9 +311,8 @@ const es: Record<keyof typeof en, string> = {
   "nav.closeMenu": "Cerrar menú",
 
   "hero.eyebrow": "Compromiso Cavender",
-  "hero.headline1": "Las personas primero.",
-  "hero.headline2": "Impulsados por la comunidad.",
-  "hero.headline3": "Autos que regresan.",
+  "hero.headline1": "Confianza Cavender.",
+  "hero.headline2": "Impulsados por el impacto.",
   "hero.body":
     "En Cavender Auto Group, cada vehículo que vendemos apoya a las personas y causas que fortalecen nuestras comunidades. Juntos impulsamos algo más que cambio: construimos un mejor mañana.",
   "hero.startJourney": "Comienza tu camino",

@@ -20,6 +20,18 @@ import {
 import { cardCategory } from "@/lib/cardClasses";
 import type { Vehicle } from "@/lib/types";
 
+/** Shop by Life homepage display order (2-column grid, no featured span). */
+const SHOP_BY_LIFE_ORDER: LifeCategoryId[] = [
+  "family",
+  "everyday-drive",
+  "work",
+  "luxury",
+  "budget",
+  "first-vehicle",
+  "fuel-efficient",
+  "weekend-ready",
+];
+
 interface DiscoveryCategoriesSectionProps {
   vehicles: Vehicle[];
 }
@@ -41,6 +53,13 @@ export function DiscoveryCategoriesSection({
       ) as Record<LifeCategoryId, number>,
     [vehicles, smartMatchCatalog],
   );
+
+  const displayCategories = useMemo(() => {
+    const byId = new Map(LIFE_CATEGORIES.map((c) => [c.id, c]));
+    return SHOP_BY_LIFE_ORDER.map((id) => byId.get(id)).filter(
+      (c): c is (typeof LIFE_CATEGORIES)[number] => c != null,
+    );
+  }, []);
 
   function navigateToCategory(categoryId: LifeCategoryId) {
     const patch = filtersFromLifeCategory(categoryId);
@@ -70,10 +89,9 @@ export function DiscoveryCategoriesSection({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {LIFE_CATEGORIES.map((cat, index) => {
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {displayCategories.map((cat) => {
               const count = counts[cat.id];
-              const featured = index === 0;
               const localized = getLocalizedLifeCategory(cat, locale);
 
               return (
@@ -81,33 +99,25 @@ export function DiscoveryCategoriesSection({
                   key={cat.id}
                   type="button"
                   onClick={() => navigateToCategory(cat.id)}
-                  className={`${cardCategory} ${
-                    featured ? "sm:col-span-2 sm:min-h-[200px]" : "min-h-[140px]"
-                  }`}
+                  className={`${cardCategory} relative flex min-h-[148px] items-center sm:min-h-[160px]`}
                 >
                   <LifeCategoryCardVisual
                     categoryId={cat.id}
                     imageUrl={cat.imageUrl}
-                    featured={featured}
                   />
 
-                  <div
-                    className={`relative z-10 flex min-w-0 flex-col text-left ${
-                      featured ? "pr-[42%] sm:pr-44" : "pr-[38%] sm:pr-36"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
-                        {localized.title}
-                      </h3>
-                      <span className="shrink-0 rounded-md border border-[var(--line-dark)] bg-[var(--cream)] px-2.5 py-1 text-xs font-bold text-[var(--muted)] group-hover:border-[var(--gold)] group-hover:text-[var(--ink)]">
-                        {count > 0
-                          ? t("categories.vehiclesCount", undefined, {
-                              count: count.toLocaleString(),
-                            })
-                          : t("categories.explore")}
-                      </span>
-                    </div>
+                  <span className="pointer-events-none absolute right-3 top-3 z-20 rounded-md border border-[var(--line-dark)] bg-white px-2.5 py-1 text-xs font-bold text-[var(--muted)] shadow-sm group-hover:border-[var(--gold)] group-hover:text-[var(--ink)] sm:right-4 sm:top-4">
+                    {count > 0
+                      ? t("categories.vehiclesCount", undefined, {
+                          count: count.toLocaleString(),
+                        })
+                      : t("categories.explore")}
+                  </span>
+
+                  <div className="relative z-10 flex w-[52%] min-w-0 flex-col justify-center pr-2 text-left sm:w-[50%] sm:pr-3">
+                    <h3 className="text-2xl font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-3xl">
+                      {localized.title}
+                    </h3>
                     <p className="mt-2 max-w-sm text-sm leading-snug text-[var(--muted)]">
                       {localized.description}
                     </p>

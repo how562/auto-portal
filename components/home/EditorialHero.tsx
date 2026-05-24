@@ -10,13 +10,6 @@ import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
 import type { CommunityHeroImagePosition } from "@/lib/communityHeroTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
-const AVATAR_ACCENTS = [
-  "bg-[#c4b8a8]",
-  "bg-[#9a8f7f]",
-  "bg-[#b8956b]",
-  "bg-[#7d7568]",
-];
-
 const TILE_CLASS: Record<CommunityHeroImagePosition, string> = {
   top_left: "hero-collage-tile-a min-h-[11rem] sm:min-h-[12.5rem]",
   right_tall: "hero-collage-tile-b",
@@ -157,30 +150,8 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
       <div className="portal-container">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20 xl:gap-24">
           <div className="order-1 flex max-w-xl flex-col lg:max-w-none lg:py-2">
-            {content.eyebrow.label ? (
-              <Link
-                href={content.eyebrow.url}
-                className="inline-flex w-fit items-center gap-3 rounded-md bg-white py-2 pl-2 pr-4 shadow-tight transition hover:shadow-card"
-              >
-                <span className="flex -space-x-2" aria-hidden>
-                  {AVATAR_ACCENTS.map((accent, i) => (
-                    <span
-                      key={i}
-                      className={`inline-flex h-8 w-8 rounded-full ring-2 ring-white ${accent}`}
-                    />
-                  ))}
-                </span>
-                <span className="text-sm font-medium text-[var(--ink)]">
-                  {content.eyebrow.label}
-                </span>
-                <span className="text-[var(--muted)]" aria-hidden>
-                  ›
-                </span>
-              </Link>
-            ) : null}
-
             {content.headlineLines.length > 0 ? (
-              <h1 className="mt-10 font-serif text-balance font-semibold leading-[0.9] tracking-[-0.035em]">
+              <h1 className="headline-stack text-balance font-sans">
                 {content.headlineLines.map((line) => (
                   <span
                     key={line.text}

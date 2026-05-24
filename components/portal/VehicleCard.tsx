@@ -69,6 +69,7 @@ export function VehicleCard({
   const availability = useCta("availability");
   const buildShortlist = useCta("build_my_shortlist");
   const compareSimilar = useCta("compare_similar");
+  const viewDetails = useCta("view_details");
 
   const title = formatVehicleTitle(vehicle);
 
@@ -166,6 +167,10 @@ export function VehicleCard({
 
         <div className="mt-3 flex flex-col gap-2">
 
+          <Link href={detailHref} className={btnCardPrimary}>
+            {viewDetails.label}
+          </Link>
+
           <button
 
             type="button"
@@ -184,8 +189,7 @@ export function VehicleCard({
 
             }
 
-            className={btnCardPrimary}
-
+            className={btnCardSecondary}
           >
 
             {availability.label}

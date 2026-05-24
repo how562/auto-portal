@@ -50,5 +50,4 @@ export async function fetchCommunityHeroFromCMS(): Promise<CommunityHeroContent 
 export async function getCommunityHeroContent(): Promise<CommunityHeroContent> {
   const cms = await fetchCommunityHeroFromCMS();
   return cms ?? COMMUNITY_HERO_FALLBACK;
-}
-
+}

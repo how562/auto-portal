@@ -32,13 +32,9 @@ function applyFallbackDictionary(content: CommunityHeroContent): CommunityHeroCo
   const t = createTranslator("es");
   return {
     ...content,
-    eyebrow: content.eyebrow
-      ? { ...content.eyebrow, label: t("hero.eyebrow") }
-      : content.eyebrow,
     headlineLines: [
       { text: t("hero.headline1"), muted: false },
-      { text: t("hero.headline2"), muted: false },
-      { text: t("hero.headline3"), muted: true },
+      { text: t("hero.headline2"), muted: true },
     ],
     body: t("hero.body"),
     buttons: content.buttons.map((btn, index) => {

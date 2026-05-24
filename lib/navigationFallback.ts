@@ -18,8 +18,8 @@ export const FALLBACK_HEADER_NAV: HeaderNavigation = {
     {
       id: "fallback-locations",
       label: "Locations",
-      href: "#locations",
-      linkKind: "hash",
+      href: "/locations",
+      linkKind: "route",
     },
     {
       id: "fallback-how",
@@ -41,33 +41,92 @@ export const FALLBACK_FOOTER_NAV: FooterNavigation = {
     {
       title: "Discover",
       items: [
-        { id: "fb-d1", label: "Find My Vehicle" },
-        { id: "fb-d2", label: "Smart Match" },
-        { id: "fb-d3", label: "Categories" },
+        {
+          id: "fb-d1",
+          label: "Find My Vehicle",
+          href: "#guided-discovery",
+          linkKind: "hash",
+        },
+        {
+          id: "fb-d2",
+          label: "Smart Match",
+          href: "#guided-discovery",
+          linkKind: "hash",
+        },
+        {
+          id: "fb-d3",
+          label: "Categories",
+          href: "#categories",
+          linkKind: "hash",
+        },
       ],
     },
     {
       title: "Shop",
       items: [
-        { id: "fb-s1", label: "Inventory" },
-        { id: "fb-s2", label: "Under $30k" },
-        { id: "fb-s3", label: "Compare" },
+        {
+          id: "fb-s1",
+          label: "Inventory",
+          href: "/inventory",
+          linkKind: "route",
+        },
+        {
+          id: "fb-s2",
+          label: "Under $30k",
+          href: "/inventory?budget=under-30k",
+          linkKind: "route",
+        },
+        {
+          id: "fb-s3",
+          label: "Compare",
+          action: "compare",
+        },
       ],
     },
     {
       title: "Group",
       items: [
-        { id: "fb-g1", label: "Locations" },
-        { id: "fb-g2", label: "How It Works" },
-        { id: "fb-g3", label: "Contact" },
+        {
+          id: "fb-g1",
+          label: "Locations",
+          href: "/locations",
+          linkKind: "route",
+        },
+        {
+          id: "fb-g2",
+          label: "How It Works",
+          href: "#how-it-works",
+          linkKind: "hash",
+        },
+        {
+          id: "fb-g3",
+          label: "Contact",
+          href: "/contact-the-cavenders",
+          linkKind: "route",
+        },
       ],
     },
     {
       title: "Legal",
       items: [
-        { id: "fb-l1", label: "Privacy" },
-        { id: "fb-l2", label: "Terms" },
-        { id: "fb-l3", label: "Accessibility" },
+        {
+          id: "fb-l1",
+          label: "Privacy",
+          href: "/privacy",
+          linkKind: "route",
+        },
+        {
+          id: "fb-l2",
+          label: "Terms",
+          href: "/terms",
+          linkKind: "route",
+        },
+        {
+          id: "fb-l3",
+          label: "Accessibility",
+          href: "/accessibility",
+          linkKind: "route",
+        },
       ],
     },
   ],

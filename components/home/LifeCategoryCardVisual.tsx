@@ -8,7 +8,6 @@ import { getLifeCategoryPlaceholder } from "@/lib/lifeCategoryVisuals";
 interface LifeCategoryCardVisualProps {
   categoryId: LifeCategoryId;
   imageUrl?: string;
-  featured?: boolean;
 }
 
 function LifeCategoryPlaceholderArt({
@@ -43,57 +42,33 @@ function LifeCategoryPlaceholderArt({
 export function LifeCategoryCardVisual({
   categoryId,
   imageUrl,
-  featured = false,
 }: LifeCategoryCardVisualProps) {
   const [showImage, setShowImage] = useState(Boolean(imageUrl));
-  const [imageReady, setImageReady] = useState(false);
   const usePlaceholder = !imageUrl || !showImage;
 
   const onImageError = useCallback(() => {
     setShowImage(false);
-    setImageReady(false);
   }, []);
-
-  const widthClass = featured
-    ? "w-[46%] max-w-[13rem] sm:max-w-[15rem]"
-    : "w-[44%] max-w-[10.5rem] sm:max-w-[12rem]";
 
   return (
     <div
-      className={`pointer-events-none absolute inset-y-0 -right-1 sm:-right-2 ${widthClass}`}
+      className="absolute right-0 top-0 z-0 h-[50%] w-[48%] sm:inset-y-0 sm:h-full sm:w-[50%]"
       aria-hidden
     >
-      <div
-        className={`life-card-visual-media relative h-full w-full transition-[opacity,transform] duration-500 ease-out group-hover:translate-x-1 ${
-          usePlaceholder || imageReady ? "opacity-100" : "opacity-0"
-        }`}
-      >
+      <div className="life-card-visual-media relative h-full w-full overflow-hidden transition-transform duration-500 ease-out group-hover:translate-x-0.5">
         {imageUrl && showImage ? (
           <Image
             src={imageUrl}
             alt=""
             fill
-            sizes="(max-width: 640px) 40vw, 200px"
-            className={`object-cover object-center transition-opacity duration-700 ease-out ${
-              imageReady ? "opacity-90" : "opacity-0"
-            }`}
-            onLoad={() => setImageReady(true)}
+            sizes="(max-width: 640px) 48vw, 50vw"
+            className="object-cover object-[left_center]"
             onError={onImageError}
           />
         ) : (
           <LifeCategoryPlaceholderArt categoryId={categoryId} />
         )}
       </div>
-
-      {/* Fade image into card background */}
-      <div
-        className="absolute inset-0 z-[1] bg-gradient-to-r from-white via-white/90 to-white/0"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-y-0 left-0 z-[2] w-1/3 bg-gradient-to-r from-white to-transparent"
-        aria-hidden
-      />
     </div>
   );
 }

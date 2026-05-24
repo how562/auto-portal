@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortalHeader } from "@/components/layout/PortalHeader";
 import { VehicleDetailView } from "@/components/vdp/VehicleDetailView";
-import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { formatMetadataTitle, formatVehicleLabel } from "@/lib/format";
 import {
@@ -45,9 +44,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   ]);
 
   return (
-    <LeadCaptureProvider>
+    <>
       <PortalHeader />
       <VehicleDetailView vehicle={vehicle} store={store} similar={similar} />
-    </LeadCaptureProvider>
+    </>
   );
 }

@@ -81,7 +81,8 @@ export interface LifeCategoryConfig {
   emptyStateBody_es?: string;
   matchRules: LifeMatchRule[];
   refinements: LifeRefinement[];
-  smartMatchKey?: SmartMatchLifestyleKey;
+  /** Value of `smart_match_rules.lifestyle` used for DB-backed matching. */
+  matchLifestyle?: SmartMatchLifestyleKey;
   impliedBodyStyle?: LifeFilterPatch["bodyStyle"];
 }
 
@@ -247,7 +248,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "We are refreshing family-friendly SUVs and vans. Try removing a refinement or browse all inventory.",
     emptyStateBody_es:
       "Estamos renovando SUVs y vans familiares. Quita un refinamiento o explora todo el inventario.",
-    smartMatchKey: "family",
+    matchLifestyle: "family",
     impliedBodyStyle: "suv",
     matchRules: [
       {
@@ -353,7 +354,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "New trucks and capability-focused vehicles arrive often. Clear refinements or browse all inventory.",
     emptyStateBody_es:
       "Llegan camionetas y vehículos de capacidad con frecuencia. Quita refinamientos o explora todo el inventario.",
-    smartMatchKey: "work",
+    matchLifestyle: "work",
     impliedBodyStyle: "truck",
     matchRules: [
       {
@@ -434,7 +435,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Luxury inventory changes quickly. Try a refinement or explore the full lineup.",
     emptyStateBody_es:
       "El inventario de lujo cambia rápido. Prueba un refinamiento o explora toda la línea.",
-    smartMatchKey: "luxury",
+    matchLifestyle: "luxury",
     matchRules: [
       { makes: LUXURY_MAKES },
       { trimKeywords: PREMIUM_TRIM_KEYWORDS },
@@ -531,7 +532,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Affordable inventory turns fast. Widen your search or browse all vehicles.",
     emptyStateBody_es:
       "El inventario accesible se mueve rápido. Amplía tu búsqueda o explora todos los vehículos.",
-    smartMatchKey: "budget",
+    matchLifestyle: "budget",
     matchRules: [
       { maxPrice: 30000 },
       {
@@ -602,7 +603,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Starter-friendly inventory changes often. Try a refinement or see everything we have.",
     emptyStateBody_es:
       "El inventario para principiantes cambia seguido. Prueba un refinamiento o mira todo lo que tenemos.",
-    smartMatchKey: "first",
+    matchLifestyle: "first-vehicle",
     matchRules: [
       {
         maxPrice: 25000,
@@ -671,7 +672,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Fuel-friendly inventory updates regularly. Clear refinements or browse all vehicles.",
     emptyStateBody_es:
       "El inventario eficiente se actualiza seguido. Quita refinamientos o explora todos los vehículos.",
-    smartMatchKey: "efficient",
+    matchLifestyle: "fuel-efficient",
     matchRules: [
       { keywords: EFFICIENT_KEYWORDS },
       {
@@ -743,7 +744,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Adventure-focused vehicles arrive often. Try a refinement or browse all inventory.",
     emptyStateBody_es:
       "Llegan vehículos para aventura con frecuencia. Prueba un refinamiento o explora todo el inventario.",
-    smartMatchKey: "weekend",
+    matchLifestyle: "weekend-ready",
     matchRules: [
       {
         bodyStyles: ["suv", "truck", "pickup", "crossover"],
@@ -821,7 +822,7 @@ export const LIFE_CATEGORIES: LifeCategoryConfig[] = [
       "Commuter-friendly inventory turns quickly. Clear refinements or see the full lineup.",
     emptyStateBody_es:
       "El inventario para el día a día se mueve rápido. Quita refinamientos o mira toda la línea.",
-    smartMatchKey: "everyday",
+    matchLifestyle: "everyday-drive",
     matchRules: [
       {
         bodyStyles: ["sedan", "crossover", "suv", "hatch", "compact"],
@@ -978,10 +979,10 @@ function matchesLifeRule(
 
 function matchesSmartMatchCatalog(
   vehicle: NormalizedVehicle,
-  key: SmartMatchLifestyleKey,
+  lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog,
 ): boolean {
-  const rules = catalog[key] ?? [];
+  const rules = catalog[lifestyle] ?? [];
   if (rules.length === 0) return false;
   return rules.some((rule: SmartMatchRule) =>
     vehicleMatchesSmartMatchRule(vehicle, rule),
@@ -999,8 +1000,8 @@ export function vehicleMatchesLifeCategory(
   const config = getLifeCategory(categoryId);
 
   if (
-    config.smartMatchKey &&
-    matchesSmartMatchCatalog(normalized, config.smartMatchKey, catalog)
+    config.matchLifestyle &&
+    matchesSmartMatchCatalog(normalized, config.matchLifestyle, catalog)
   ) {
     return true;
   }
@@ -1101,8 +1102,8 @@ export function getLifeEmptyState(
   };
 }
 
-export function lifeCategoryToSmartMatchKey(
+export function lifeCategoryToMatchLifestyle(
   categoryId: LifeCategoryId,
 ): SmartMatchLifestyleKey | undefined {
-  return getLifeCategory(categoryId).smartMatchKey;
+  return getLifeCategory(categoryId).matchLifestyle;
 }
