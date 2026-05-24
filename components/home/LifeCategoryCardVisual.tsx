@@ -44,7 +44,6 @@ export function LifeCategoryCardVisual({
   imageUrl,
 }: LifeCategoryCardVisualProps) {
   const [showImage, setShowImage] = useState(Boolean(imageUrl));
-  const usePlaceholder = !imageUrl || !showImage;
 
   const onImageError = useCallback(() => {
     setShowImage(false);
