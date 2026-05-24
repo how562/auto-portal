@@ -94,6 +94,8 @@ export interface InventoryFilters {
 
 export const DEFAULT_INVENTORY_SORT: InventorySort = "merchandised";
 
+export const INVENTORY_PAGE_SIZE = 20;
+
 export const DEFAULT_INVENTORY_FILTERS: InventoryFilters = {
   condition: "all",
   budget: "all",
@@ -209,17 +211,22 @@ export function filterInventoryVehicles(
 
   if (useLifeFilters) {
     const categoryId = filters.lifestyle as LifeCategoryId;
-    let lifeFiltered = result.filter((vehicle) =>
+    const lifeFiltered = result.filter((vehicle) =>
       vehicleMatchesLifeCategory(vehicle, categoryId, catalog),
     );
 
-    if (lifeFiltered.length === 0 && vehicles.length > 0) {
-      lifeFiltered = vehicles.filter((vehicle) =>
+    if (lifeFiltered.length > 0) {
+      result = lifeFiltered;
+    } else if (result.length === 0 && vehicles.length > 0) {
+      const broadLife = vehicles.filter((vehicle) =>
         vehicleMatchesLifeCategory(vehicle, categoryId, catalog),
       );
+      if (broadLife.length > 0) {
+        result = broadLife;
+      }
     }
-
-    result = lifeFiltered;
+    // When life category matches nothing but Smart Match already surfaced
+    // fallback vehicles, keep `result` instead of replacing with [].
 
     if (filters.lifeRefinement) {
       const refined = result.filter((vehicle) =>

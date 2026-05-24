@@ -1,5 +1,6 @@
 import { getSupabase } from "./supabase";
 import type { InventorySort } from "./inventorySearch";
+import { INVENTORY_PAGE_SIZE } from "./inventorySearch";
 import type { InventoryFilters } from "./inventorySearch";
 import { applyServerInventoryFilters } from "./inventoryServerFilters";
 import type { Store, Vehicle, VehicleDetail } from "./types";
@@ -64,7 +65,7 @@ function orderingFor(sort: InventorySort): OrderSpec[] {
   }
 }
 
-export const INVENTORY_PAGE_SIZE = 20;
+export { INVENTORY_PAGE_SIZE } from "./inventorySearch";
 
 export const PORTAL_VEHICLE_SELECT =
   "id, store_id, vin, year, make, model, trim, condition, body_style, internet_price, msrp, sale_price, mileage, stock_number, primary_image_url, dealer_name, image_count, has_images, data_quality_score, created_at, imported_at";

@@ -27,11 +27,11 @@ import {
   getLifeRefinementChips,
   getRefinementSuggestions,
   paginateInventoryResults,
+  INVENTORY_PAGE_SIZE,
   type InventoryFilters,
 } from "@/lib/inventorySearch";
 import type { InventoryViewMode } from "@/lib/inventoryView";
 import { getStoredViewMode, storeViewMode } from "@/lib/inventoryView";
-import { INVENTORY_PAGE_SIZE } from "@/lib/vehicles";
 import type { Store, Vehicle } from "@/lib/types";
 
 interface InventoryPageClientProps {

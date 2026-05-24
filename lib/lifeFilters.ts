@@ -1,3 +1,4 @@
+import { vehicleMatchesBodyStyleTokens } from "./bodyStyleMatch";
 import type { Locale } from "./i18n/types";
 import {
   normalizeVehicle,
@@ -909,10 +910,10 @@ function textIncludesAny(haystack: string, needles: string[]): boolean {
 }
 
 function bodyStyleMatches(vehicle: NormalizedVehicle, styles: string[]): boolean {
-  if (styles.length === 0) return true;
-  return styles.some(
-    (style) =>
-      vehicle.body_style.includes(style) || vehicle.searchText.includes(style),
+  return vehicleMatchesBodyStyleTokens(
+    vehicle.body_style,
+    vehicle.searchText,
+    styles,
   );
 }
 

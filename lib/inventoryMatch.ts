@@ -12,6 +12,10 @@ import type {
   SmartMatchRuleMode,
   SmartMatchRulesCatalog,
 } from "./smartMatchRulesTypes";
+import {
+  matchesShopperBodyStyleFilter,
+  vehicleMatchesBodyStyleTokens,
+} from "./bodyStyleMatch";
 import { sortVehiclesByMerchandisingQuality } from "./vehicleQuality";
 import type {
   BudgetRange,
@@ -234,6 +238,7 @@ function applyRuleMode(
         condition: null,
         minPrice: null,
         maxPrice: null,
+        trimKeywords: [],
       };
     default:
       return rule;
@@ -251,11 +256,15 @@ export function vehicleMatchesSmartMatchRule(
 ): boolean {
   const activeRule = applyRuleMode(rule, mode);
 
-  if (activeRule.bodyStyles.length > 0) {
-    const ok = activeRule.bodyStyles.some((style) =>
-      vehicle.body_style.includes(style),
-    );
-    if (!ok) return false;
+  if (
+    activeRule.bodyStyles.length > 0 &&
+    !vehicleMatchesBodyStyleTokens(
+      vehicle.body_style,
+      vehicle.searchText,
+      activeRule.bodyStyles,
+    )
+  ) {
+    return false;
   }
 
   const identityChecks: Array<{ active: boolean; ok: boolean }> = [
@@ -353,12 +362,27 @@ function filterVehiclesByLifestyleRules(
   lifestyle: SmartMatchLifestyleKey,
   catalog: SmartMatchRulesCatalog,
   mode: SmartMatchRuleMode,
+  storeId?: string,
 ): Vehicle[] {
   const matched = vehicles.filter((vehicle) => {
     const normalized = normalizeVehicle(vehicle);
+    if (storeId && storeId !== "all" && normalized.store_id !== storeId) {
+      return false;
+    }
     return vehicleMatchesLifestyleKey(normalized, lifestyle, catalog, mode);
   });
   return sortVehiclesByMerchandisingQuality(matched);
+}
+
+function filterVehiclesByStore(
+  vehicles: Vehicle[],
+  storeId: string | undefined,
+): Vehicle[] {
+  if (!storeId || storeId === "all") return vehicles;
+  return vehicles.filter((vehicle) => {
+    const normalized = normalizeVehicle(vehicle);
+    return normalized.store_id === storeId;
+  });
 }
 
 function getFirstMatchingRule(
@@ -374,35 +398,11 @@ function matchesBodyStyle(
   vehicle: NormalizedVehicle,
   body: MatchBodyStyle,
 ): boolean {
-  if (body === "any") return true;
-  const text = vehicle.searchText;
-  const bodyStyle = vehicle.body_style;
-  switch (body) {
-    case "suv":
-      return (
-        text.includes("suv") ||
-        text.includes("crossover") ||
-        bodyStyle.includes("suv")
-      );
-    case "truck":
-      return (
-        text.includes("truck") ||
-        text.includes("pickup") ||
-        bodyStyle.includes("truck")
-      );
-    case "sedan":
-      return text.includes("sedan") || bodyStyle.includes("sedan");
-    case "coupe":
-      return text.includes("coupe") || bodyStyle.includes("coupe");
-    case "van":
-      return (
-        text.includes("van") ||
-        text.includes("minivan") ||
-        bodyStyle.includes("van")
-      );
-    default:
-      return true;
-  }
+  return matchesShopperBodyStyleFilter(
+    vehicle.body_style,
+    vehicle.searchText,
+    body,
+  );
 }
 
 function matchesBudget(vehicle: NormalizedVehicle, budget: MatchBudget): boolean {
@@ -531,7 +531,6 @@ export function filterVehiclesByIntent(
 
   logMatchDebug("filterResult", {
     matchedVehicleCount: matched.length,
-    fallbackUsed: false,
   });
 
   return sortVehiclesByMerchandisingQuality(matched);
@@ -799,17 +798,15 @@ export interface SmartMatchResults {
 }
 
 /**
- * Smart Match results with progressive fallback when filters return zero
+ * Smart Match results with progressive fallback when strict matching returns zero
  * but active inventory exists (homepage Refine Your Fit + inventory SRP).
  *
- * Fallback order:
- * 1. strict filters + strict rule
+ * Fallback order (each step runs only after the prior step returned zero):
+ * 1. strict filters + strict rules
  * 2. drop shopper condition filter
  * 3. drop shopper budget filter
- * 4. drop rule condition
- * 5. drop rule price bounds
- * 6. rule identity/body only
- * 7. best merchandised active inventory
+ * 4. lifestyle rules — make, model keywords, body style only (partial body match)
+ * 5. all active inventory (merchandising sort: has_images → image_count → data_quality_score)
  */
 export function getSmartMatchResults(
   vehicles: Vehicle[],
@@ -817,7 +814,7 @@ export function getSmartMatchResults(
   rules: SmartMatchRulesCatalog = FALLBACK_SMART_MATCH_CATALOG,
 ): SmartMatchResults {
   const activeRules = getActiveSmartMatchRules(rules);
-  const { lifestyle, budget, condition } = activeFilters(filters);
+  const { lifestyle, budget, condition, store_id } = activeFilters(filters);
 
   logMatchDebug("smartMatch", {
     activeRulesCount: countCatalogRules(activeRules),
@@ -826,10 +823,21 @@ export function getSmartMatchResults(
     selectedCondition: condition,
   });
 
-  const strict = sortVehiclesByMerchandisingQuality(
-    filterVehiclesByIntent(vehicles, filters, activeRules),
-  );
-  if (strict.length > 0 || vehicles.length === 0) {
+  if (vehicles.length === 0) {
+    logMatchDebug("smartMatchResult", {
+      matchedVehicleCount: 0,
+      fallbackUsed: false,
+      fallbackStep: "emptyInventory",
+    });
+    return {
+      vehicles: [],
+      fallbackUsed: false,
+      matchedCount: 0,
+    };
+  }
+
+  const strict = filterVehiclesByIntent(vehicles, filters, activeRules);
+  if (strict.length > 0) {
     logMatchDebug("smartMatchResult", {
       matchedVehicleCount: strict.length,
       fallbackUsed: false,
@@ -842,80 +850,67 @@ export function getSmartMatchResults(
     };
   }
 
-  if (condition !== "any") {
-    const withoutCondition = sortVehiclesByMerchandisingQuality(
-      filterVehiclesByIntent(
-        vehicles,
-        { ...filters, condition: "any" },
-        activeRules,
-      ),
-    );
-    if (withoutCondition.length > 0) {
-      logMatchDebug("smartMatchResult", {
-        matchedVehicleCount: withoutCondition.length,
-        fallbackUsed: true,
-        fallbackStep: "dropFilterCondition",
-      });
-      return {
-        vehicles: withoutCondition,
-        fallbackUsed: true,
-        matchedCount: withoutCondition.length,
-      };
-    }
+  const withoutCondition = filterVehiclesByIntent(
+    vehicles,
+    { ...filters, condition: "any" },
+    activeRules,
+  );
+  if (withoutCondition.length > 0) {
+    logMatchDebug("smartMatchResult", {
+      matchedVehicleCount: withoutCondition.length,
+      fallbackUsed: true,
+      fallbackStep: "dropFilterCondition",
+    });
+    return {
+      vehicles: withoutCondition,
+      fallbackUsed: true,
+      matchedCount: withoutCondition.length,
+    };
   }
 
-  if (budget !== "any") {
-    const withoutBudget = sortVehiclesByMerchandisingQuality(
-      filterVehiclesByIntent(
-        vehicles,
-        { ...filters, budget: "any", condition: "any" },
-        activeRules,
-      ),
-    );
-    if (withoutBudget.length > 0) {
-      logMatchDebug("smartMatchResult", {
-        matchedVehicleCount: withoutBudget.length,
-        fallbackUsed: true,
-        fallbackStep: "dropFilterBudget",
-      });
-      return {
-        vehicles: withoutBudget,
-        fallbackUsed: true,
-        matchedCount: withoutBudget.length,
-      };
-    }
+  const withoutBudget = filterVehiclesByIntent(
+    vehicles,
+    { ...filters, budget: "any", condition: "any" },
+    activeRules,
+  );
+  if (withoutBudget.length > 0) {
+    logMatchDebug("smartMatchResult", {
+      matchedVehicleCount: withoutBudget.length,
+      fallbackUsed: true,
+      fallbackStep: "dropFilterBudget",
+    });
+    return {
+      vehicles: withoutBudget,
+      fallbackUsed: true,
+      matchedCount: withoutBudget.length,
+    };
   }
 
   if (lifestyle !== "any") {
-    const ruleRelaxSteps: SmartMatchRuleMode[] = [
-      "noCondition",
-      "noPriceNoCondition",
+    const identityOnly = filterVehiclesByLifestyleRules(
+      vehicles,
+      lifestyle,
+      activeRules,
       "identityOnly",
-    ];
-
-    for (const mode of ruleRelaxSteps) {
-      const relaxed = filterVehiclesByLifestyleRules(
-        vehicles,
-        lifestyle,
-        activeRules,
-        mode,
-      );
-      if (relaxed.length > 0) {
-        logMatchDebug("smartMatchResult", {
-          matchedVehicleCount: relaxed.length,
-          fallbackUsed: true,
-          fallbackStep: mode,
-        });
-        return {
-          vehicles: relaxed,
-          fallbackUsed: true,
-          matchedCount: relaxed.length,
-        };
-      }
+      store_id,
+    );
+    if (identityOnly.length > 0) {
+      logMatchDebug("smartMatchResult", {
+        matchedVehicleCount: identityOnly.length,
+        fallbackUsed: true,
+        fallbackStep: "identityOnly",
+      });
+      return {
+        vehicles: identityOnly,
+        fallbackUsed: true,
+        matchedCount: identityOnly.length,
+      };
     }
   }
 
-  const allInventory = sortVehiclesByMerchandisingQuality(vehicles);
+  const allInventory = sortVehiclesByMerchandisingQuality(
+    filterVehiclesByStore(vehicles, store_id),
+  );
 
   logMatchDebug("smartMatchResult", {
     matchedVehicleCount: allInventory.length,

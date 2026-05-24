@@ -47,7 +47,9 @@ export function applyServerInventoryFilters(query: any, filters: InventoryFilter
 
   switch (filters.bodyStyle) {
     case "suv":
-      next = next.or("body_style.ilike.%suv%,body_style.ilike.%crossover%");
+      next = next.or(
+        "body_style.ilike.%suv%,body_style.ilike.%crossover%,body_style.ilike.%sport utility%",
+      );
       break;
     case "truck":
       next = next.or("body_style.ilike.%truck%,body_style.ilike.%pickup%");
