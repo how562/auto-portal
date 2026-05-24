@@ -2,6 +2,9 @@ import type { Translator } from "./i18n/translations";
 
 export type LeadAction =
   | "availability"
+  | "trade"
+  | "eprice"
+  | "savings"
   | "shortlist"
   | "compare"
   | "general-shortlist";
@@ -11,6 +14,12 @@ export function getModalHeadline(action: LeadAction, t?: Translator): string {
     switch (action) {
       case "availability":
         return "Check availability for this vehicle";
+      case "trade":
+        return "Value your trade";
+      case "eprice":
+        return "Get your e-price";
+      case "savings":
+        return "Unlock your savings";
       case "shortlist":
       case "general-shortlist":
         return "Let us build your shortlist";
@@ -24,6 +33,12 @@ export function getModalHeadline(action: LeadAction, t?: Translator): string {
   switch (action) {
     case "availability":
       return t("lead.headline.availability");
+    case "trade":
+      return "Value your trade";
+    case "eprice":
+      return "Get your e-price";
+    case "savings":
+      return "Unlock your savings";
     case "shortlist":
     case "general-shortlist":
       return t("lead.headline.shortlist");
@@ -45,6 +60,15 @@ export function buildDefaultMessage(
     return t
       ? t("lead.message.availability", undefined, { vehicle: vehicleLabel })
       : `I'd like to check availability for ${vehicleLabel}.`;
+  }
+  if (action === "trade" && vehicleLabel) {
+    return `I'd like to value my trade for ${vehicleLabel}.`;
+  }
+  if (action === "eprice" && vehicleLabel) {
+    return `I'd like to get an e-price for ${vehicleLabel}.`;
+  }
+  if (action === "savings" && vehicleLabel) {
+    return `I'd like to unlock savings for ${vehicleLabel}.`;
   }
   if (action === "compare" && vehicleLabel) {
     return t

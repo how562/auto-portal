@@ -31,12 +31,14 @@ import {
   buildVdpKeyHighlights,
   buildVdpQuickFacts,
 } from "@/lib/vdpDisplay";
+import type { VdpCtaSettingRow } from "@/lib/vdpCtaTypes";
 import type { Store, Vehicle, VehicleDetail } from "@/lib/types";
 
 interface VehicleDetailViewProps {
   vehicle: VehicleDetail;
   store: Store | null;
   similar: Vehicle[];
+  vdpCtaSettings: VdpCtaSettingRow[];
 }
 
 function VdpHeroOverlay({
@@ -129,6 +131,7 @@ export function VehicleDetailView({
   vehicle,
   store,
   similar,
+  vdpCtaSettings,
 }: VehicleDetailViewProps) {
   const { t, locale } = useLanguage();
   const catalog = useSmartMatchRulesCatalog();
@@ -190,13 +193,23 @@ export function VehicleDetailView({
         {/* SECTION 2: Pricing panel + content grid */}
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_min(100%,22rem)] lg:items-start">
           <aside className="order-first lg:order-2 lg:col-start-2 lg:row-start-1">
-            <VehiclePricingPanel vehicle={vehicle} store={store} />
+            <VehiclePricingPanel
+              vehicle={vehicle}
+              store={store}
+              vdpCtaSettings={vdpCtaSettings}
+            />
           </aside>
 
           <div className="order-2 min-w-0 lg:order-1 lg:col-start-1 lg:row-start-1">
             {/* Compact sticky CTA bar — mobile/tablet only; desktop uses sidebar panel */}
             <div className="sticky top-[4.5rem] z-30 rounded-lg border border-[var(--line-dark)]/80 bg-white/95 p-3 shadow-[0_8px_32px_-12px_rgba(21,42,71,0.15)] backdrop-blur-md sm:top-20 sm:p-4 lg:hidden">
-              <VehicleVdpCtaBar vehicle={vehicle} storeId={storeId} layout="bar" />
+              <VehicleVdpCtaBar
+                vehicle={vehicle}
+                store={store}
+                storeId={storeId}
+                vdpCtaSettings={vdpCtaSettings}
+                layout="bar"
+              />
             </div>
 
             <div id="vehicle-overview" className="mt-8 space-y-12 sm:space-y-14 lg:mt-0">
@@ -286,7 +299,9 @@ export function VehicleDetailView({
             <div className="mt-5">
               <VehicleVdpCtaBar
                 vehicle={vehicle}
+                store={store}
                 storeId={storeId}
+                vdpCtaSettings={vdpCtaSettings}
                 layout="stack"
               />
             </div>

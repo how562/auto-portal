@@ -7,16 +7,22 @@ import { VehicleMathBox } from "@/components/vdp/VehicleMathBox";
 import { VehicleVdpCtaBar } from "@/components/vdp/VehicleVdpCtaBar";
 import { formatPrice, formatVehicleLabel, formatVehiclePrice } from "@/lib/format";
 import { buildVehiclePricingBreakdown } from "@/lib/vdpPricing";
+import type { VdpCtaSettingRow } from "@/lib/vdpCtaTypes";
 import type { Store, VehicleDetail } from "@/lib/types";
 
 interface VehiclePricingPanelProps {
   vehicle: VehicleDetail;
   store: Store | null;
+  vdpCtaSettings: VdpCtaSettingRow[];
 }
 
-export function VehiclePricingPanel({ vehicle, store }: VehiclePricingPanelProps) {
+export function VehiclePricingPanel({
+  vehicle,
+  store,
+  vdpCtaSettings,
+}: VehiclePricingPanelProps) {
   const { t } = useLanguage();
-  const { openLead } = useLeadCapture();
+  const { openVdpLead } = useLeadCapture();
   const contactTeam = useCta("contact_team");
   const breakdown = buildVehiclePricingBreakdown(vehicle);
   const storeId = store?.id ?? vehicle.store_id ?? null;
@@ -51,7 +57,13 @@ export function VehiclePricingPanel({ vehicle, store }: VehiclePricingPanelProps
       </div>
 
       <div className="border-t border-[var(--line)] bg-white px-5 py-5 sm:px-6">
-        <VehicleVdpCtaBar vehicle={vehicle} storeId={storeId} layout="stack" />
+        <VehicleVdpCtaBar
+          vehicle={vehicle}
+          store={store}
+          storeId={storeId}
+          vdpCtaSettings={vdpCtaSettings}
+          layout="stack"
+        />
 
         {store?.phone ? (
           <a
@@ -64,9 +76,10 @@ export function VehiclePricingPanel({ vehicle, store }: VehiclePricingPanelProps
           <button
             type="button"
             onClick={() =>
-              openLead({
+              openVdpLead({
                 action: "availability",
                 vehicle,
+                store,
                 storeId,
                 shopperIntent: `Contact request for ${label}`,
               })

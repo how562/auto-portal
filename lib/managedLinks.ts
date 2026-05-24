@@ -47,6 +47,9 @@ function parseLeadAction(href: string | null): LeadAction | undefined {
       action === "general-shortlist" ||
       action === "shortlist" ||
       action === "availability" ||
+      action === "trade" ||
+      action === "eprice" ||
+      action === "savings" ||
       action === "compare"
     ) {
       return action;

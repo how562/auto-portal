@@ -11,7 +11,11 @@ import {
 } from "react";
 import { formatVehicleLabel } from "@/lib/format";
 import type { LeadAction } from "@/lib/leads";
-import type { Vehicle } from "@/lib/types";
+import {
+  buildVdpLeadVehicleSnapshot,
+  buildVdpShopperIntent,
+} from "@/lib/vdpLead";
+import type { Store, Vehicle } from "@/lib/types";
 
 const LeadModal = dynamic(
   () => import("./LeadModal").then((mod) => mod.LeadModal),
@@ -25,8 +29,22 @@ export interface OpenLeadOptions {
   storeId?: string | null;
 }
 
+export interface OpenVdpLeadOptions {
+  action: LeadAction;
+  vehicle: Vehicle;
+  store?: Store | null;
+  storeId?: string | null;
+  shopperIntent?: string;
+}
+
 interface LeadCaptureState {
   openLead: (options: OpenLeadOptions) => void;
+  openVdpLead: (options: OpenVdpLeadOptions) => void;
+  openValueTrade: (options: {
+    vehicle: Vehicle;
+    store?: Store | null;
+    storeId?: string | null;
+  }) => void;
 }
 
 const LeadCaptureContext = createContext<LeadCaptureState | null>(null);
@@ -39,20 +57,77 @@ export function LeadCaptureProvider({ children }: { children: ReactNode }) {
   const [vehicleLabel, setVehicleLabel] = useState<string | null>(null);
   const [shopperIntent, setShopperIntent] = useState("");
 
-  const openLead = useCallback((options: OpenLeadOptions) => {
-    setAction(options.action);
-    setVehicleId(options.vehicle?.id ?? null);
-    setStoreId(
-      options.storeId ?? options.vehicle?.store_id ?? null,
-    );
-    setVehicleLabel(
-      options.vehicle ? formatVehicleLabel(options.vehicle) : null,
-    );
-    setShopperIntent(options.shopperIntent ?? "");
-    setModalOpen(true);
-  }, []);
+  const openLeadModal = useCallback(
+    (
+      nextAction: LeadAction,
+      vehicle: Vehicle | undefined,
+      nextStoreId: string | null,
+      intent: string,
+    ) => {
+      setAction(nextAction);
+      setVehicleId(vehicle?.id ?? null);
+      setStoreId(nextStoreId ?? vehicle?.store_id ?? null);
+      setVehicleLabel(vehicle ? formatVehicleLabel(vehicle) : null);
+      setShopperIntent(intent);
+      setModalOpen(true);
+    },
+    [],
+  );
 
-  const value = useMemo(() => ({ openLead }), [openLead]);
+  const openLead = useCallback(
+    (options: OpenLeadOptions) => {
+      openLeadModal(
+        options.action,
+        options.vehicle,
+        options.storeId ?? options.vehicle?.store_id ?? null,
+        options.shopperIntent ?? "",
+      );
+    },
+    [openLeadModal],
+  );
+
+  const openVdpLead = useCallback(
+    (options: OpenVdpLeadOptions) => {
+      const snapshot = buildVdpLeadVehicleSnapshot(
+        options.vehicle,
+        options.store ?? null,
+      );
+      const baseIntent =
+        options.shopperIntent?.trim() ||
+        `Inquiry for ${formatVehicleLabel(options.vehicle)}`;
+      openLeadModal(
+        options.action,
+        options.vehicle,
+        options.storeId ?? options.vehicle.store_id ?? null,
+        buildVdpShopperIntent(baseIntent, snapshot),
+      );
+    },
+    [openLeadModal],
+  );
+
+  const openValueTrade = useCallback(
+    (options: { vehicle: Vehicle; store?: Store | null; storeId?: string | null }) => {
+      if (typeof window !== "undefined" && window.MotoAcquire?.openVVRDrawer) {
+        window.MotoAcquire.openVVRDrawer();
+        return;
+      }
+
+      const label = formatVehicleLabel(options.vehicle);
+      openVdpLead({
+        action: "trade",
+        vehicle: options.vehicle,
+        store: options.store,
+        storeId: options.storeId,
+        shopperIntent: `Value my trade — interested in ${label}`,
+      });
+    },
+    [openVdpLead],
+  );
+
+  const value = useMemo(
+    () => ({ openLead, openVdpLead, openValueTrade }),
+    [openLead, openVdpLead, openValueTrade],
+  );
 
   return (
     <LeadCaptureContext.Provider value={value}>
