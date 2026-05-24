@@ -4,7 +4,7 @@ import {
   formatPrice,
   getVehicleSavingsAmount,
 } from "./format";
-import type { Vehicle, VehicleDetail } from "./types";
+import type { VehicleDetail } from "./types";
 
 export function isUsedVehicle(
   condition: string | null | undefined,
