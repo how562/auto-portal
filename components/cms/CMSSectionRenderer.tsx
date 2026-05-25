@@ -216,6 +216,30 @@ function TextBlockSection({
   );
 }
 
+/** Body copy tuned for long-form readability (image + text sections). */
+function CmsReadableBody({ body, className = "mt-6" }: { body: string; className?: string }) {
+  const trimmed = body.trim();
+  if (!trimmed) return null;
+
+  const paragraphs = trimmed
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const blocks = paragraphs.length > 0 ? paragraphs : [trimmed];
+
+  return (
+    <div
+      className={`max-w-[34rem] space-y-4 text-base leading-[1.65] text-[var(--ink)]/80 sm:text-[1.0625rem] sm:leading-[1.72] ${className}`.trim()}
+    >
+      {blocks.map((paragraph, index) => (
+        <p key={index} className="whitespace-pre-wrap">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function ImageTextSection({
   section,
   copy,
@@ -224,24 +248,30 @@ function ImageTextSection({
   copy: SectionCopy;
 }) {
   const s = parseSettings(section.settings);
-  const mediaSide = resolveImageTextMediaSide(section);
-  const mediaFirst = mediaSide === "left";
-  const imageUrl = copy.imageUrl;
+  const imageOnLeft = resolveImageTextMediaSide(section) === "left";
+  const imageUrl = copy.imageUrl?.trim();
+  const hasImage = Boolean(imageUrl);
   const mediaType = settingString(s, "media_type", "image");
   const videoTitle = settingString(s, "video_title");
+  const showMedia = hasImage || mediaType === "video";
 
   const textBlock = (
-    <div className="min-w-0">
+    <div className={`min-w-0 ${showMedia && imageOnLeft ? "md:order-2" : ""}`}>
       <StandardSectionCopy
-        copy={copy}
+        copy={{ ...copy, body: "" }}
         subheadlineClassName="mt-3 text-sm font-medium text-[var(--gold)]"
       />
+      {copy.body ? <CmsReadableBody body={copy.body} /> : null}
     </div>
   );
 
-  const mediaBlock = (
-    <div className={`${cardImageFrame} min-h-[12rem] aspect-[4/3] lg:min-h-0`}>
-      {imageUrl ? (
+  const mediaBlock = showMedia ? (
+    <div
+      className={`${cardImageFrame} min-h-[12rem] aspect-[4/3] min-w-0 lg:min-h-0 ${
+        imageOnLeft ? "md:order-1" : ""
+      }`}
+    >
+      {hasImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       ) : (
@@ -253,23 +283,20 @@ function ImageTextSection({
         </div>
       )}
     </div>
-  );
+  ) : null;
 
   return (
     <SectionShell>
       <div className="portal-container">
-        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
-          {mediaFirst ? (
-            <>
-              {mediaBlock}
-              {textBlock}
-            </>
-          ) : (
-            <>
-              {textBlock}
-              {mediaBlock}
-            </>
-          )}
+        <div
+          className={
+            showMedia
+              ? "grid grid-cols-1 items-start gap-10 md:grid-cols-2 md:gap-12 lg:gap-14"
+              : undefined
+          }
+        >
+          {textBlock}
+          {mediaBlock}
         </div>
       </div>
     </SectionShell>
