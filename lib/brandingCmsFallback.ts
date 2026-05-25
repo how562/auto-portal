@@ -133,8 +133,13 @@ export function getBrandingCmsSeedPayloads() {
   const bundle = getBrandingCmsFallbackBundle();
   const stripMeta = <T extends { id: string; created_at: string; updated_at: string }>(
     rows: T[],
-  ) =>
-    rows.map(({ id: _id, created_at: _c, updated_at: _u, ...row }) => row);
+  ): Omit<T, "id" | "created_at" | "updated_at">[] =>
+    rows.map((row) => {
+      const entries = Object.entries(row).filter(
+        ([key]) => key !== "id" && key !== "created_at" && key !== "updated_at",
+      );
+      return Object.fromEntries(entries) as Omit<T, "id" | "created_at" | "updated_at">;
+    });
 
   return {
     logos: stripMeta(bundle.logos),
