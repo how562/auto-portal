@@ -13,17 +13,13 @@ export function sectionLayoutVariant(section: PageSection): string {
 export function sectionEyebrow(section: PageSection): string {
   return (
     section.eyebrow ??
-    (settingString(sectionSettings(section), "eyebrow") ||
-      section.subtitle ||
-      "")
+    settingString(sectionSettings(section), "eyebrow")
   );
 }
 
 export function sectionHeadline(section: PageSection): string {
   return (
-    section.headline ??
-    section.title ??
-    settingString(sectionSettings(section), "headline")
+    section.headline ?? settingString(sectionSettings(section), "headline")
   );
 }
 
@@ -34,11 +30,7 @@ export function sectionSubheadline(section: PageSection): string {
 }
 
 export function sectionBody(section: PageSection): string {
-  return (
-    section.body ??
-    section.content ??
-    settingString(sectionSettings(section), "body")
-  );
+  return section.body ?? settingString(sectionSettings(section), "body");
 }
 
 export function sectionImageUrl(section: PageSection): string {

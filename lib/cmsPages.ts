@@ -1,17 +1,13 @@
 import { fetchAllPageSectionsForAdmin, fetchSitePageById } from "./cmsAdmin";
 import { fetchVehiclesForCollection } from "./cmsCollections";
 import { parseSettings, settingNumber, settingString } from "./cmsSettings";
+import { parsePageSectionFromDb, PAGE_SECTION_SELECT } from "./cmsSectionFromDb";
+import type { CMSSection, EnrichedCMSSection } from "./cmsSectionModel";
 import type {
   CMSPageData,
   EnrichedCMSPageData,
-  EnrichedPageSection,
-  PageSection,
   SitePage,
 } from "./cmsTypes";
-import {
-  normalizePageSectionRow,
-  PAGE_SECTION_SELECT,
-} from "./cmsSectionNormalize";
 import { getSupabase } from "./supabase";
 import { isSupabaseAdminConfigured } from "./supabaseAdmin";
 import { fetchStores } from "./stores";
@@ -38,7 +34,7 @@ export async function fetchPublishedPageBySlug(
   return (data as SitePage | null) ?? null;
 }
 
-export async function fetchPageSections(pageId: string): Promise<PageSection[]> {
+export async function fetchPageSections(pageId: string): Promise<CMSSection[]> {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
@@ -53,8 +49,8 @@ export async function fetchPageSections(pageId: string): Promise<PageSection[]> 
   }
 
   return (data ?? [])
-    .map((row) => normalizePageSectionRow(row as Record<string, unknown>))
-    .filter((s): s is PageSection => s !== null);
+    .map((row) => parsePageSectionFromDb(row as Record<string, unknown>))
+    .filter((s): s is CMSSection => s !== null);
 }
 
 export async function fetchCMSPageBySlug(
@@ -68,9 +64,9 @@ export async function fetchCMSPageBySlug(
 }
 
 async function enrichSection(
-  section: PageSection,
+  section: CMSSection,
   stores: Store[],
-): Promise<EnrichedPageSection> {
+): Promise<EnrichedCMSSection> {
   const settings = parseSettings(section.settings);
 
   if (section.section_type === "inventory_collection") {

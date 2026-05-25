@@ -126,19 +126,13 @@ export function parseCommunityHeroFromPageSection(
   const settings = parseSettings(section.settings);
 
   const headline =
-    section.headline ??
-    settingString(settings, "headline") ??
-    section.title ??
-    "";
+    section.headline ?? settingString(settings, "headline") ?? "";
 
   const subheadline =
     section.subheadline ?? settingString(settings, "subheadline") ?? "";
 
   const body =
-    section.body ??
-    section.content ??
-    settingString(settings, "body") ??
-    subheadline;
+    section.body ?? settingString(settings, "body") ?? subheadline;
 
   const headlineLines = parseHeadlineLines(headline, settings);
   const buttons = parseButtons(settings, section);
@@ -149,10 +143,7 @@ export function parseCommunityHeroFromPageSection(
   }
 
   const eyebrowLabel =
-    section.eyebrow ??
-    settingString(settings, "eyebrow") ??
-    section.subtitle ??
-    "";
+    section.eyebrow ?? settingString(settings, "eyebrow") ?? "";
 
   const eyebrowUrl =
     settingString(settings, "eyebrow_url") ||

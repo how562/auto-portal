@@ -1,4 +1,5 @@
-import type { Store, Vehicle } from "./types";
+import type { CMSSection, EnrichedCMSSection } from "./cmsSectionModel";
+import type { SitePage } from "./cmsPageTypes";
 
 export const CMS_SECTION_TYPES = [
   "community_hero",
@@ -20,53 +21,22 @@ export const CMS_SECTION_TYPES = [
 
 export type CMSSectionType = (typeof CMS_SECTION_TYPES)[number];
 
-export interface SitePage {
-  id: string;
-  slug: string;
-  title: string;
-  meta_description: string | null;
-  status: string;
-}
+export type { CMSSection, EnrichedCMSSection, SitePage };
 
-export interface PageSection {
-  id: string;
-  page_id: string;
-  section_type: CMSSectionType;
-  title: string | null;
-  subtitle: string | null;
-  content: string | null;
-  settings: Record<string, unknown>;
-  sort_order: number;
-  is_active: boolean;
-  eyebrow?: string | null;
-  headline?: string | null;
-  subheadline?: string | null;
-  body?: string | null;
-  headline_es?: string | null;
-  subheadline_es?: string | null;
-  body_es?: string | null;
-  image_url?: string | null;
-  image_url_es?: string | null;
-  cta_text?: string | null;
-  cta_text_es?: string | null;
-  cta_url?: string | null;
-  cta_url_es?: string | null;
-  layout_variant?: string | null;
-}
+/** @deprecated Use CMSSection */
+export type PageSection = CMSSection;
+
+/** @deprecated Use EnrichedCMSSection */
+export type EnrichedPageSection = EnrichedCMSSection;
 
 export interface CMSPageData {
   page: SitePage;
-  sections: PageSection[];
-}
-
-export interface EnrichedPageSection extends PageSection {
-  vehicles?: Vehicle[];
-  stores?: Store[];
+  sections: CMSSection[];
 }
 
 export interface EnrichedCMSPageData {
   page: SitePage;
-  sections: EnrichedPageSection[];
+  sections: EnrichedCMSSection[];
 }
 
 /** Slugs handled by dedicated App Router segments — never CMS pages. */

@@ -1,5 +1,5 @@
 import type { Locale } from "./i18n/types";
-import type { PageSection } from "./cmsTypes";
+import type { CMSSection } from "./cmsSectionModel";
 
 function parseSettings(
   settings: Record<string, unknown> | null | undefined,
@@ -52,7 +52,6 @@ function localizeSettingsValue(value: unknown): unknown {
   return value;
 }
 
-/** Merges `field_es` into `field` throughout settings (items, cards, FAQ, etc.). */
 export function localizeSettings(
   settings: Record<string, unknown> | null | undefined,
   locale: Locale,
@@ -63,11 +62,8 @@ export function localizeSettings(
   return localizeRecord(parseSettings(settings));
 }
 
-/** Applies Spanish column + settings overrides; syncs legacy title/subtitle/content for renderers. */
-export function localizePageSection<T extends PageSection>(
-  section: T,
-  locale: Locale,
-): T {
+/** @deprecated Use localizeCMSSection from cmsSectionDisplay */
+export function localizePageSection<T extends CMSSection>(section: T, locale: Locale): T {
   if (locale !== "es") return section;
 
   const headline = pickLocalizedString(section.headline_es, section.headline);
@@ -85,14 +81,12 @@ export function localizePageSection<T extends PageSection>(
     subheadline: subheadline ?? section.subheadline,
     body: body ?? section.body,
     cta_text: cta_text ?? section.cta_text,
-    title: headline ?? section.title,
-    subtitle: subheadline ?? section.subtitle,
-    content: body ?? section.content,
     settings,
   };
 }
 
-export function localizePageSections<T extends PageSection>(
+/** @deprecated Use localizeCMSSections from cmsSectionDisplay */
+export function localizePageSections<T extends CMSSection>(
   sections: T[],
   locale: Locale,
 ): T[] {

@@ -24,10 +24,15 @@ function parseLeadAction(value: string): LeadAction {
 export function CMSFormSection({ section }: { section: PageSection }) {
   const { openLead } = useLeadCapture();
   const settings = parseSettings(section.settings);
-  const headline = section.title ?? settingString(settings, "headline", "Let us help");
+  const headline =
+    section.headline ?? settingString(settings, "headline", "Let us help");
   const subheadline =
-    section.subtitle ??
-    settingString(settings, "subheadline", "Share a few details and we will curate options across our stores.");
+    section.subheadline ??
+    settingString(
+      settings,
+      "subheadline",
+      "Share a few details and we will curate options across our stores.",
+    );
   const ctaLabel = settingString(settings, "cta_label", "Get started");
   const leadAction = parseLeadAction(settingString(settings, "lead_action", "general-shortlist"));
   const shopperIntent =

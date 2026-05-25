@@ -155,12 +155,10 @@ export function resolveTopPicksIntro(
   const settings = parseSettings(localized.settings);
   const headline =
     localized.headline?.trim() ||
-    localized.title?.trim() ||
     settingString(settings, "headline").trim() ||
     fallbackHeadline;
   const subheadline =
     localized.subheadline?.trim() ||
-    localized.subtitle?.trim() ||
     settingString(settings, "subheadline").trim() ||
     localized.body?.trim() ||
     fallbackSubheadline;

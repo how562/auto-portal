@@ -85,20 +85,16 @@ export function resolveCavenderCommitmentContent(
   const resolvedHeadline =
     headlineFromSettings ||
     (locale === "es"
-      ? cmsSection?.headline_es?.trim() ||
-        cmsSection?.headline?.trim() ||
-        cmsSection?.title?.trim()
-      : cmsSection?.headline?.trim() || cmsSection?.title?.trim()) ||
+      ? cmsSection?.headline_es?.trim() || cmsSection?.headline?.trim()
+      : cmsSection?.headline?.trim()) ||
     t("commitment.headline");
 
   const bodyFromSettings = settingString(settings, "body").trim();
   const resolvedBody =
     bodyFromSettings ||
     (locale === "es"
-      ? cmsSection?.body_es?.trim() ||
-        cmsSection?.body?.trim() ||
-        cmsSection?.content?.trim()
-      : cmsSection?.body?.trim() || cmsSection?.content?.trim()) ||
+      ? cmsSection?.body_es?.trim() || cmsSection?.body?.trim()
+      : cmsSection?.body?.trim()) ||
     t("commitment.body");
 
   const legacyImageEn =

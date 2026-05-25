@@ -5,10 +5,23 @@ import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
-import { localizePageSections } from "@/lib/cmsSectionI18n";
+import {
+  SectionBodyText,
+  StandardSectionCopy,
+} from "@/components/cms/StandardSectionCopy";
 import { VehicleCard } from "@/components/portal/VehicleCard";
+import {
+  getSectionCopy,
+  localizeCMSSections,
+  resolveImageTextMediaSide,
+  type SectionCopy,
+} from "@/lib/cmsSectionDisplay";
+import type { EnrichedCMSSection } from "@/lib/cmsSectionModel";
+import {
+  getRegistryEntry,
+  registryHasDedicatedRenderer,
+} from "@/lib/cmsSectionRegistry";
 import { parseSettings, settingItems, settingString } from "@/lib/cmsSettings";
-import type { EnrichedPageSection } from "@/lib/cmsTypes";
 import { isProbablySafeHtml, sanitizeCmsHtml } from "@/lib/sanitizeHtml";
 import type { Store } from "@/lib/types";
 import { btnLightMd, btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
@@ -103,15 +116,19 @@ function CmsLink({
   );
 }
 
-function HeroSection({ section }: { section: EnrichedPageSection }) {
+function HeroSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const eyebrow = settingString(s, "eyebrow") || section.subtitle || "";
-  const headline = settingString(s, "headline") || section.title || "";
-  const subheadline = settingString(s, "subheadline") || section.content || "";
-  const imageUrl = settingString(s, "image_url");
-  const ctaLabel = settingString(s, "cta_label");
-  const ctaHref = settingString(s, "cta_href", "/inventory");
+  const imageUrl = copy.imageUrl;
+  const ctaLabel = settingString(s, "cta_label") || copy.ctaText;
+  const ctaHref = copy.ctaUrl || settingString(s, "cta_href", "/inventory");
   const dark = settingString(s, "variant") === "dark";
+  const subheadline = copy.subheadline || copy.body;
 
   return (
     <SectionShell dark={dark}>
@@ -129,21 +146,21 @@ function HeroSection({ section }: { section: EnrichedPageSection }) {
             />
           ) : null}
           <div className="relative max-w-3xl">
-            {eyebrow ? (
+            {copy.eyebrow ? (
               <p
                 className={`text-[11px] font-semibold uppercase tracking-[0.25em] ${
                   dark ? "text-[var(--gold-soft)]" : "text-[var(--gold)]"
                 }`}
               >
-                {eyebrow}
+                {copy.eyebrow}
               </p>
             ) : null}
-            {headline ? (
+            {copy.headline ? (
               <h1 className="mt-4 headline-stack text-4xl sm:text-5xl lg:text-6xl">
-                {headline}
+                {copy.headline}
               </h1>
             ) : null}
-            {subheadline ? (
+            {subheadline && subheadline !== copy.body ? (
               <p
                 className={`mt-6 max-w-xl text-lg leading-relaxed ${
                   dark ? "text-white/70" : "text-[var(--muted)]"
@@ -151,6 +168,14 @@ function HeroSection({ section }: { section: EnrichedPageSection }) {
               >
                 {subheadline}
               </p>
+            ) : copy.body && !copy.subheadline ? (
+              <div
+                className={`mt-6 max-w-xl text-lg leading-relaxed ${
+                  dark ? "text-white/70" : "text-[var(--muted)]"
+                }`}
+              >
+                <SectionBodyText body={copy.body} className="mt-0" />
+              </div>
             ) : null}
             {ctaLabel ? (
               <div className="mt-10">
@@ -168,11 +193,15 @@ function HeroSection({ section }: { section: EnrichedPageSection }) {
   );
 }
 
-function TextBlockSection({ section }: { section: EnrichedPageSection }) {
+function TextBlockSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const align = settingString(s, "alignment", "left");
-  const body = section.content ?? settingString(s, "body");
-  const title = section.title;
+  const align = settingString(s, "alignment", "left") === "center" ? "center" : "left";
 
   return (
     <SectionShell>
@@ -180,76 +209,83 @@ function TextBlockSection({ section }: { section: EnrichedPageSection }) {
         <div
           className={`mx-auto max-w-3xl ${align === "center" ? "text-center" : ""}`}
         >
-          {title ? (
-            <h2 className="headline-stack text-3xl sm:text-4xl">{title}</h2>
-          ) : null}
-          {section.subtitle ? (
-            <p className="mt-3 text-[var(--muted)]">{section.subtitle}</p>
-          ) : null}
-          {body ? (
-            <div className="mt-6 space-y-4 text-base leading-relaxed text-[var(--muted)] whitespace-pre-wrap">
-              {body}
-            </div>
-          ) : null}
+          <StandardSectionCopy copy={copy} align={align} />
         </div>
       </div>
     </SectionShell>
   );
 }
 
-function ImageTextSection({ section }: { section: EnrichedPageSection }) {
+function ImageTextSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const imageUrl = settingString(s, "image_url");
-  const position = settingString(s, "image_position", "right");
-  const body = section.content ?? settingString(s, "body");
-  const imageFirst = position === "left";
+  const mediaSide = resolveImageTextMediaSide(section);
+  const mediaFirst = mediaSide === "left";
+  const imageUrl = copy.imageUrl;
+  const mediaType = settingString(s, "media_type", "image");
+  const videoTitle = settingString(s, "video_title");
+
+  const textBlock = (
+    <div className="min-w-0">
+      <StandardSectionCopy
+        copy={copy}
+        subheadlineClassName="mt-3 text-sm font-medium text-[var(--gold)]"
+      />
+    </div>
+  );
+
+  const mediaBlock = (
+    <div className={`${cardImageFrame} min-h-[12rem] aspect-[4/3] lg:min-h-0`}>
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 px-6 text-center text-sm text-[var(--muted)]">
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            {mediaType === "video" ? "Video" : "Image"}
+          </span>
+          {videoTitle ? <span>{videoTitle}</span> : null}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <SectionShell>
       <div className="portal-container">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className={imageFirst ? "lg:order-2" : ""}>
-            {section.title ? (
-              <h2 className="headline-stack text-3xl sm:text-4xl">{section.title}</h2>
-            ) : null}
-            {section.subtitle ? (
-              <p className="mt-3 text-sm font-medium text-[var(--gold)]">
-                {section.subtitle}
-              </p>
-            ) : null}
-            {body ? (
-              <p className="mt-6 text-base leading-relaxed text-[var(--muted)] whitespace-pre-wrap">
-                {body}
-              </p>
-            ) : null}
-          </div>
-          <div
-            className={`${cardImageFrame} aspect-[4/3] ${
-              imageFirst ? "lg:order-1" : ""
-            }`}
-          >
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[var(--muted)]">
-                Image
-              </div>
-            )}
-          </div>
+        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+          {mediaFirst ? (
+            <>
+              {mediaBlock}
+              {textBlock}
+            </>
+          ) : (
+            <>
+              {textBlock}
+              {mediaBlock}
+            </>
+          )}
         </div>
       </div>
     </SectionShell>
   );
 }
 
-function SplitFeatureSection({ section }: { section: EnrichedPageSection }) {
+function SplitFeatureSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const imageUrl = settingString(s, "image_url");
+  const imageUrl = copy.imageUrl || settingString(s, "image_url");
+  const sectionTitle = copy.headline;
   const items = settingItems<{ title?: string; body?: string }>(s, "items");
   const leftTitle = settingString(s, "left_title") || items[0]?.title;
   const leftBody = settingString(s, "left_body") || items[0]?.body;
@@ -259,9 +295,9 @@ function SplitFeatureSection({ section }: { section: EnrichedPageSection }) {
   return (
     <SectionShell className="bg-white">
       <div className="portal-container">
-        {section.title ? (
+        {sectionTitle ? (
           <h2 className="mb-10 text-center headline-stack text-3xl sm:text-4xl">
-            {section.title}
+            {sectionTitle}
           </h2>
         ) : null}
         <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
@@ -303,10 +339,17 @@ function SplitFeatureSection({ section }: { section: EnrichedPageSection }) {
   );
 }
 
-function CtaBandSection({ section }: { section: EnrichedPageSection }) {
+function CtaBandSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const headline = section.title ?? settingString(s, "headline");
-  const subheadline = section.subtitle ?? settingString(s, "subheadline");
+  const headline = copy.headline;
+  const subheadline = copy.subheadline;
+  const buttons = settingItems<{ label?: string; url?: string }>(s, "buttons");
   const ctaLabel = settingString(s, "cta_label", "Get started");
   const ctaHref = settingString(s, "cta_href", "/inventory");
   const dark = settingString(s, "variant") !== "light";
@@ -324,27 +367,41 @@ function CtaBandSection({ section }: { section: EnrichedPageSection }) {
             {subheadline}
           </p>
         ) : null}
-        <div className="mt-8 flex justify-center">
-          <CmsLink href={ctaHref} label={ctaLabel} variant={dark ? "light" : "primary"} />
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          {buttons.length > 0 ? (
+            buttons.map((btn, i) =>
+              btn.label && btn.url ? (
+                <CmsLink
+                  key={`${btn.url}-${i}`}
+                  href={btn.url}
+                  label={btn.label}
+                  variant={dark ? "light" : i === 0 ? "primary" : "secondary"}
+                />
+              ) : null,
+            )
+          ) : (
+            <CmsLink href={ctaHref} label={ctaLabel} variant={dark ? "light" : "primary"} />
+          )}
         </div>
       </div>
     </SectionShell>
   );
 }
 
-function FaqSection({ section }: { section: EnrichedPageSection }) {
+function FaqSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
   const items = settingItems<{ question?: string; answer?: string }>(s, "items");
 
   return (
     <SectionShell>
       <div className="portal-container max-w-3xl">
-        {section.title ? (
-          <h2 className="headline-stack text-3xl sm:text-4xl">{section.title}</h2>
-        ) : null}
-        {section.subtitle ? (
-          <p className="mt-3 text-[var(--muted)]">{section.subtitle}</p>
-        ) : null}
+        <StandardSectionCopy copy={copy} />
         <dl className="mt-10 space-y-4">
           {items.map((item, i) => (
             <div key={i} className={cardFaqItem}>
@@ -364,16 +421,22 @@ function FaqSection({ section }: { section: EnrichedPageSection }) {
   );
 }
 
-function StatsSection({ section }: { section: EnrichedPageSection }) {
+function StatsSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
   const items = settingItems<{ value?: string; label?: string }>(s, "items");
 
   return (
     <SectionShell className="bg-white border-y border-[var(--line)]">
       <div className="portal-container">
-        {section.title ? (
+        {copy.headline ? (
           <h2 className="text-center headline-stack text-3xl sm:text-4xl">
-            {section.title}
+            {copy.headline}
           </h2>
         ) : null}
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -395,7 +458,13 @@ function StatsSection({ section }: { section: EnrichedPageSection }) {
   );
 }
 
-function CardGridSection({ section }: { section: EnrichedPageSection }) {
+function CardGridSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
   const cards = settingItems<{
     title?: string;
@@ -408,12 +477,7 @@ function CardGridSection({ section }: { section: EnrichedPageSection }) {
   return (
     <SectionShell>
       <div className="portal-container">
-        {section.title ? (
-          <h2 className="headline-stack text-3xl sm:text-4xl">{section.title}</h2>
-        ) : null}
-        {section.subtitle ? (
-          <p className="mt-3 max-w-xl text-[var(--muted)]">{section.subtitle}</p>
-        ) : null}
+        <StandardSectionCopy copy={copy} />
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, i) => (
             <article key={i} className={cardGridArticle}>
@@ -456,21 +520,23 @@ function CardGridSection({ section }: { section: EnrichedPageSection }) {
 
 function InventoryCollectionSection({
   section,
+  copy,
 }: {
-  section: EnrichedPageSection;
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
 }) {
   const vehicles = section.vehicles ?? [];
 
   return (
     <SectionShell>
       <div className="portal-container mb-8">
-        {section.title ? (
-          <h2 className="headline-stack text-3xl sm:text-4xl">{section.title}</h2>
+        {copy.headline ? (
+          <h2 className="headline-stack text-3xl sm:text-4xl">{copy.headline}</h2>
         ) : (
           <h2 className="headline-stack text-3xl sm:text-4xl">Featured inventory</h2>
         )}
-        {section.subtitle ? (
-          <p className="mt-3 max-w-xl text-[var(--muted)]">{section.subtitle}</p>
+        {copy.subheadline ? (
+          <p className="mt-3 max-w-xl text-[var(--muted)]">{copy.subheadline}</p>
         ) : null}
         <Link
           href="/inventory"
@@ -497,14 +563,14 @@ function InventoryCollectionSection({
 }
 
 function LocationsSection({
-  section,
+  copy,
   stores,
 }: {
-  section: EnrichedPageSection;
+  copy: SectionCopy;
   stores: Store[];
 }) {
-  const headline = section.title ?? "Our locations";
-  const subheadline = section.subtitle;
+  const headline = copy.headline || "Our locations";
+  const subheadline = copy.subheadline;
 
   return (
     <SectionShell className="border-t border-[var(--line)] bg-white">
@@ -552,23 +618,31 @@ function LocationsSection({
   );
 }
 
-function CustomHtmlSection({ section }: { section: EnrichedPageSection }) {
+function CustomHtmlSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const s = parseSettings(section.settings);
-  const raw =
-    settingString(s, "html") || section.content || "";
+  const raw = settingString(s, "html") || copy.body;
   const safe = isProbablySafeHtml(raw) ? sanitizeCmsHtml(raw) : null;
+  const plainBody = !safe && copy.body;
 
   return (
     <SectionShell>
       <div className="portal-container max-w-3xl">
-        {section.title ? (
-          <h2 className="mb-6 headline-stack text-2xl sm:text-3xl">{section.title}</h2>
+        {copy.headline ? (
+          <h2 className="mb-6 headline-stack text-2xl sm:text-3xl">{copy.headline}</h2>
         ) : null}
         {safe ? (
           <div
             className="prose-cms space-y-4 text-[var(--muted)] leading-relaxed [&_a]:text-[var(--ink)] [&_a]:underline [&_h3]:font-semibold [&_h3]:text-[var(--ink)]"
             dangerouslySetInnerHTML={{ __html: safe }}
           />
+        ) : plainBody ? (
+          <SectionBodyText body={plainBody} className="mt-0" />
         ) : (
           <div className={cardEmpty}>
             Custom content is unavailable or did not pass safety checks.
@@ -579,51 +653,94 @@ function CustomHtmlSection({ section }: { section: EnrichedPageSection }) {
   );
 }
 
-function UnknownSection() {
-  return null;
+function GenericSection({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
+  if (
+    !copy.headline &&
+    !copy.subheadline &&
+    !copy.body &&
+    !copy.eyebrow &&
+    !copy.imageUrl
+  ) {
+    return null;
+  }
+
+  const entry = getRegistryEntry(section.section_type);
+
+  return (
+    <SectionShell>
+      <div className="portal-container max-w-3xl">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+          {entry.label} ({section.section_type})
+        </p>
+        <StandardSectionCopy copy={copy} />
+        {copy.imageUrl ? (
+          <div className={`${cardImageFrame} mt-8 aspect-[16/10] max-w-xl`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={copy.imageUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+        ) : null}
+      </div>
+    </SectionShell>
+  );
 }
 
-function CMSSectionBlock({ section }: { section: EnrichedPageSection }) {
+function CMSSectionBlock({
+  section,
+  copy,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+}) {
   const stores = section.stores ?? [];
+
+  if (!registryHasDedicatedRenderer(section.section_type)) {
+    return <GenericSection section={section} copy={copy} />;
+  }
 
   switch (section.section_type) {
     case "hero":
-      return <HeroSection section={section} />;
+      return <HeroSection section={section} copy={copy} />;
     case "text_block":
-      return <TextBlockSection section={section} />;
+      return <TextBlockSection section={section} copy={copy} />;
     case "image_text":
-      return <ImageTextSection section={section} />;
+      return <ImageTextSection section={section} copy={copy} />;
     case "split_feature":
-      return <SplitFeatureSection section={section} />;
+      return <SplitFeatureSection section={section} copy={copy} />;
     case "cta_band":
-      return <CtaBandSection section={section} />;
+      return <CtaBandSection section={section} copy={copy} />;
     case "faq":
-      return <FaqSection section={section} />;
+      return <FaqSection section={section} copy={copy} />;
     case "stats":
-      return <StatsSection section={section} />;
+      return <StatsSection section={section} copy={copy} />;
     case "card_grid":
-      return <CardGridSection section={section} />;
+      return <CardGridSection section={section} copy={copy} />;
     case "inventory_collection":
-      return <InventoryCollectionSection section={section} />;
+      return <InventoryCollectionSection section={section} copy={copy} />;
     case "form":
       return <CMSFormSection section={section} />;
     case "locations":
-      return <LocationsSection section={section} stores={stores} />;
+      return <LocationsSection copy={copy} stores={stores} />;
     case "custom_html":
-      return <CustomHtmlSection section={section} />;
+      return <CustomHtmlSection section={section} copy={copy} />;
     default:
-      return <UnknownSection />;
+      return <GenericSection section={section} copy={copy} />;
   }
 }
 
 interface CMSSectionRendererProps {
-  sections: EnrichedPageSection[];
+  sections: EnrichedCMSSection[];
 }
 
 export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
   const { locale } = useLanguage();
   const localizedSections = useMemo(
-    () => localizePageSections(sections, locale),
+    () => localizeCMSSections(sections, locale),
     [sections, locale],
   );
 
@@ -638,7 +755,11 @@ export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
   return (
     <div className="flex flex-col">
       {localizedSections.map((section) => (
-        <CMSSectionBlock key={section.id} section={section} />
+        <CMSSectionBlock
+          key={section.id}
+          section={section}
+          copy={getSectionCopy(section)}
+        />
       ))}
     </div>
   );

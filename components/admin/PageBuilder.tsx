@@ -4,20 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
-  PageSectionCard,
+  CmsSectionEditorCard,
   type CollectionOption,
-} from "@/components/admin/PageSectionCard";
-import {
-  CMS_SECTION_TYPES,
-  type CMSSectionType,
-  type PageSection,
-  type SitePage,
-} from "@/lib/cmsTypes";
+} from "@/components/admin/CmsSectionEditorCard";
+import { CmsSectionDebugPanel } from "@/components/admin/CmsSectionDebugPanel";
+import type { CMSSection } from "@/lib/cmsSectionModel";
+import { listRegistryEntriesForBuilder } from "@/lib/cmsSectionRegistry";
+import type { CMSSectionType, SitePage } from "@/lib/cmsTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface PageBuilderProps {
   page: SitePage;
-  initialSections: PageSection[];
+  initialSections: CMSSection[];
   collections: CollectionOption[];
 }
 
@@ -84,7 +82,7 @@ export function PageBuilder({
           section_type: newSectionType,
         }),
       });
-      const data = (await res.json()) as { section?: PageSection; error?: string };
+      const data = (await res.json()) as { section?: CMSSection; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Add failed");
       if (data.section) {
         setSections((prev) => [...prev, data.section!]);
@@ -255,9 +253,9 @@ export function PageBuilder({
               onChange={(e) => setNewSectionType(e.target.value as CMSSectionType)}
               className="block min-w-[12rem] rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
             >
-              {CMS_SECTION_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              {listRegistryEntriesForBuilder().map((entry) => (
+                <option key={entry.type} value={entry.type}>
+                  {entry.label}
                 </option>
               ))}
             </select>
@@ -279,7 +277,7 @@ export function PageBuilder({
         ) : (
           <div className="space-y-3">
             {sections.map((section, index) => (
-              <PageSectionCard
+              <CmsSectionEditorCard
                 key={section.id}
                 section={section}
                 isFirst={index === 0}
@@ -298,6 +296,8 @@ export function PageBuilder({
           </div>
         )}
       </section>
+
+      <CmsSectionDebugPanel sections={sections} />
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

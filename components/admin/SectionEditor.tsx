@@ -177,7 +177,7 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
  </span>
  <input
  type="text"
- value={section.headline ?? section.title ?? ""}
+              value={section.headline ?? ""}
  onChange={(e) => updateLocal({ headline: e.target.value || null })}
  className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
  />
@@ -188,7 +188,7 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
  </span>
  <input
  type="text"
- value={section.subheadline ?? section.subtitle ?? ""}
+              value={section.subheadline ?? ""}
  onChange={(e) => updateLocal({ subheadline: e.target.value || null })}
  className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
  />
@@ -199,7 +199,7 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
  Body
  </span>
  <textarea
- value={section.body ?? section.content ?? ""}
+              value={section.body ?? ""}
  onChange={(e) => updateLocal({ body: e.target.value || null })}
  rows={4}
  className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"

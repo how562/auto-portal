@@ -1,8 +1,10 @@
-import { RESERVED_CMS_SLUGS, type PageSection, type SitePage } from "./cmsTypes";
+import type { CMSSection } from "./cmsSectionModel";
 import {
-  normalizePageSectionRow,
-  PAGE_SECTION_SELECT,
-} from "./cmsSectionNormalize";
+  canonicalSectionPatchFromInput,
+  canonicalSectionToDbPayload,
+} from "./cmsSectionToDb";
+import { parsePageSectionFromDb, PAGE_SECTION_SELECT } from "./cmsSectionFromDb";
+import { RESERVED_CMS_SLUGS, type SitePage } from "./cmsTypes";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
 const PAGE_SELECT = "id, slug, title, meta_description, status, created_at, updated_at";
@@ -174,7 +176,7 @@ export async function deleteSitePage(pageId: string): Promise<void> {
 export async function fetchPageSectionsForAdmin(
   pageId: string,
   options?: { includeInactive?: boolean },
-): Promise<PageSection[]> {
+): Promise<CMSSection[]> {
   if (!isSupabaseAdminConfigured()) return [];
   const supabase = getSupabaseAdmin();
   let query = supabase
@@ -190,49 +192,50 @@ export async function fetchPageSectionsForAdmin(
   const { data, error } = await query;
   if (error) throw new Error(`Failed to load sections: ${error.message}`);
   return (data ?? [])
-    .map((row) => normalizePageSectionRow(row as Record<string, unknown>))
-    .filter((s): s is PageSection => s != null);
+    .map((row) => parsePageSectionFromDb(row as Record<string, unknown>))
+    .filter((s): s is CMSSection => s != null);
 }
 
 export async function fetchAllPageSectionsForAdmin(
   pageId: string,
-): Promise<PageSection[]> {
+): Promise<CMSSection[]> {
   return fetchPageSectionsForAdmin(pageId, { includeInactive: true });
 }
 
 export interface PageSectionCreateInput {
   page_id: string;
-  section_type: PageSection["section_type"];
+  section_type: CMSSection["section_type"];
   sort_order?: number;
 }
 
-export interface PageSectionUpdateInput {
-  section_type?: PageSection["section_type"];
-  title?: string | null;
-  subtitle?: string | null;
-  content?: string | null;
-  settings?: Record<string, unknown>;
-  sort_order?: number;
-  is_active?: boolean;
-  eyebrow?: string | null;
-  headline?: string | null;
-  subheadline?: string | null;
-  body?: string | null;
-  headline_es?: string | null;
-  subheadline_es?: string | null;
-  body_es?: string | null;
-  cta_text_es?: string | null;
-  image_url?: string | null;
-  image_url_es?: string | null;
-  cta_text?: string | null;
-  cta_url?: string | null;
-  cta_url_es?: string | null;
-  layout_variant?: string | null;
-}
+/** Canonical fields only — no title/content. */
+export type PageSectionUpdateInput = Partial<
+  Pick<
+    CMSSection,
+    | "section_type"
+    | "settings"
+    | "sort_order"
+    | "is_active"
+    | "layout_variant"
+    | "eyebrow"
+    | "headline"
+    | "subheadline"
+    | "body"
+    | "headline_es"
+    | "subheadline_es"
+    | "body_es"
+    | "cta_text_es"
+    | "image_url"
+    | "image_url_es"
+    | "cta_text"
+    | "cta_url"
+    | "cta_url_es"
+  >
+>;
 
 export async function createPageSection(
   input: PageSectionCreateInput,
-): Promise<PageSection> {
+): Promise<CMSSection> {
   const pageId = input.page_id.trim();
   if (!pageId) throw new Error("page_id is required");
 
@@ -263,7 +266,7 @@ export async function createPageSection(
     .single();
 
   if (error) throw new Error(`Failed to create section: ${error.message}`);
-  const row = normalizePageSectionRow(data as Record<string, unknown>);
+  const row = parsePageSectionFromDb(data as Record<string, unknown>);
   if (!row) throw new Error("Created section could not be read");
   return row;
 }
@@ -271,18 +274,14 @@ export async function createPageSection(
 export async function updatePageSection(
   sectionId: string,
   input: PageSectionUpdateInput,
-): Promise<PageSection> {
+): Promise<CMSSection> {
   if (!isSupabaseAdminConfigured()) {
     throw new Error("Supabase admin is not configured");
   }
 
-  const payload: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-
-  for (const [key, value] of Object.entries(input)) {
-    if (value !== undefined) payload[key] = value;
-  }
+  const payload = canonicalSectionToDbPayload(
+    canonicalSectionPatchFromInput(input as Record<string, unknown>),
+  );
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -293,7 +292,7 @@ export async function updatePageSection(
     .single();
 
   if (error) throw new Error(`Failed to update section: ${error.message}`);
-  const row = normalizePageSectionRow(data as Record<string, unknown>);
+  const row = parsePageSectionFromDb(data as Record<string, unknown>);
   if (!row) throw new Error("Updated section could not be read");
   return row;
 }

@@ -1,0 +1,443 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { CommunityHeroImageSlots } from "@/components/admin/CommunityHeroImageSlots";
+import { CmsImageField } from "@/components/admin/CmsImageField";
+import type { CMSSection } from "@/lib/cmsSectionModel";
+import type { CMSCanonicalFieldKey } from "@/lib/cmsSectionModel";
+import { getRegistryEntry } from "@/lib/cmsSectionRegistry";
+import { parseSettings, settingString } from "@/lib/cmsSettings";
+import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
+
+export interface CollectionOption {
+  id: string;
+  name: string;
+}
+
+interface CmsSectionEditorCardProps {
+  section: CMSSection;
+  isFirst: boolean;
+  isLast: boolean;
+  collections: CollectionOption[];
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+  onSaved: (section: CMSSection) => void;
+}
+
+function canonicalPatch(local: CMSSection): Record<string, unknown> {
+  return {
+    eyebrow: local.eyebrow,
+    headline: local.headline,
+    subheadline: local.subheadline,
+    body: local.body,
+    headline_es: local.headline_es,
+    subheadline_es: local.subheadline_es,
+    body_es: local.body_es,
+    cta_text_es: local.cta_text_es,
+    image_url: local.image_url,
+    image_url_es: local.image_url_es,
+    cta_text: local.cta_text,
+    cta_url: local.cta_url,
+    cta_url_es: local.cta_url_es,
+    layout_variant: local.layout_variant,
+    is_active: local.is_active,
+    settings: local.settings,
+  };
+}
+
+function fieldEnabled(
+  fields: CMSCanonicalFieldKey[],
+  key: CMSCanonicalFieldKey,
+): boolean {
+  return fields.includes(key);
+}
+
+export function CmsSectionEditorCard({
+  section: initial,
+  isFirst,
+  isLast,
+  collections,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  onSaved,
+}: CmsSectionEditorCardProps) {
+  const [open, setOpen] = useState(false);
+  const [local, setLocal] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lang, setLang] = useState<"en" | "es">("en");
+
+  useEffect(() => {
+    setLocal(initial);
+  }, [initial]);
+
+  const entry = getRegistryEntry(local.section_type);
+  const settings = local.settings ?? {};
+  const isCommunityHero = local.section_type === "community_hero";
+
+  function setField<K extends keyof CMSSection>(k: K, v: CMSSection[K]) {
+    setLocal((prev) => ({ ...prev, [k]: v }));
+  }
+
+  function setSetting(key: string, value: unknown) {
+    setLocal((prev) => ({
+      ...prev,
+      settings: { ...(prev.settings ?? {}), [key]: value },
+    }));
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/page-sections/${local.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(canonicalPatch(local)),
+      });
+      const data = (await res.json()) as { section?: CMSSection; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      if (data.section) {
+        setLocal(data.section);
+        onSaved(data.section);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const dirty = JSON.stringify(local) !== JSON.stringify(initial);
+  const enFields = entry.editorFields.filter((f) => !f.endsWith("_es"));
+  const esFields = entry.editorFields.filter((f) => f.endsWith("_es"));
+
+  return (
+    <article className="rounded-md border border-[var(--line-dark)] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <span className="text-[var(--muted)]">{open ? "▼" : "▶"}</span>
+          <span className="rounded bg-[var(--cream-dark)] px-2 py-0.5 text-xs font-semibold uppercase">
+            {entry.label}
+          </span>
+          <span className="truncate text-sm font-medium">
+            {local.headline || local.eyebrow || "Untitled section"}
+          </span>
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={isFirst}
+            onClick={onMoveUp}
+            className={`${btnSecondaryMd} px-2 py-1 text-xs disabled:opacity-40`}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={isLast}
+            onClick={onMoveDown}
+            className={`${btnSecondaryMd} px-2 py-1 text-xs disabled:opacity-40`}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className={`${btnSecondaryMd} px-2 py-1 text-xs text-red-700`}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] p-4 sm:p-5">
+          <p className="text-xs text-[var(--muted)]">{entry.description}</p>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={local.is_active}
+              onChange={(e) => setField("is_active", e.target.checked)}
+            />
+            Active on page
+          </label>
+
+          {isCommunityHero ? (
+            <CommunityHeroImageSlots
+              sectionId={local.id}
+              settings={settings}
+              onSettingsSaved={(nextSettings, updatedSection) => {
+                if (updatedSection) {
+                  setLocal(updatedSection);
+                  onSaved(updatedSection);
+                } else {
+                  setField("settings", nextSettings);
+                }
+              }}
+            />
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={`rounded-lg px-3 py-1 text-sm ${lang === "en" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("es")}
+              className={`rounded-lg px-3 py-1 text-sm ${lang === "es" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
+            >
+              Spanish
+            </button>
+          </div>
+
+          {lang === "en" ? (
+            <CanonicalFieldsForm
+              section={local}
+              fields={enFields}
+              setField={setField}
+            />
+          ) : (
+            <CanonicalFieldsForm
+              section={local}
+              fields={esFields}
+              setField={setField}
+              es
+            />
+          )}
+
+          <TypeSettingsFields
+            section={local}
+            collections={collections}
+            setSetting={setSetting}
+          />
+
+          <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--line)] pt-4">
+            <button
+              type="button"
+              disabled={!dirty || saving}
+              onClick={() => setLocal(initial)}
+              className={`${btnSecondaryMd} disabled:opacity-40`}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={save}
+              className={`${btnPrimaryMd} disabled:opacity-60`}
+            >
+              {saving ? "Saving…" : "Save section"}
+            </button>
+          </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function CanonicalFieldsForm({
+  section,
+  fields,
+  setField,
+  es = false,
+}: {
+  section: CMSSection;
+  fields: CMSCanonicalFieldKey[];
+  setField: <K extends keyof CMSSection>(k: K, v: CMSSection[K]) => void;
+  es?: boolean;
+}) {
+  const label = (name: string) => (es ? `${name} (ES)` : name);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {fieldEnabled(fields, "eyebrow") && !es ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Eyebrow
+          </span>
+          <input
+            value={section.eyebrow ?? ""}
+            onChange={(e) => setField("eyebrow", e.target.value || null)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+      {fieldEnabled(fields, es ? "headline_es" : "headline") ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            {label("Headline")}
+          </span>
+          <input
+            value={(es ? section.headline_es : section.headline) ?? ""}
+            onChange={(e) =>
+              setField(
+                es ? "headline_es" : "headline",
+                e.target.value || null,
+              )
+            }
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+      {fieldEnabled(fields, es ? "subheadline_es" : "subheadline") ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            {label("Subheadline")}
+          </span>
+          <input
+            value={(es ? section.subheadline_es : section.subheadline) ?? ""}
+            onChange={(e) =>
+              setField(
+                es ? "subheadline_es" : "subheadline",
+                e.target.value || null,
+              )
+            }
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+      {fieldEnabled(fields, es ? "body_es" : "body") ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            {label("Body")}
+          </span>
+          <textarea
+            rows={5}
+            value={(es ? section.body_es : section.body) ?? ""}
+            onChange={(e) =>
+              setField(es ? "body_es" : "body", e.target.value || null)
+            }
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+      {fieldEnabled(fields, es ? "image_url_es" : "image_url") && !es ? (
+        <div className="sm:col-span-2">
+          <CmsImageField
+            label="Image URL"
+            value={section.image_url ?? ""}
+            onChange={(url) => setField("image_url", url || null)}
+          />
+        </div>
+      ) : null}
+      {fieldEnabled(fields, es ? "cta_text_es" : "cta_text") ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            {label("CTA text")}
+          </span>
+          <input
+            value={(es ? section.cta_text_es : section.cta_text) ?? ""}
+            onChange={(e) =>
+              setField(es ? "cta_text_es" : "cta_text", e.target.value || null)
+            }
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+      {fieldEnabled(fields, es ? "cta_url_es" : "cta_url") && !es ? (
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            CTA URL
+          </span>
+          <input
+            value={section.cta_url ?? ""}
+            onChange={(e) => setField("cta_url", e.target.value || null)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
+function TypeSettingsFields({
+  section,
+  collections,
+  setSetting,
+}: {
+  section: CMSSection;
+  collections: CollectionOption[];
+  setSetting: (key: string, value: unknown) => void;
+}) {
+  const s = parseSettings(section.settings);
+  const t = section.section_type;
+
+  if (t === "inventory_collection") {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Collection (settings)
+          </span>
+          <select
+            value={settingString(s, "collection_id")}
+            onChange={(e) => setSetting("collection_id", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          >
+            <option value="">— Select —</option>
+            {collections.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    );
+  }
+
+  if (t === "custom_html") {
+    return (
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+          HTML (settings.html)
+        </span>
+        <textarea
+          rows={6}
+          value={settingString(s, "html")}
+          onChange={(e) => setSetting("html", e.target.value)}
+          className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 font-mono text-xs"
+        />
+      </label>
+    );
+  }
+
+  if (t === "faq") {
+    const items = Array.isArray(s.items) ? s.items : [];
+    return (
+      <label className="block space-y-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+          FAQ items (JSON)
+        </span>
+        <textarea
+          rows={6}
+          value={JSON.stringify(items, null, 2)}
+          onChange={(e) => {
+            try {
+              setSetting("items", JSON.parse(e.target.value));
+            } catch {
+              /* ignore while typing */
+            }
+          }}
+          className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 font-mono text-xs"
+        />
+      </label>
+    );
+  }
+
+  return null;
+}
