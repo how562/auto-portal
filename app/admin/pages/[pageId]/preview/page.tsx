@@ -7,7 +7,6 @@ import { DiscoveryProvider } from "@/components/portal/DiscoveryContext";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { fetchSitePageById } from "@/lib/cmsAdmin";
 import { fetchEnrichedCMSPageForPreview } from "@/lib/cmsPages";
-import { fetchStores } from "@/lib/stores";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +29,6 @@ export default async function AdminPagePreviewPage({ params }: PageProps) {
 
   const data = await fetchEnrichedCMSPageForPreview(params.pageId);
   const sections = data?.sections ?? [];
-  const stores = await fetchStores();
 
   return (
     <DiscoveryProvider>

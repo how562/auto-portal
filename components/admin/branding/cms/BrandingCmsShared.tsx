@@ -5,7 +5,7 @@
  * Global UI theme tokens remain in globals.css — not edited here.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CopyTokenButton } from "@/components/admin/branding/CopyTokenButton";
 

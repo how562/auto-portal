@@ -8,7 +8,6 @@ import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { brandPageTitle } from "@/lib/brand";
 import { RESERVED_CMS_SLUGS } from "@/lib/cmsTypes";
 import { fetchEnrichedCMSPage, fetchPublishedPageBySlug } from "@/lib/cmsPages";
-import { fetchStores } from "@/lib/stores";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +54,6 @@ export default async function CMSPage({ params }: CMSPageProps) {
   if (!data) {
     notFound();
   }
-
-  const stores = await fetchStores();
 
   return (
     <DiscoveryProvider>
