@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { usePortalText } from "@/components/providers/TextSettingsProvider";
 
 interface InventoryCommandIntroProps {
   vehicleCount: number;
@@ -21,6 +22,10 @@ export function InventoryCommandIntro({
   lifeTitle,
 }: InventoryCommandIntroProps) {
   const { t } = useLanguage();
+  const inventoryTitle = usePortalText(
+    "inventory.title",
+    t("inventory.command.title"),
+  );
   const countLabel =
     vehicleCount === 1
       ? t("inventory.command.vehicleSingular")
@@ -50,7 +55,7 @@ export function InventoryCommandIntro({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 max-w-2xl">
           <h1 className="headline-stack text-2xl sm:text-3xl lg:text-4xl">
-            {lifeTitle ?? t("inventory.command.title")}
+            {lifeTitle ?? inventoryTitle}
           </h1>
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)] sm:text-[15px]">
             {t("inventory.command.subtitle")}

@@ -1,27 +1,35 @@
 import { getSupabaseAdmin } from "./supabaseAdmin";
 
 const TEXT_SELECT =
-  "text_key, label_en, label_es, category, is_active, created_at, updated_at";
+  "id, text_key, label_en, label_es, category, created_at, updated_at";
 
 export interface PortalTextSettingRow {
+  id: string;
   text_key: string;
   label_en: string;
   label_es: string | null;
   category: string | null;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export type PortalTextSettingUpdateInput = Partial<
-  Pick<PortalTextSettingRow, "label_en" | "label_es" | "category" | "is_active">
+  Pick<PortalTextSettingRow, "label_en" | "label_es">
 >;
 
 function normalizeRow(row: Record<string, unknown>): PortalTextSettingRow | null {
   const textKey = typeof row.text_key === "string" ? row.text_key.trim() : "";
   if (!textKey) return null;
 
+  const id =
+    typeof row.id === "string"
+      ? row.id
+      : typeof row.id === "number"
+        ? String(row.id)
+        : textKey;
+
   return {
+    id,
     text_key: textKey,
     label_en:
       typeof row.label_en === "string" && row.label_en.trim()
@@ -31,7 +39,6 @@ function normalizeRow(row: Record<string, unknown>): PortalTextSettingRow | null
       typeof row.label_es === "string" ? row.label_es.trim() || null : null,
     category:
       typeof row.category === "string" ? row.category.trim() || null : null,
-    is_active: row.is_active !== false,
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -73,13 +80,6 @@ export async function updatePortalTextSetting(
   if (input.label_es !== undefined) {
     payload.label_es = input.label_es?.trim() || null;
   }
-  if (input.category !== undefined) {
-    payload.category = input.category?.trim() || null;
-  }
-  if (input.is_active !== undefined) {
-    payload.is_active = input.is_active;
-  }
-
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("portal_text_settings")

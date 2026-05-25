@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { isAdminRequest } from "@/lib/adminAuthConfig";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 import {
   listSmartMatchRulesAdmin,

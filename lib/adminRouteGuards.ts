@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { isAdminProtectionEnabled, isAdminSession } from "@/lib/adminAuth";
+import { isAdminProtectionEnabled } from "@/lib/adminAuthConfig";
+import { isAdminSession } from "@/lib/adminAuth";
 
 /** App routes with dedicated segments (not CMS). */
 export const DEDICATED_APP_SLUGS = new Set([

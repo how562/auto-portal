@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { usePortalText } from "@/components/providers/TextSettingsProvider";
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
 import { localizeCommunityHero } from "@/lib/communityHeroI18n";
 import { isGuidedDiscoveryHref } from "@/lib/communityHeroUtils";
@@ -135,24 +136,45 @@ function HeroButtons({ content }: { content: CommunityHeroContent }) {
   );
 }
 
+function splitTitleLines(title: string): { text: string; muted: boolean }[] {
+  const parts = title
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return [];
+  return parts.map((text, index) => ({
+    text,
+    muted: parts.length > 1 && index === parts.length - 1,
+  }));
+}
+
 export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
-  const { locale } = useLanguage();
+  const { t, locale } = useLanguage();
   const content = useMemo(
     () => localizeCommunityHero(rawContent, locale),
     [rawContent, locale],
   );
-  const paragraph = content.body.trim() || content.subheadline.trim();
-  const hasSubheadAndBody =
-    content.subheadline.trim().length > 0 && content.body.trim().length > 0;
+
+  const cmsTitleFallback =
+    content.headlineLines.map((line) => line.text).join("\n") ||
+    `${t("hero.headline1")}\n${t("hero.headline2")}`;
+  const cmsSubtitleFallback =
+    content.subheadline.trim() ||
+    content.body.trim() ||
+    t("hero.body");
+
+  const portalTitle = usePortalText("homepage.title", cmsTitleFallback);
+  const portalSubtitle = usePortalText("homepage.subtitle", cmsSubtitleFallback);
+  const titleLines = splitTitleLines(portalTitle);
 
   return (
     <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-20 sm:pt-32 sm:pb-24 lg:pt-36 lg:pb-28">
       <div className="portal-container">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20 xl:gap-24">
           <div className="order-1 flex max-w-xl flex-col lg:max-w-none lg:py-2">
-            {content.headlineLines.length > 0 ? (
+            {titleLines.length > 0 ? (
               <h1 className="headline-stack text-balance font-sans">
-                {content.headlineLines.map((line) => (
+                {titleLines.map((line) => (
                   <span
                     key={line.text}
                     className={`block text-[clamp(2.75rem,7vw,5.25rem)] ${
@@ -165,19 +187,9 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
               </h1>
             ) : null}
 
-            {hasSubheadAndBody ? (
-              <p className="mt-10 max-w-[34rem] text-sm font-semibold leading-snug text-[var(--ink)]">
-                {content.subheadline}
-              </p>
-            ) : null}
-
-            {paragraph ? (
-              <p
-                className={`max-w-[34rem] text-base leading-relaxed text-[var(--muted)] sm:text-[1.0625rem] sm:leading-[1.62] ${
-                  hasSubheadAndBody ? "mt-4" : "mt-10"
-                }`}
-              >
-                {paragraph}
+            {portalSubtitle ? (
+              <p className="mt-10 max-w-[34rem] text-base leading-relaxed text-[var(--muted)] sm:text-[1.0625rem] sm:leading-[1.62]">
+                {portalSubtitle}
               </p>
             ) : null}
 

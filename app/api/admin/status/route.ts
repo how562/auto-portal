@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminProtectionEnabled, isAdminRequest } from "@/lib/adminAuth";
+import { isAdminProtectionEnabled, isAdminRequest } from "@/lib/adminAuthConfig";
 import { CMS_MEDIA_BUCKET, ensureCmsMediaBucket } from "@/lib/cmsMedia";
 import { getServiceRoleKey, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 

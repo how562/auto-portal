@@ -1,4 +1,4 @@
-/** Known Smart Match keys (portal_text_settings.text_key). */
+/** Known portal_text_settings.text_key values (includes dotted keys). */
 export type PortalTextKey =
   | "smart_match_eyebrow"
   | "smart_match_title"
@@ -7,7 +7,11 @@ export type PortalTextKey =
   | "smart_match_results_title"
   | "smart_match_results_body"
   | "smart_match_empty"
-  | "smart_match_view_all";
+  | "smart_match_view_all"
+  | "homepage.title"
+  | "homepage.subtitle"
+  | "inventory.title"
+  | "discovery.heading";
 
 export interface PortalTextValue {
   labelEn: string;

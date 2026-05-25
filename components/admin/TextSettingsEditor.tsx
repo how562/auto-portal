@@ -5,6 +5,9 @@ import type { PortalTextSettingRow } from "@/lib/textSettingsAdmin";
 
 interface TextSettingsEditorProps {
   initialRows: PortalTextSettingRow[];
+  /** True when the table returned zero rows (not a filter miss). */
+  tableEmpty?: boolean;
+  expectedKeyCount?: number;
 }
 
 function groupByCategory(rows: PortalTextSettingRow[]): Map<string, PortalTextSettingRow[]> {
@@ -18,7 +21,11 @@ function groupByCategory(rows: PortalTextSettingRow[]): Map<string, PortalTextSe
   return new Map(Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-export function TextSettingsEditor({ initialRows }: TextSettingsEditorProps) {
+export function TextSettingsEditor({
+  initialRows,
+  tableEmpty = false,
+  expectedKeyCount,
+}: TextSettingsEditorProps) {
   const [rows, setRows] = useState(initialRows);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -108,7 +115,7 @@ export function TextSettingsEditor({ initialRows }: TextSettingsEditorProps) {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search keys or labelsâ€¦"
+          placeholder="Search keys or labels…"
           className="min-w-[200px] flex-1 rounded-lg border border-[var(--line-dark)] px-3 py-2 text-sm"
         />
         <select
@@ -131,7 +138,22 @@ export function TextSettingsEditor({ initialRows }: TextSettingsEditorProps) {
         </p>
       ) : null}
 
-      {filtered.length === 0 ? (
+      {tableEmpty ? (
+        <div className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/40 px-6 py-12 text-center text-sm text-[var(--muted)]">
+          <p className="font-medium text-[var(--ink)]">
+            No rows in <code className="font-mono text-xs">portal_text_settings</code>
+          </p>
+          <p className="mx-auto mt-3 max-w-md leading-relaxed">
+            Seed the table (e.g. migration{" "}
+            <code className="font-mono text-xs">20260522210000_portal_text_settings</code>
+            {expectedKeyCount
+              ? ` — ${expectedKeyCount} Smart Match keys`
+              : null}
+            ) so copy can be edited here. Until then, the public site uses built-in
+            fallbacks for wired keys.
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-[var(--line-dark)] px-6 py-12 text-center text-sm text-[var(--muted)]">
           No text settings match your filters.
         </p>
@@ -224,7 +246,7 @@ export function TextSettingsEditor({ initialRows }: TextSettingsEditorProps) {
                 disabled={savingKey === editingKey || !draftEn.trim()}
                 className="rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {savingKey === editingKey ? "Savingâ€¦" : "Save"}
+                {savingKey === editingKey ? "Saving…" : "Save"}
               </button>
             </div>
           </div>

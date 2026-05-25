@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { LifeCategoryCardVisual } from "@/components/home/LifeCategoryCardVisual";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { usePortalText } from "@/components/providers/TextSettingsProvider";
 import { countByCategory } from "@/lib/categoryCounts";
 import { useSmartMatchRulesCatalog } from "@/components/providers/SmartMatchRulesProvider";
 import { DiscoveryCTA } from "@/components/home/DiscoveryCTA";
@@ -41,6 +42,10 @@ export function DiscoveryCategoriesSection({
 }: DiscoveryCategoriesSectionProps) {
   const router = useRouter();
   const { t, locale } = useLanguage();
+  const discoveryHeading = usePortalText(
+    "discovery.heading",
+    t("categories.howDoYouDrive"),
+  );
   const smartMatchCatalog = useSmartMatchRulesCatalog();
 
   const counts = useMemo(
@@ -79,7 +84,7 @@ export function DiscoveryCategoriesSection({
               {t("categories.shopByLife")}
             </p>
             <h2 className="mt-4 headline-stack text-4xl sm:text-5xl">
-              {t("categories.howDoYouDrive")}
+              {discoveryHeading}
             </h2>
             <p className="mt-4 text-[var(--muted)]">
               {t("categories.lifeIntro")}

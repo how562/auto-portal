@@ -1,16 +1,19 @@
 import { TextSettingsEditor } from "@/components/admin/TextSettingsEditor";
 import { listPortalTextSettings } from "@/lib/textSettingsAdmin";
+import { PORTAL_TEXT_KEYS } from "@/lib/portalTextFallbacks";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 export async function TextSettingsScreen() {
   const configured = isSupabaseAdminConfigured();
   let rows: Awaited<ReturnType<typeof listPortalTextSettings>> = [];
+  let loadError: string | null = null;
 
   if (configured) {
     try {
       rows = await listPortalTextSettings();
-    } catch {
-      /* empty list */
+    } catch (error: unknown) {
+      loadError =
+        error instanceof Error ? error.message : "Failed to load text settings";
     }
   }
 
@@ -33,7 +36,17 @@ export async function TextSettingsScreen() {
         </p>
       ) : null}
 
-      <TextSettingsEditor initialRows={rows} />
+      {loadError ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {loadError}
+        </p>
+      ) : null}
+
+      <TextSettingsEditor
+        initialRows={rows}
+        tableEmpty={configured && !loadError && rows.length === 0}
+        expectedKeyCount={PORTAL_TEXT_KEYS.length}
+      />
     </div>
   );
 }

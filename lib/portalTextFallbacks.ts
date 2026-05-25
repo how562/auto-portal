@@ -46,6 +46,28 @@ export const PORTAL_TEXT_FALLBACKS: Record<PortalTextKey, PortalTextValue> = {
     labelEs: "Ver todas las opciones",
     category: "smart_match",
   },
+  "homepage.title": {
+    labelEn: "Cavender Confidence.\nDriven by Impact.",
+    labelEs: "Confianza Cavender.\nImpulsados por el impacto.",
+    category: "homepage",
+  },
+  "homepage.subtitle": {
+    labelEn:
+      "At Cavender Auto Group, every vehicle we sell supports the people and causes that make our communities stronger. Together, we're driving more than change — we're building a better tomorrow.",
+    labelEs:
+      "En Cavender Auto Group, cada vehículo que vendemos apoya a las personas y causas que fortalecen nuestras comunidades. Juntos impulsamos algo más que cambio: construimos un mejor mañana.",
+    category: "homepage",
+  },
+  "inventory.title": {
+    labelEn: "Inventory Command Center",
+    labelEs: "Centro de comando de inventario",
+    category: "inventory",
+  },
+  "discovery.heading": {
+    labelEn: "How do you drive?",
+    labelEs: "¿Cómo manejas?",
+    category: "discovery",
+  },
 };
 
 export const PORTAL_TEXT_KEYS = Object.keys(

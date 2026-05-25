@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { CMS_ADMIN_COOKIE, getAdminSecret, isValidAdminSecret } from "@/lib/adminAuth";
+import {
+  CMS_ADMIN_COOKIE,
+  getAdminSecret,
+  isValidAdminSecret,
+} from "@/lib/adminAuthConfig";
 
 export async function POST(request: Request) {
   const secret = getAdminSecret();

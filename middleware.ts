@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { CMS_ADMIN_COOKIE, getAdminSecret, isValidAdminSecret } from "@/lib/adminAuth";
+import {
+  CMS_ADMIN_COOKIE,
+  getAdminSecret,
+  isValidAdminSecret,
+} from "@/lib/adminAuthConfig";
 
 function isAdminProtectedPath(pathname: string): boolean {
   return pathname.startsWith("/admin") || pathname === "/mathbox-settings";
