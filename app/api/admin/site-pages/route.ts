@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
-  deletePageSection,
-  updatePageSection,
-  type PageSectionUpdateInput,
+  createSitePage,
+  listAllSitePages,
+  type SitePageCreateInput,
 } from "@/lib/cmsAdmin";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
-interface RouteContext {
-  params: { id: string };
-}
-
-export async function PATCH(request: Request, context: RouteContext) {
+export async function GET(request: Request) {
   if (!isAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -23,16 +19,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const body = (await request.json()) as PageSectionUpdateInput;
-    const section = await updatePageSection(context.params.id, body);
-    return NextResponse.json({ section });
+    const pages = await listAllSitePages();
+    return NextResponse.json({ pages });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Update failed";
+    const message = error instanceof Error ? error.message : "Load failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, context: RouteContext) {
+export async function POST(request: Request) {
   if (!isAdminRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -44,10 +39,11 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   try {
-    await deletePageSection(context.params.id);
-    return NextResponse.json({ ok: true });
+    const body = (await request.json()) as SitePageCreateInput;
+    const page = await createSitePage(body);
+    return NextResponse.json({ page }, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Delete failed";
+    const message = error instanceof Error ? error.message : "Create failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

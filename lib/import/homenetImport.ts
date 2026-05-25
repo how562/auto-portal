@@ -7,6 +7,12 @@ import {
   readSftpConfigFromEnv,
   type DownloadedInventoryFile,
 } from "./sftpInventory";
+import { loadActiveFeedFileMappings } from "@/lib/feedFileMappings";
+import {
+  completeFeedImportRun,
+  failFeedImportRun,
+  startFeedImportRun,
+} from "@/lib/feedImportRunLog";
 import {
   buildStoreLookupTables,
   isResolvedStoreMapping,
@@ -235,7 +241,10 @@ async function upsertVehicleBatch(
 async function fetchStoreLookup(
   supabase: SupabaseClient,
 ): Promise<StoreLookupTables> {
-  const { data, error } = await supabase.from("stores").select("id, name");
+  const [{ data, error }, dbFileMap] = await Promise.all([
+    supabase.from("stores").select("id, name"),
+    loadActiveFeedFileMappings(supabase),
+  ]);
 
   if (error || !data) {
     throw new Error(`Failed to load stores for import mapping: ${error?.message ?? "unknown"}`);
@@ -243,6 +252,7 @@ async function fetchStoreLookup(
 
   return buildStoreLookupTables(
     (data ?? []) as Array<{ id: string; name: string | null }>,
+    dbFileMap,
   );
 }
 
@@ -390,17 +400,28 @@ export async function runHomenetInventoryImport(
 export async function runHomenetMultiFileInventoryImport(
   supabase: SupabaseClient,
 ): Promise<HomenetImportSummary> {
-  const sftpConfig = readSftpConfigFromEnv();
-  const downloadedFiles = await downloadAllInventoryFiles(sftpConfig);
-  const storeLookup = await fetchStoreLookup(supabase);
+  const runId = await startFeedImportRun(supabase);
 
-  const fileSummaries: HomenetFileImportSummary[] = [];
+  try {
+    const sftpConfig = readSftpConfigFromEnv();
+    const downloadedFiles = await downloadAllInventoryFiles(sftpConfig);
+    const storeLookup = await fetchStoreLookup(supabase);
 
-  for (const downloaded of downloadedFiles) {
-    fileSummaries.push(
-      await importSingleInventoryFile(supabase, downloaded, storeLookup),
-    );
+    const fileSummaries: HomenetFileImportSummary[] = [];
+
+    for (const downloaded of downloadedFiles) {
+      fileSummaries.push(
+        await importSingleInventoryFile(supabase, downloaded, storeLookup),
+      );
+    }
+
+    const summary = aggregateFileSummaries(fileSummaries);
+    await completeFeedImportRun(supabase, runId, summary);
+    return summary;
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "HomeNet import failed";
+    await failFeedImportRun(supabase, runId, message);
+    throw error;
   }
-
-  return aggregateFileSummaries(fileSummaries);
 }

@@ -1,6 +1,7 @@
 import { readRowStoreHints } from "./dealerSendMap";
 
 export type StoreMappingSource =
+  | "feed_file_mappings"
   | "env_file_map"
   | "filename_store_name"
   | "feed_store_id"
@@ -19,6 +20,8 @@ export interface StoreLookupTables {
   storeNameById: Map<string, string>;
   /** Normalized filename key → store id (from HOMENET_STORE_FILE_MAP). */
   fileMap: Map<string, string>;
+  /** Normalized filename key → store id (from feed_file_mappings, active rows). */
+  dbFileMap: Map<string, string>;
 }
 
 export interface ResolvedStoreMapping {
@@ -72,7 +75,10 @@ export function readStoreFileMapFromEnv(): Map<string, string> {
   }
 }
 
-export function buildStoreLookupTables(stores: StoreRecord[]): StoreLookupTables {
+export function buildStoreLookupTables(
+  stores: StoreRecord[],
+  dbFileMap: Map<string, string> = new Map(),
+): StoreLookupTables {
   const storeIdByDealerName = new Map<string, string>();
   const storeIdByNormalizedName = new Map<string, string>();
   const storeNameById = new Map<string, string>();
@@ -99,12 +105,14 @@ export function buildStoreLookupTables(stores: StoreRecord[]): StoreLookupTables
     storeIdByNormalizedName,
     storeNameById,
     fileMap: readStoreFileMapFromEnv(),
+    dbFileMap,
   };
 }
 
-function resolveFromEnvFileMap(
+function resolveFromPatternFileMap(
   fileName: string,
   fileMap: Map<string, string>,
+  source: StoreMappingSource,
 ): ResolvedStoreMapping | null {
   const normalizedFile = normalizeMappingToken(fileBaseName(fileName));
   if (!normalizedFile) return null;
@@ -114,7 +122,7 @@ function resolveFromEnvFileMap(
     return {
       storeId,
       storeName: "",
-      source: "env_file_map",
+      source,
     };
   }
 
@@ -123,12 +131,26 @@ function resolveFromEnvFileMap(
       return {
         storeId,
         storeName: "",
-        source: "env_file_map",
+        source,
       };
     }
   }
 
   return null;
+}
+
+function resolveFromEnvFileMap(
+  fileName: string,
+  fileMap: Map<string, string>,
+): ResolvedStoreMapping | null {
+  return resolveFromPatternFileMap(fileName, fileMap, "env_file_map");
+}
+
+function resolveFromDbFileMap(
+  fileName: string,
+  dbFileMap: Map<string, string>,
+): ResolvedStoreMapping | null {
+  return resolveFromPatternFileMap(fileName, dbFileMap, "feed_file_mappings");
 }
 
 function filenameMatchesStoreName(fileName: string, storeName: string): boolean {
@@ -238,13 +260,22 @@ function resolveFromFeedRows(
 
 /**
  * Resolve which store a feed file belongs to.
- * Tries filename/env mapping first, then feed columns on sample rows.
+ * Order: feed_file_mappings → env map → filename heuristic → feed columns.
  */
 export function resolveStoreForFile(
   fileName: string,
   rows: Record<string, string>[],
   lookup: StoreLookupTables,
 ): StoreMappingResult {
+  const fromDb = resolveFromDbFileMap(fileName, lookup.dbFileMap);
+  if (fromDb) {
+    return {
+      ...fromDb,
+      storeName:
+        fromDb.storeName || lookup.storeNameById.get(fromDb.storeId) || "",
+    };
+  }
+
   const fromEnv = resolveFromEnvFileMap(fileName, lookup.fileMap);
   if (fromEnv) {
     return {
@@ -265,6 +296,6 @@ export function resolveStoreForFile(
   }
 
   return {
-    reason: `Could not map "${fileName}" to a store — configure HOMENET_STORE_FILE_MAP or ensure DealerName/StoreID is present in the feed`,
+    reason: `Could not map "${fileName}" to a store — add an active feed_file_mappings row, HOMENET_STORE_FILE_MAP entry, or ensure DealerName/StoreID is present in the feed`,
   };
 }

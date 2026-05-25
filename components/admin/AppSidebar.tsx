@@ -10,11 +10,16 @@ export interface AdminNavItem {
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { title: "Pages", href: "/admin/pages" },
+  { title: "Homepage Sections", href: "/admin/homepage-sections" },
+  { title: "Collections", href: "/admin/collections" },
+  { title: "Notes", href: "/admin/notes" },
   { title: "Inventory", href: "/admin/inventory" },
   { title: "Media", href: "/admin/media" },
   { title: "Math Box", href: "/admin/mathbox-settings" },
   { title: "Text Settings", href: "/admin/text-settings" },
   { title: "Smart Match", href: "/admin/smart-match-rules" },
+  { title: "Feed Mapping", href: "/admin/feed-mapping" },
+  { title: "Feed Imports", href: "/admin/feeds" },
 ];
 
 function isNavActive(pathname: string, href: string): boolean {

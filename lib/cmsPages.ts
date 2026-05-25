@@ -1,3 +1,4 @@
+import { fetchAllPageSectionsForAdmin, fetchSitePageById } from "./cmsAdmin";
 import { fetchVehiclesForCollection } from "./cmsCollections";
 import { parseSettings, settingNumber, settingString } from "./cmsSettings";
 import type {
@@ -12,6 +13,7 @@ import {
   PAGE_SECTION_SELECT,
 } from "./cmsSectionNormalize";
 import { getSupabase } from "./supabase";
+import { isSupabaseAdminConfigured } from "./supabaseAdmin";
 import { fetchStores } from "./stores";
 import type { Store } from "./types";
 
@@ -101,4 +103,27 @@ export async function fetchEnrichedCMSPage(
   );
 
   return { page: base.page, sections };
+}
+
+/** Admin preview: any status, active sections only. */
+export async function fetchEnrichedCMSPageForPreview(
+  pageId: string,
+): Promise<EnrichedCMSPageData | null> {
+  if (!isSupabaseAdminConfigured()) return null;
+
+  const page = await fetchSitePageById(pageId);
+  if (!page) return null;
+
+  const sections = (await fetchAllPageSectionsForAdmin(pageId)).filter(
+    (s) => s.is_active,
+  );
+
+  const needsStores = sections.some((s) => s.section_type === "locations");
+  const stores = needsStores ? await fetchStores() : [];
+
+  const enriched = await Promise.all(
+    sections.map((section) => enrichSection(section, stores)),
+  );
+
+  return { page, sections: enriched };
 }

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
-  deletePageSection,
-  updatePageSection,
-  type PageSectionUpdateInput,
+  deleteSitePage,
+  updateSitePage,
+  type SitePageUpdateInput,
 } from "@/lib/cmsAdmin";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
@@ -23,9 +23,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const body = (await request.json()) as PageSectionUpdateInput;
-    const section = await updatePageSection(context.params.id, body);
-    return NextResponse.json({ section });
+    const body = (await request.json()) as SitePageUpdateInput;
+    const page = await updateSitePage(context.params.id, body);
+    return NextResponse.json({ page });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Update failed";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -44,7 +44,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   try {
-    await deletePageSection(context.params.id);
+    await deleteSitePage(context.params.id);
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Delete failed";
