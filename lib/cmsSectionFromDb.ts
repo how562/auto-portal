@@ -1,6 +1,6 @@
 import type { CMSSection } from "./cmsSectionModel";
 import { CMS_SECTION_TYPES, type CMSSectionType } from "./cmsTypes";
-import { parseSettings, settingString } from "./cmsSettings";
+import { settingString } from "./cmsSettings";
 
 export const PAGE_SECTION_SELECT =
   "id, page_id, section_type, title, subtitle, content, settings, sort_order, is_active, eyebrow, headline, subheadline, body, headline_es, subheadline_es, body_es, cta_text_es, image_url, image_url_es, cta_text, cta_url, cta_url_es, layout_variant";
