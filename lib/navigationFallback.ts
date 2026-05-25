@@ -84,25 +84,13 @@ export const FALLBACK_FOOTER_NAV: FooterNavigation = {
       ],
     },
     {
-      title: "Group",
+      title: "About",
       items: [
-        {
-          id: "fb-g1",
-          label: "Locations",
-          href: "/locations",
-          linkKind: "route",
-        },
         {
           id: "fb-g2",
           label: "How It Works",
           href: "#how-it-works",
           linkKind: "hash",
-        },
-        {
-          id: "fb-g3",
-          label: "Contact",
-          href: "/contact-the-cavenders",
-          linkKind: "route",
         },
       ],
     },

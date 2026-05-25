@@ -5,6 +5,7 @@ import {
   filterVehiclesByIntent,
   filtersFromShopperSelection,
   getSmartMatchResults,
+  normalizeVehicle,
   type InventoryMatchFilters,
   type MatchBodyStyle,
   type MatchBudget,
@@ -268,6 +269,25 @@ export function filterInventoryVehicles(
 ): Vehicle[] {
   return filterInventoryVehiclesWithMeta(vehicles, filters, smartMatchCatalog)
     .vehicles;
+}
+
+/** Free-text inventory search from ?search= query param. */
+export function filterVehiclesByKeywordSearch(
+  vehicles: Vehicle[],
+  query: string | null | undefined,
+): Vehicle[] {
+  const q = query?.trim().toLowerCase();
+  if (!q) return vehicles;
+  return vehicles.filter((vehicle) =>
+    normalizeVehicle(vehicle).searchText.includes(q),
+  );
+}
+
+export function readInventorySearchQuery(
+  params: URLSearchParams,
+): string | null {
+  const value = params.get("search")?.trim();
+  return value || null;
 }
 
 function imageCount(v: Vehicle): number {
@@ -576,6 +596,7 @@ export function paginateInventoryResults<T>(
 export function filtersToSearchParams(
   filters: InventoryFilters,
   page?: number,
+  search?: string | null,
 ): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.condition !== "all") params.set("condition", filters.condition);
@@ -586,6 +607,8 @@ export function filtersToSearchParams(
   if (filters.storeId !== "all") params.set("store", filters.storeId);
   if (filters.sort !== DEFAULT_INVENTORY_SORT) params.set("sort", filters.sort);
   if (page && page > 1) params.set("page", String(page));
+  const searchTrimmed = search?.trim();
+  if (searchTrimmed) params.set("search", searchTrimmed);
   return params;
 }
 

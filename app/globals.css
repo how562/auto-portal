@@ -66,6 +66,7 @@
   font-display: swap;
 }
 
+/* Design token source of truth — semantic map in lib/designTokens.ts */
 :root {
   --ink: #152a47;
   --charcoal: #1e3556;
@@ -350,5 +351,56 @@ body {
   }
   50% {
     transform: translateY(-3px);
+  }
+}
+
+@keyframes brand-marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@layer utilities {
+  .brand-marquee-viewport {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 6%,
+      #000 94%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 6%,
+      #000 94%,
+      transparent
+    );
+  }
+
+  .brand-marquee-track {
+    animation: brand-marquee-scroll var(--brand-marquee-duration, 80s) linear
+      infinite;
+    will-change: transform;
+  }
+
+  .brand-marquee-paused .brand-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand-marquee-track {
+      animation: none;
+      transform: none;
+    }
+
+    .brand-marquee-reduced {
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+    }
   }
 }

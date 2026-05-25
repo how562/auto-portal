@@ -21,6 +21,7 @@ import {
 import {
   DEFAULT_INVENTORY_FILTERS,
   filterInventoryVehiclesWithMeta,
+  filterVehiclesByKeywordSearch,
   filtersToSearchParams,
   getLifeCategoryHeader,
   getLifeEmptyStateCopy,
@@ -38,6 +39,7 @@ interface InventoryPageClientProps {
   vehicles: Vehicle[];
   stores: Store[];
   initialFilters: InventoryFilters;
+  initialSearchQuery?: string | null;
   loadError: string | null;
   page: number;
   totalCount: number;
@@ -65,6 +67,7 @@ export function InventoryPageClient({
   vehicles,
   stores,
   initialFilters,
+  initialSearchQuery = null,
   loadError,
   page,
   totalCount,
@@ -75,6 +78,7 @@ export function InventoryPageClient({
   const smartMatchCatalog = useSmartMatchRulesCatalog();
   const router = useRouter();
   const [filters, setFilters] = useState<InventoryFilters>(initialFilters);
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [makeFilter, setMakeFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
@@ -85,18 +89,22 @@ export function InventoryPageClient({
   }, [initialFilters]);
 
   useEffect(() => {
+    setSearchQuery(initialSearchQuery);
+  }, [initialSearchQuery]);
+
+  useEffect(() => {
     setViewMode(getStoredViewMode());
   }, []);
 
   const currentPage = page;
 
   const syncUrl = useCallback(
-    (next: InventoryFilters, nextPage = 1) => {
-      const params = filtersToSearchParams(next, nextPage);
+    (next: InventoryFilters, nextPage = 1, nextSearch = searchQuery) => {
+      const params = filtersToSearchParams(next, nextPage, nextSearch);
       const qs = params.toString();
       router.replace(qs ? `/inventory?${qs}` : "/inventory", { scroll: false });
     },
-    [router],
+    [router, searchQuery],
   );
 
   const updateFilters = useCallback(
@@ -125,9 +133,10 @@ export function InventoryPageClient({
 
   const clearAll = useCallback(() => {
     setFilters(DEFAULT_INVENTORY_FILTERS);
+    setSearchQuery(null);
     setMakeFilter("all");
     setModelFilter("all");
-    syncUrl(DEFAULT_INVENTORY_FILTERS);
+    syncUrl(DEFAULT_INVENTORY_FILTERS, 1, null);
   }, [syncUrl]);
 
   const handleMakeChange = useCallback((make: string) => {
@@ -157,37 +166,48 @@ export function InventoryPageClient({
     [filteredVehicles, makeFilter, modelFilter],
   );
 
+  const searchFiltered = useMemo(
+    () => filterVehiclesByKeywordSearch(makeModelFiltered, searchQuery),
+    [makeModelFiltered, searchQuery],
+  );
+
   const pagedResults = useMemo(() => {
     if (serverPaginated) {
-      const items = applyMakeModelFilter(vehicles, makeFilter, modelFilter);
+      const items = filterVehiclesByKeywordSearch(
+        applyMakeModelFilter(vehicles, makeFilter, modelFilter),
+        searchQuery,
+      );
       return {
         items,
         totalCount:
-          makeFilter !== "all" || modelFilter !== "all"
+          makeFilter !== "all" ||
+          modelFilter !== "all" ||
+          searchQuery
             ? items.length
             : totalCount,
         page: currentPage,
         totalPages: Math.max(1, Math.ceil(totalCount / INVENTORY_PAGE_SIZE)),
       };
     }
-    return paginateInventoryResults(makeModelFiltered, currentPage);
+    return paginateInventoryResults(searchFiltered, currentPage);
   }, [
     serverPaginated,
     vehicles,
-    makeModelFiltered,
+    searchFiltered,
     totalCount,
     currentPage,
     makeFilter,
     modelFilter,
+    searchQuery,
   ]);
 
   const buildPageHref = useCallback(
     (targetPage: number) => {
-      const params = filtersToSearchParams(filters, targetPage);
+      const params = filtersToSearchParams(filters, targetPage, searchQuery);
       const qs = params.toString();
       return qs ? `/inventory?${qs}` : "/inventory";
     },
-    [filters],
+    [filters, searchQuery],
   );
 
   const lifeHeader = useMemo(

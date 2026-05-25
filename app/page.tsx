@@ -4,11 +4,9 @@ import { getCommunityHeroContent } from "@/lib/communityHero";
 
 import { fetchCavenderCommitmentCmsPayload } from "@/lib/cavenderCommitment";
 
-import { fetchStores } from "@/lib/stores";
-
 import { fetchPortalVehicles } from "@/lib/vehicles";
 
-import type { Store, Vehicle } from "@/lib/types";
+import type { Vehicle } from "@/lib/types";
 
 
 
@@ -16,38 +14,19 @@ export const dynamic = "force-dynamic";
 
 
 
-async function loadPortalData(): Promise<{
-
-  vehicles: Vehicle[];
-
-  stores: Store[];
-
-}> {
-
-  const [vehicles, stores] = await Promise.all([
-
-    fetchPortalVehicles(),
-
-    fetchStores(),
-
-  ]);
-
-  return { vehicles, stores };
-
+async function loadPortalData(): Promise<{ vehicles: Vehicle[] }> {
+  const vehicles = await fetchPortalVehicles();
+  return { vehicles };
 }
 
 
 
 export default async function Home() {
 
-  const [{ vehicles, stores }, communityHero, commitmentCms] = await Promise.all([
-
+  const [{ vehicles }, communityHero, commitmentCms] = await Promise.all([
     loadPortalData(),
-
     getCommunityHeroContent(),
-
     fetchCavenderCommitmentCmsPayload(),
-
   ]);
 
 
@@ -59,9 +38,6 @@ export default async function Home() {
       <PortalExperience
 
         vehicles={vehicles}
-
-        stores={stores}
-
         communityHero={communityHero}
 
         commitmentCms={commitmentCms}

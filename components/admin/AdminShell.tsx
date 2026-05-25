@@ -17,11 +17,7 @@ export function AdminShell({
   const isLogin = pathname.startsWith("/admin/login");
 
   if (isLogin) {
-    return (
-      <div className="min-h-screen bg-[var(--cream)] text-[var(--ink)]">
-        {children}
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (

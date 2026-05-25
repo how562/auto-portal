@@ -36,7 +36,7 @@ export async function NotesScreen() {
         </p>
       ) : null}
 
-      <NotesEditor initialNotes={notes} />
+      <NotesEditor initialNotes={notes} configured={configured} />
     </div>
   );
 }

@@ -62,7 +62,7 @@ export default async function AdminPagePreviewPage({ params }: PageProps) {
         <main className="min-h-screen bg-[var(--cream)] pt-20 sm:pt-24">
           <CMSSectionRenderer sections={sections} />
         </main>
-        <PortalFooter stores={stores} />
+        <PortalFooter />
       </LeadCaptureProvider>
     </DiscoveryProvider>
   );

@@ -1,3 +1,6 @@
+/**
+ * @deprecated Replaced by ExploreOurBrandsSection on the homepage. Kept for reference only.
+ */
 import Link from "next/link";
 import type { Store } from "@/lib/types";
 

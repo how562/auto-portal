@@ -5,9 +5,26 @@ import type { NoteAdminRow } from "@/lib/notesAdmin";
 
 interface NotesEditorProps {
   initialNotes: NoteAdminRow[];
+  configured: boolean;
 }
 
-export function NotesEditor({ initialNotes }: NotesEditorProps) {
+async function parseNotesResponse(res: Response): Promise<{
+  rows?: NoteAdminRow[];
+  row?: NoteAdminRow;
+  error?: string;
+}> {
+  try {
+    return (await res.json()) as {
+      rows?: NoteAdminRow[];
+      row?: NoteAdminRow;
+      error?: string;
+    };
+  } catch {
+    return { error: res.status === 404 ? "Notes API not found" : "Invalid server response" };
+  }
+}
+
+export function NotesEditor({ initialNotes, configured }: NotesEditorProps) {
   const [notes, setNotes] = useState(initialNotes);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialNotes[0]?.id ?? null,
@@ -43,103 +60,142 @@ export function NotesEditor({ initialNotes }: NotesEditorProps) {
   }, [selectedId, selected?.updated_at, selected]);
 
   const refreshNotes = useCallback(async () => {
+    if (!configured) return;
     const res = await fetch(
       `/api/admin/notes?archived=${showArchived ? "1" : "0"}`,
       { credentials: "include" },
     );
-    const data = (await res.json()) as { rows?: NoteAdminRow[] };
-    if (data.rows) setNotes(data.rows);
-  }, [showArchived]);
+    const data = await parseNotesResponse(res);
+    if (!res.ok) {
+      setError(data.error ?? "Failed to refresh notes");
+      return;
+    }
+    if (data.rows) {
+      setNotes(data.rows);
+      setSelectedId((current) => {
+        if (current && data.rows!.some((n) => n.id === current)) return current;
+        return data.rows![0]?.id ?? null;
+      });
+    }
+  }, [showArchived, configured]);
 
   useEffect(() => {
     void refreshNotes();
   }, [showArchived, refreshNotes]);
 
   async function createNote() {
-    setSaving(true);
-    setError(null);
-    const res = await fetch("/api/admin/notes", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = (await res.json()) as { row?: NoteAdminRow; error?: string };
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Create failed");
+    if (!configured) {
+      setError("Supabase admin is not configured.");
       return;
     }
-    if (data.row) {
-      setNotes((prev) => [data.row!, ...prev]);
-      setSelectedId(data.row.id);
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/notes", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Untitled", body: "" }),
+      });
+      const data = await parseNotesResponse(res);
+      if (!res.ok) {
+        setError(data.error ?? "Create failed");
+        return;
+      }
+      if (data.row) {
+        setNotes((prev) => [data.row!, ...prev]);
+        setSelectedId(data.row.id);
+        setDraftTitle(data.row.title);
+        setDraftBody(data.row.body);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   async function saveNote() {
     if (!selectedId) return;
-    setSaving(true);
-    setError(null);
-    const res = await fetch("/api/admin/notes", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: selectedId,
-        updates: { title: draftTitle, body: draftBody },
-      }),
-    });
-    const data = (await res.json()) as { row?: NoteAdminRow; error?: string };
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Save failed");
+    if (!configured) {
+      setError("Supabase admin is not configured.");
       return;
     }
-    if (data.row) {
-      setNotes((prev) =>
-        prev.map((n) => (n.id === data.row!.id ? data.row! : n)),
-      );
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/notes", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedId,
+          updates: { title: draftTitle, body: draftBody },
+        }),
+      });
+      const data = await parseNotesResponse(res);
+      if (!res.ok) {
+        setError(data.error ?? "Save failed");
+        return;
+      }
+      if (data.row) {
+        setNotes((prev) =>
+          prev.map((n) => (n.id === data.row!.id ? data.row! : n)),
+        );
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   async function togglePin() {
-    if (!selected) return;
+    if (!selected || !configured) return;
     setSaving(true);
-    const res = await fetch("/api/admin/notes", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: selected.id,
-        updates: { pinned: !selected.pinned },
-      }),
-    });
-    const data = (await res.json()) as { row?: NoteAdminRow; error?: string };
-    setSaving(false);
-    if (data.row) {
-      setNotes((prev) =>
-        prev
-          .map((n) => (n.id === data.row!.id ? data.row! : n))
-          .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
-      );
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/notes", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selected.id,
+          updates: { pinned: !selected.pinned },
+        }),
+      });
+      const data = await parseNotesResponse(res);
+      if (!res.ok) {
+        setError(data.error ?? "Pin failed");
+        return;
+      }
+      if (data.row) {
+        setNotes((prev) =>
+          prev
+            .map((n) => (n.id === data.row!.id ? data.row! : n))
+            .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
+        );
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   async function archiveNote() {
     if (!selectedId || !confirm("Archive this note?")) return;
     setSaving(true);
-    const res = await fetch(
-      `/api/admin/notes?id=${encodeURIComponent(selectedId)}`,
-      { method: "DELETE", credentials: "include" },
-    );
-    const data = (await res.json()) as { row?: NoteAdminRow; error?: string };
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Archive failed");
-      return;
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/notes?id=${encodeURIComponent(selectedId)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      const data = await parseNotesResponse(res);
+      if (!res.ok) {
+        setError(data.error ?? "Archive failed");
+        return;
+      }
+      setNotes((prev) => prev.filter((n) => n.id !== selectedId));
+      setSelectedId(null);
+    } finally {
+      setSaving(false);
     }
-    setNotes((prev) => prev.filter((n) => n.id !== selectedId));
-    setSelectedId(null);
   }
 
   return (
@@ -163,8 +219,8 @@ export function NotesEditor({ initialNotes }: NotesEditorProps) {
         <button
           type="button"
           onClick={() => void createNote()}
-          disabled={saving}
-          className="rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white"
+          disabled={saving || !configured}
+          className="rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           New note
         </button>
@@ -228,7 +284,7 @@ export function NotesEditor({ initialNotes }: NotesEditorProps) {
                 <button
                   type="button"
                   onClick={() => void saveNote()}
-                  disabled={saving}
+                  disabled={saving || !configured}
                   className="rounded-md bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   Save
@@ -236,8 +292,8 @@ export function NotesEditor({ initialNotes }: NotesEditorProps) {
                 <button
                   type="button"
                   onClick={() => void togglePin()}
-                  disabled={saving}
-                  className="rounded-md border border-[var(--line-dark)] px-4 py-2 text-sm"
+                  disabled={saving || !configured}
+                  className="rounded-md border border-[var(--line-dark)] px-4 py-2 text-sm disabled:opacity-50"
                 >
                   {selected.pinned ? "Unpin" : "Pin"}
                 </button>
@@ -245,8 +301,8 @@ export function NotesEditor({ initialNotes }: NotesEditorProps) {
                   <button
                     type="button"
                     onClick={() => void archiveNote()}
-                    disabled={saving}
-                    className="rounded-md border border-[var(--line-dark)] px-4 py-2 text-sm text-[var(--muted)]"
+                    disabled={saving || !configured}
+                    className="rounded-md border border-[var(--line-dark)] px-4 py-2 text-sm text-[var(--muted)] disabled:opacity-50"
                   >
                     Archive
                   </button>

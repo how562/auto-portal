@@ -4,6 +4,7 @@ import {
   hasActiveInventoryFilters,
   needsSmartMatchFiltering,
   parseInventoryPage,
+  readInventorySearchQuery,
   searchParamsToFilters,
 } from "@/lib/inventorySearch";
 import { fetchStores } from "@/lib/stores";
@@ -39,8 +40,10 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
   }
 
   const filters = searchParamsToFilters(params);
+  const searchQuery = readInventorySearchQuery(params);
   const page = parseInventoryPage(readParam(searchParams, "page"));
-  const useClientPagination = needsSmartMatchFiltering(filters);
+  const useClientPagination =
+    needsSmartMatchFiltering(filters) || searchQuery != null;
 
   try {
     if (useClientPagination) {
@@ -52,6 +55,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
         vehicles,
         stores,
         filters,
+        searchQuery,
         loadError: null as string | null,
         page,
         totalCount: vehicles.length,
@@ -73,6 +77,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
       vehicles: result.vehicles,
       stores,
       filters,
+      searchQuery,
       loadError: null as string | null,
       page: result.page,
       totalCount: result.totalCount,
@@ -83,6 +88,7 @@ async function loadInventory(searchParams: InventoryPageProps["searchParams"]) {
       vehicles: [],
       stores: [],
       filters,
+      searchQuery,
       loadError:
         error instanceof Error ? error.message : "Failed to load inventory",
       page: 1,
@@ -99,6 +105,7 @@ export default async function InventoryPage({
     vehicles,
     stores,
     filters,
+    searchQuery,
     loadError,
     page,
     totalCount,
@@ -110,6 +117,7 @@ export default async function InventoryPage({
       vehicles={vehicles}
       stores={stores}
       initialFilters={filters}
+      initialSearchQuery={searchQuery}
       loadError={loadError}
       page={page}
       totalCount={totalCount}
