@@ -226,7 +226,9 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
               >
                 <div className="flex items-center gap-3">
                   <StepBubble n={2} active={guidedStep === 2} done={hasBudget} />
-                  <span className="text-sm font-semibold text-[var(--ink)]">What's your budget?</span>
+                  <span className="text-sm font-semibold text-[var(--ink)]">
+                    {"What's your budget?"}
+                  </span>
                   {guidedStep !== 2 && budgetLabel && (
                     <span className="ml-auto rounded-full bg-[var(--cream-dark)] px-3 py-0.5 text-[11px] font-semibold text-[var(--ink)]">{budgetLabel}</span>
                   )}
@@ -269,7 +271,9 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
               <div className="mx-5 h-px bg-[var(--line)]" />
               <div className="flex items-center gap-3 px-5 py-4 opacity-35 select-none">
                 <StepBubble n={2} active={false} done={false} />
-                <span className="text-sm font-semibold text-[var(--ink)]">What's your budget?</span>
+                <span className="text-sm font-semibold text-[var(--ink)]">
+                  {"What's your budget?"}
+                </span>
                 <span className="ml-auto text-[11px] text-[var(--muted)]">unlocks next</span>
               </div>
             </>
@@ -301,7 +305,7 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
                 {guidedStep === 3 && (
                   <div className="mt-4 space-y-3">
                     <p className="text-[12px] text-[var(--muted)]">
-                      Optional. Leave on "Either" and we'll show you the full range.
+                      {"Optional. Leave on \"Either\" and we'll show you the full range."}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {(
@@ -394,7 +398,9 @@ export function GuidedDiscoverySection({ vehicles }: GuidedDiscoverySectionProps
               <div>
                 <p className="text-sm font-semibold text-[var(--ink)]">Your matches will appear here.</p>
                 <p className="mt-0.5 text-[12px] text-[var(--muted)]">
-                  Pick a category above — we'll instantly surface the best vehicles from our inventory that fit your needs.
+                  {
+                    "Pick a category above — we'll instantly surface the best vehicles from our inventory that fit your needs."
+                  }
                 </p>
               </div>
             </div>

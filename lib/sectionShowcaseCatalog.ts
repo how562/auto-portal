@@ -11,6 +11,7 @@ import {
 import {
   LAYOUT_LIBRARY_PRESET_DEFS,
   type LayoutLibraryPresetDef,
+  type LayoutLibraryPresetId,
 } from "./layoutLibraryPresets";
 
 export const SHOWCASE_CATEGORIES = [
@@ -184,7 +185,7 @@ export interface SectionShowcaseCatalogEntry extends SectionShowcaseEntry {
 
 export interface LayoutLibraryCatalogEntry {
   kind: "layout-library";
-  id: string;
+  id: LayoutLibraryPresetId;
   presetKey: string;
   label: string;
   description: string;

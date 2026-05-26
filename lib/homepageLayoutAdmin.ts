@@ -49,7 +49,7 @@ export async function fetchHomepageLayoutAdmin(): Promise<HomepageLayoutAdminPay
 
   return {
     sectionOrder: fullOrder,
-    hiddenSections: [...mergedHidden],
+    hiddenSections: Array.from(mergedHidden),
   };
 }
 

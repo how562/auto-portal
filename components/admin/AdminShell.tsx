@@ -17,7 +17,8 @@ export function AdminShell({
   const isLogin = pathname.startsWith("/admin/login");
   const isWideCatalog =
     pathname.startsWith("/admin/section-showcase") ||
-    pathname.startsWith("/admin/section-library");
+    pathname.startsWith("/admin/section-library") ||
+    pathname.startsWith("/admin/pages");
 
   if (isLogin) {
     return <>{children}</>;
