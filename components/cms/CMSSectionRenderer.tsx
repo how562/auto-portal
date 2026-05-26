@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
 import {
@@ -22,6 +22,10 @@ import {
   registryHasDedicatedRenderer,
 } from "@/lib/cmsSectionRegistry";
 import { parseSettings, settingItems, settingString } from "@/lib/cmsSettings";
+import {
+  resolvePageHeaderMedia,
+  shouldUsePageHeaderHero,
+} from "@/lib/cmsPageHeaderLayout";
 import { isProbablySafeHtml, sanitizeCmsHtml } from "@/lib/sanitizeHtml";
 import type { Store } from "@/lib/types";
 import { btnLightMd, btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
@@ -116,13 +120,120 @@ function CmsLink({
   );
 }
 
-function HeroSection({
+function PageHeaderHeroSection({
   section,
   copy,
+  pageTitle,
+  bannerUrl,
+  sideImageUrl,
 }: {
   section: EnrichedCMSSection;
   copy: SectionCopy;
+  pageTitle: string;
+  bannerUrl?: string;
+  sideImageUrl?: string;
 }) {
+  const s = parseSettings(section.settings);
+  const ctaLabel = settingString(s, "cta_label") || copy.ctaText;
+  const ctaHref = copy.ctaUrl || settingString(s, "cta_href", "/inventory");
+  const subheadline = copy.subheadline || copy.body;
+
+  return (
+    <section className="cms-page-header">
+      <div
+        className={`cms-page-header__banner ${
+          bannerUrl ? "" : "cms-page-header__banner--placeholder"
+        }`.trim()}
+      >
+        {bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bannerUrl} alt="" />
+        ) : null}
+        <div className="cms-page-header__overlay" aria-hidden />
+        <h1 className="cms-page-header__title">{pageTitle}</h1>
+      </div>
+
+      <div className="portal-container cms-page-header__intro">
+        <div className="cms-page-header__grid">
+          <div className="min-w-0">
+            {copy.eyebrow ? (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
+                {copy.eyebrow}
+              </p>
+            ) : null}
+            {copy.headline ? (
+              <h2 className="mt-4 headline-stack text-3xl sm:text-4xl lg:text-[2.75rem]">
+                {copy.headline}
+              </h2>
+            ) : null}
+            {subheadline && subheadline !== copy.body ? (
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
+                {subheadline}
+              </p>
+            ) : copy.body && !copy.subheadline ? (
+              <div className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
+                <SectionBodyText body={copy.body} className="mt-0" />
+              </div>
+            ) : null}
+            {ctaLabel ? (
+              <div className="mt-10">
+                <CmsLink href={ctaHref} label={ctaLabel} variant="primary" />
+              </div>
+            ) : null}
+          </div>
+
+          {sideImageUrl ? (
+            <div
+              className={`${cardImageFrame} cms-page-header__side-image aspect-[4/3] min-w-0`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={sideImageUrl} alt="" className="h-full w-full object-cover" />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroSection({
+  section,
+  copy,
+  pageTitle,
+  pageSlug,
+  sectionIndex,
+  allSections,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+  pageTitle?: string;
+  pageSlug?: string;
+  sectionIndex?: number;
+  allSections?: EnrichedCMSSection[];
+}) {
+  const isPageHeader =
+    pageSlug &&
+    pageTitle &&
+    sectionIndex === 0 &&
+    shouldUsePageHeaderHero(section, pageSlug, true);
+
+  if (isPageHeader) {
+    const { bannerUrl, sideImageUrl } = resolvePageHeaderMedia(
+      allSections ?? [section],
+      sectionIndex ?? 0,
+      section,
+    );
+    return (
+      <PageHeaderHeroSection
+        section={section}
+        copy={copy}
+        pageTitle={pageTitle}
+        bannerUrl={bannerUrl}
+        sideImageUrl={sideImageUrl}
+      />
+    );
+  }
+
   const s = parseSettings(section.settings);
   const imageUrl = copy.imageUrl;
   const ctaLabel = settingString(s, "cta_label") || copy.ctaText;
@@ -720,9 +831,17 @@ function GenericSection({
 function CMSSectionBlock({
   section,
   copy,
+  pageTitle,
+  pageSlug,
+  sectionIndex,
+  allSections,
 }: {
   section: EnrichedCMSSection;
   copy: SectionCopy;
+  pageTitle?: string;
+  pageSlug?: string;
+  sectionIndex: number;
+  allSections: EnrichedCMSSection[];
 }) {
   const stores = section.stores ?? [];
 
@@ -732,7 +851,16 @@ function CMSSectionBlock({
 
   switch (section.section_type) {
     case "hero":
-      return <HeroSection section={section} copy={copy} />;
+      return (
+        <HeroSection
+          section={section}
+          copy={copy}
+          pageTitle={pageTitle}
+          pageSlug={pageSlug}
+          sectionIndex={sectionIndex}
+          allSections={allSections}
+        />
+      );
     case "text_block":
       return <TextBlockSection section={section} copy={copy} />;
     case "image_text":
@@ -762,9 +890,15 @@ function CMSSectionBlock({
 
 interface CMSSectionRendererProps {
   sections: EnrichedCMSSection[];
+  pageTitle?: string;
+  pageSlug?: string;
 }
 
-export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
+export function CMSSectionRenderer({
+  sections,
+  pageTitle,
+  pageSlug,
+}: CMSSectionRendererProps) {
   const { locale } = useLanguage();
   const localizedSections = useMemo(
     () => localizeCMSSections(sections, locale),
@@ -781,11 +915,15 @@ export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
 
   return (
     <div className="flex flex-col">
-      {localizedSections.map((section) => (
+      {localizedSections.map((section, index) => (
         <CMSSectionBlock
           key={section.id}
           section={section}
           copy={getSectionCopy(section)}
+          pageTitle={pageTitle}
+          pageSlug={pageSlug}
+          sectionIndex={index}
+          allSections={localizedSections}
         />
       ))}
     </div>

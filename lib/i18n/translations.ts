@@ -4,6 +4,9 @@ const en = {
   "lang.en": "EN",
   "lang.es": "ES",
   "lang.toggle": "Language",
+  "header.spanishHint.line1": "¿Hablas español?",
+  "header.spanishHint.line2": "Haz clic aquí",
+  "header.spanishHint.mobile": "Toca ES para español",
 
   "nav.findMyVehicle": "Find My Vehicle",
   "nav.inventory": "Inventory",
@@ -101,10 +104,9 @@ const en = {
   "topPicks.why.under30k": "Budget-friendly without feeling basic.",
 
   "cavender_commitment_label": "Cavender Commitment",
-  "commitment.headline":
-    "Honoring Those Who Serve.\nSupporting You Every Day.",
+  "commitment.headline": "Honoring Those Who Serve.",
   "commitment.body":
-    "As a thank you to our veterans and active-duty military, we’re proud to offer exclusive savings and benefits designed with you in mind.",
+    "Veterans and active-duty military deserve more when they shop with Cavender—exclusive savings and benefits built for those who serve. Learn how you can qualify for free oil changes for life.",
   "commitment.imageAlt": "Honoring military service",
   "commitment.placeholderTagline": "Military City USA",
   "commitment.value.savings.title": "Exclusive Savings",
@@ -329,6 +331,8 @@ const en = {
   "footer.trust": "No pressure. Just real options from across our auto group.",
   "footer.locationsContact": "Locations & contact",
   "footer.copyright": "Guided discovery portal.",
+  "footer.connectWithUs": "Connect With Us",
+  "footer.navToggle": "Site navigation",
   "footer.col.discover": "Discover",
   "footer.col.shop": "Shop",
   "footer.col.group": "Group",
@@ -362,6 +366,9 @@ const es: Record<keyof typeof en, string> = {
   "lang.en": "EN",
   "lang.es": "ES",
   "lang.toggle": "Idioma",
+  "header.spanishHint.line1": "¿Hablas español?",
+  "header.spanishHint.line2": "Haz clic aquí",
+  "header.spanishHint.mobile": "Toca ES para español",
 
   "nav.findMyVehicle": "Encuentra lo que va contigo",
   "nav.inventory": "Inventario",
@@ -461,10 +468,9 @@ const es: Record<keyof typeof en, string> = {
   "topPicks.why.under30k": "Accesible sin sentirse básico.",
 
   "cavender_commitment_label": "Compromiso Cavender",
-  "commitment.headline":
-    "Honrando a quienes sirven.\nApoyándote cada día.",
+  "commitment.headline": "Honrando a quienes sirven.",
   "commitment.body":
-    "Como agradecimiento a nuestros veteranos y miembros activos, ofrecemos beneficios y ahorros exclusivos pensados para ti.",
+    "Los veteranos y miembros activos merecen más al comprar con Cavender—ahorros y beneficios exclusivos para quienes sirven. Conoce cómo calificar para cambios de aceite gratis de por vida.",
   "commitment.imageAlt": "Reconocimiento al servicio militar",
   "commitment.placeholderTagline": "Ciudad Militar USA",
   "commitment.value.savings.title": "Ahorros exclusivos",
@@ -689,6 +695,8 @@ const es: Record<keyof typeof en, string> = {
   "footer.trust": "Sin presión. Opciones reales de todo nuestro grupo.",
   "footer.locationsContact": "Ubicaciones y contacto",
   "footer.copyright": "Portal de descubrimiento guiado.",
+  "footer.connectWithUs": "Conéctate con nosotros",
+  "footer.navToggle": "Navegación del sitio",
   "footer.col.discover": "Descubrir",
   "footer.col.shop": "Comprar",
   "footer.col.group": "Grupo",

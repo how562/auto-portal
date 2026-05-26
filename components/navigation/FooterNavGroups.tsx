@@ -15,23 +15,37 @@ function scrollToId(id: string) {
 
 interface FooterNavGroupsProps {
   navigation: FooterNavigation;
+  variant?: "dark" | "light";
 }
 
-export function FooterNavGroups({ navigation }: FooterNavGroupsProps) {
+export function FooterNavGroups({ navigation, variant = "dark" }: FooterNavGroupsProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isLight = variant === "light";
 
   return (
     <>
       {navigation.groups.map((group) => (
         <div key={group.title}>
-          <p className="text-xs font-semibold uppercase tracking-wider text-white/40">
+          <p
+            className={
+              isLight
+                ? "text-sm font-bold text-[var(--ink)]"
+                : "text-xs font-semibold uppercase tracking-wider text-white/40"
+            }
+          >
             {group.title}
           </p>
-          <ul className="mt-3 space-y-2 text-sm text-white/30">
+          <ul
+            className={
+              isLight
+                ? "mt-3 space-y-2.5 text-sm text-[var(--ink)]"
+                : "mt-3 space-y-2 text-sm text-white/30"
+            }
+          >
             {group.items.map((item) => (
               <li key={item.id}>
-                <FooterNavLink item={item} isHome={isHome} />
+                <FooterNavLink item={item} isHome={isHome} variant={variant} />
               </li>
             ))}
           </ul>
@@ -44,13 +58,18 @@ export function FooterNavGroups({ navigation }: FooterNavGroupsProps) {
 function FooterNavLink({
   item,
   isHome,
+  variant = "dark",
 }: {
   item: FooterNavigation["groups"][number]["items"][number];
   isHome: boolean;
+  variant?: "dark" | "light";
 }) {
   const { openLead } = useLeadCapture();
   const href = item.href?.trim();
-  const linkClass = "transition hover:text-white/50";
+  const linkClass =
+    variant === "light"
+      ? "text-left transition hover:text-[var(--muted)]"
+      : "transition hover:text-white/50";
 
   if (item.action) {
     return (

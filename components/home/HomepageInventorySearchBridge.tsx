@@ -64,7 +64,7 @@ export function HomepageInventorySearchBridge({
 
   const chipButtonClass =
     variant === "hero"
-      ? "inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[var(--line-dark)] bg-white/70 px-4 text-sm font-semibold text-[var(--muted)] shadow-[var(--shadow-tight)] transition hover:bg-white hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+      ? "homepage-search-pill inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[var(--line-dark)] bg-white px-4 text-sm font-semibold text-[var(--muted)] transition hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--ink)_18%,var(--line-dark))] hover:bg-white hover:text-[var(--ink)] hover:shadow-[0_4px_14px_rgba(9,33,63,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
       : "rounded-full border border-[var(--line)] bg-white/60 px-3 py-1 text-[11px] font-semibold text-[var(--muted)] transition hover:border-[var(--line-dark)] hover:bg-white hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]";
 
   const chips = (
@@ -94,7 +94,7 @@ export function HomepageInventorySearchBridge({
     <form
       className={
         variant === "hero"
-          ? "w-full"
+          ? "homepage-search-form w-full"
           : hideEyebrow && hideHelperLine
             ? "mt-0"
             : hideEyebrow || hideHelperLine
@@ -135,7 +135,7 @@ export function HomepageInventorySearchBridge({
   return (
     <section aria-labelledby={`${inputId}-eyebrow`}>
       {variant === "hero" ? (
-        <div className="w-full">
+        <div className="homepage-search-bridge--hero w-full">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
             <div className="w-full lg:basis-[54%] xl:basis-[60%]">{form}</div>
             <div className="min-w-0 flex-1">{chips}</div>

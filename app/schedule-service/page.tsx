@@ -5,7 +5,6 @@ import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { ScheduleServiceView } from "@/components/service/ScheduleServiceView";
 import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { fetchServiceLocations } from "@/lib/serviceScheduling";
-import { SCHEDULE_SERVICE_PAGE_CONTENT } from "@/lib/serviceSchedulingContent";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +19,10 @@ export default async function ScheduleServicePage() {
   return (
     <LeadCaptureProvider>
       <PortalHeader />
-      <main className="min-h-screen bg-[var(--cream)]">
+      <main className="min-h-screen bg-white pt-[4.125rem] sm:pt-[4.625rem]">
         <ScheduleServiceView locations={locations} />
       </main>
       <PortalFooter />
-      <span className="sr-only">{SCHEDULE_SERVICE_PAGE_CONTENT.headline}</span>
     </LeadCaptureProvider>
   );
 }

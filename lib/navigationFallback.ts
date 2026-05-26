@@ -99,13 +99,24 @@ export const FALLBACK_FOOTER_NAV: FooterNavigation = {
       items: [
         {
           id: "fb-l1",
-          label: "Privacy",
+          label: "Privacy Policy",
           href: "/privacy",
           linkKind: "route",
         },
         {
+          id: "fb-l-contact",
+          label: "Contact Us",
+          action: "general-shortlist",
+        },
+        {
+          id: "fb-l-sitemap",
+          label: "Sitemap",
+          href: "/sitemap",
+          linkKind: "route",
+        },
+        {
           id: "fb-l2",
-          label: "Terms",
+          label: "Terms of Use",
           href: "/terms",
           linkKind: "route",
         },

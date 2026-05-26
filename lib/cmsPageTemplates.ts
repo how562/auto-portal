@@ -96,46 +96,11 @@ export const PAGE_TEMPLATES: PageTemplateDefinition[] = [
     suggestedSlug: "about-us",
     sections: [
       {
-        section_type: "hero",
-        sort_order: 10,
-        headline: "About Cavender Auto Group",
-        subheadline: "Family-owned dealerships built on trust, service, and community.",
-        settings: { variant: "light" },
-      },
-      {
         section_type: "text_block",
-        sort_order: 20,
-        headline: "Our story",
-        body: "Add your dealership history, values, and what sets Cavender apart.",
+        sort_order: 10,
+        headline: "About page",
+        body: "The /about-us route uses the dedicated About Us layout. Edit lib/aboutUsPageContent.ts for copy and imagery.",
         settings: { alignment: "left" },
-      },
-      {
-        section_type: "image_text",
-        sort_order: 30,
-        headline: "Serving Texas communities",
-        body: "Highlight local involvement, team culture, and customer experience.",
-        image_url: "/hero/community.jpg",
-        settings: { layout: "image-right" },
-      },
-      {
-        section_type: "stats",
-        sort_order: 40,
-        headline: "By the numbers",
-        settings: {
-          items: [
-            { value: "1960s", label: "Founded" },
-            { value: "8+", label: "Locations" },
-            { value: "1000s", label: "Happy customers" },
-          ],
-        },
-      },
-      {
-        section_type: "cta_band",
-        sort_order: 50,
-        headline: "Visit a store near you",
-        settings: {
-          buttons: [{ label: "Find locations", url: "/about-us#locations" }],
-        },
       },
     ],
   },

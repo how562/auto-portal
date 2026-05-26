@@ -3,20 +3,26 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SectionShowcasePresetPreview } from "@/components/section-showcase/SectionShowcasePresetPreview";
+import { LayoutLibraryPreview } from "@/components/section-showcase/LayoutLibraryPreview";
 import { DiscoveryProvider } from "@/components/portal/DiscoveryContext";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 import {
   filterCatalogEntries,
-  getSectionShowcaseCatalogEntries,
+  getUnifiedCatalogEntries,
   groupCatalogByCategory,
   SHOWCASE_CATEGORIES,
   type ShowcaseCategoryId,
+  type UnifiedCatalogEntry,
 } from "@/lib/sectionShowcaseCatalog";
+import { LAYOUT_LIBRARY_PRESET_COUNT } from "@/lib/layoutLibraryPresets";
 import { SECTION_SHOWCASE_PRESET_COUNT } from "@/lib/sectionShowcasePresets";
 
+const TOTAL_CATALOG_COUNT =
+  SECTION_SHOWCASE_PRESET_COUNT + LAYOUT_LIBRARY_PRESET_COUNT;
+
 export function SectionShowcaseCatalog() {
-  const allEntries = useMemo(() => getSectionShowcaseCatalogEntries(), []);
+  const allEntries = useMemo(() => getUnifiedCatalogEntries(), []);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<ShowcaseCategoryId | "all">(
     "all",
@@ -52,7 +58,8 @@ export function SectionShowcaseCatalog() {
               CMS layout library
             </h1>
             <p className="max-w-3xl text-sm leading-relaxed text-[var(--muted)]">
-              Browse {SECTION_SHOWCASE_PRESET_COUNT} premade presets by category. Compare
+              Browse {TOTAL_CATALOG_COUNT} premade presets by category ({LAYOUT_LIBRARY_PRESET_COUNT}{" "}
+              homepage layouts + {SECTION_SHOWCASE_PRESET_COUNT} CMS sections). Compare
               metadata and live previews side by side.{" "}
               <Link
                 href="/section-showcase"
@@ -189,11 +196,15 @@ export function SectionShowcaseCatalog() {
 
                   <ul className="space-y-8">
                     {presets.map((entry) => {
-                      const isExpanded = expandedId === entry.section.id;
+                      const entryDomId =
+                        entry.kind === "cms"
+                          ? entry.section.id
+                          : `layout-${entry.id}`;
+                      const isExpanded = expandedId === entryDomId;
                       return (
                         <li
-                          key={entry.section.id}
-                          id={entry.section.id}
+                          key={entryDomId}
+                          id={entryDomId}
                           className="scroll-mt-36 rounded-xl border border-[var(--line-dark)] bg-white shadow-[var(--shadow-tight)]"
                         >
                           <div
@@ -209,7 +220,11 @@ export function SectionShowcaseCatalog() {
                                 <button
                                   type="button"
                                   disabled
-                                  title="Open a page in the builder to add sections"
+                                  title={
+                                    entry.kind === "layout-library"
+                                      ? "Homepage layout blocks are preview-only for now"
+                                      : "Open a page in the builder to add sections"
+                                  }
                                   className={`${btnPrimaryMd} cursor-not-allowed opacity-50`}
                                 >
                                   Add to page
@@ -217,14 +232,14 @@ export function SectionShowcaseCatalog() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setExpandedId(isExpanded ? null : entry.section.id)
+                                    setExpandedId(isExpanded ? null : entryDomId)
                                   }
                                   className={btnSecondaryMd}
                                 >
                                   {isExpanded ? "Collapse preview" : "View full example"}
                                 </button>
                                 <Link
-                                  href={`/section-showcase#${entry.section.id}`}
+                                  href={`/section-showcase#${entryDomId}`}
                                   className={`${btnSecondaryMd} no-underline`}
                                   target="_blank"
                                   rel="noreferrer"
@@ -235,10 +250,17 @@ export function SectionShowcaseCatalog() {
                             </div>
 
                             <div className="p-4 sm:p-5">
-                              <SectionShowcasePresetPreview
-                                section={entry.section}
-                                expanded={isExpanded}
-                              />
+                              {entry.kind === "cms" ? (
+                                <SectionShowcasePresetPreview
+                                  section={entry.section}
+                                  expanded={isExpanded}
+                                />
+                              ) : (
+                                <LayoutLibraryPreview
+                                  layoutId={entry.id}
+                                  expanded={isExpanded}
+                                />
+                              )}
                             </div>
                           </div>
                         </li>
@@ -281,11 +303,7 @@ function CategoryPill({
   );
 }
 
-function PresetMeta({
-  entry,
-}: {
-  entry: ReturnType<typeof getSectionShowcaseCatalogEntries>[number];
-}) {
+function PresetMeta({ entry }: { entry: UnifiedCatalogEntry }) {
   return (
     <div className="space-y-4 text-sm">
       <div>
@@ -294,12 +312,21 @@ function PresetMeta({
       </div>
 
       <dl className="space-y-3">
-        <MetaRow label="CMS type">
-          <code className="text-xs">{entry.section.section_type}</code>
-          {entry.hasDedicatedRenderer ? (
-            <span className="ml-2 text-xs text-emerald-700">dedicated renderer</span>
+        <MetaRow label="Type">
+          {entry.kind === "cms" ? (
+            <>
+              <code className="text-xs">{entry.section.section_type}</code>
+              {entry.hasDedicatedRenderer ? (
+                <span className="ml-2 text-xs text-emerald-700">dedicated renderer</span>
+              ) : (
+                <span className="ml-2 text-xs text-amber-700">generic fallback</span>
+              )}
+            </>
           ) : (
-            <span className="ml-2 text-xs text-amber-700">generic fallback</span>
+            <>
+              <code className="text-xs">homepage-layout</code>
+              <span className="ml-2 text-xs text-sky-700">saved for reuse</span>
+            </>
           )}
         </MetaRow>
         <MetaRow label="Best for">{entry.bestUseCase}</MetaRow>

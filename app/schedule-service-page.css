@@ -1,0 +1,328 @@
+/**
+ * Schedule Service page — location picker layout.
+ */
+
+.schedule-service-page {
+  --ss-gold: var(--gold, #b8956b);
+  --ss-ink: #1a1a1a;
+  --ss-dark: #1e1e1e;
+  --ss-muted: #6b6560;
+  background: #fff;
+}
+
+/* —— Hero —— */
+.schedule-service-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  height: clamp(280px, 38vw, 420px);
+  overflow: hidden;
+}
+
+.schedule-service-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.schedule-service-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.schedule-service-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.55) 55%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+}
+
+.schedule-service-hero__kicker {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+@media (min-width: 640px) {
+  .schedule-service-hero__kicker {
+    top: 1.5rem;
+    right: 2rem;
+    font-size: 0.75rem;
+  }
+}
+
+.schedule-service-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.schedule-service-hero__title {
+  margin: 0;
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+}
+
+.schedule-service-hero__divider {
+  display: block;
+  width: 3.5rem;
+  height: 3px;
+  margin: 1.25rem auto 1.25rem;
+  background: var(--ss-gold);
+}
+
+.schedule-service-hero__tagline {
+  margin: 0;
+  font-size: clamp(0.9375rem, 2vw, 1.125rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* —— Intro —— */
+.schedule-service-intro {
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(2rem, 4vw, 2.75rem);
+  background: #fff;
+}
+
+.schedule-service-intro__inner {
+  text-align: center;
+}
+
+.schedule-service-intro__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ss-gold);
+}
+
+.schedule-service-intro__eyebrow-line {
+  flex: 1;
+  max-width: 3.5rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--ss-gold) 55%, transparent);
+}
+
+.schedule-service-intro__headline {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.5vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ss-ink);
+}
+
+.schedule-service-intro__subhead {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--ss-muted);
+}
+
+/* —— Location grid —— */
+.schedule-service-locations {
+  padding-bottom: clamp(3rem, 6vw, 4.5rem);
+  background: #fff;
+}
+
+.schedule-service-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .schedule-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .schedule-service-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.schedule-service-empty {
+  margin: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line, #e8e4de);
+  background: #fff;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--ss-muted);
+}
+
+/* —— Location card —— */
+.schedule-service-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--ss-dark);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.schedule-service-card__photo {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.schedule-service-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.schedule-service-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 1rem 1.5rem;
+  text-align: center;
+}
+
+.schedule-service-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.schedule-service-card__address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.65rem 0 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.schedule-service-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  margin-top: auto;
+  padding: 0 1.25rem;
+  border: 1.5px solid var(--ss-gold);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--ss-gold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.schedule-service-card__cta:hover {
+  background: var(--ss-gold);
+  color: var(--ss-dark);
+}
+
+.schedule-service-card__cta--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* —— Features footer —— */
+.schedule-service-features {
+  background: var(--ss-dark);
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+}
+
+.schedule-service-features__grid {
+  display: grid;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .schedule-service-features__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .schedule-service-features__grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.schedule-service-feature {
+  text-align: center;
+  color: #fff;
+}
+
+.schedule-service-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 1rem;
+  color: var(--ss-gold);
+}
+
+.schedule-service-feature-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.schedule-service-feature__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.schedule-service-feature__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}

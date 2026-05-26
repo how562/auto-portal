@@ -1,8 +1,23 @@
-/** CMS-ready copy for the schedule service page (future service_location_grid preset). */
+/** CMS-ready copy for the schedule service page. */
+export interface ScheduleServiceFeature {
+  id: string;
+  title: string;
+  description: string;
+  icon: "calendar" | "techs" | "quality" | "time" | "support";
+}
+
 export interface ScheduleServicePageContent {
-  eyebrow: string;
-  headline: string;
-  body: string;
+  hero: {
+    kicker: string;
+    title: string;
+    tagline: string;
+    imageUrl: string;
+  };
+  intro: {
+    headline: string;
+    subheadline: string;
+  };
+  features: ScheduleServiceFeature[];
 }
 
 export interface ServiceLocation {
@@ -10,6 +25,7 @@ export interface ServiceLocation {
   storeName: string;
   brand: string | null;
   logoUrl: string | null;
+  imageUrl?: string | null;
   servicePhone: string | null;
   servicePhoneTel: string | null;
   address: string | null;

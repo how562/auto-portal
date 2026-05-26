@@ -1,15 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useCta } from "@/components/cta/CtaProvider";
 import { CommitmentStarPattern } from "@/components/home/CommitmentStarPattern";
-import { CommitmentValueIcon } from "@/components/home/CommitmentValueIcon";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { resolveCavenderCommitmentContent } from "@/lib/cavenderCommitmentContent";
 import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
+const COMMITMENT_LOGO = "/brand/cavender-commitment.png";
 interface CavenderCommitmentSectionProps {
   cms: CavenderCommitmentCmsPayload;
 }
@@ -55,7 +56,7 @@ function CommitmentImageCard({
 }) {
   return (
     <div
-      className={`hero-collage-tile min-h-[12.65rem] sm:min-h-[14.95rem] lg:min-h-[19.55rem] lg:max-h-[23rem] ${className}`.trim()}
+      className={`homepage-commitment-image hero-collage-tile min-h-[12.65rem] sm:min-h-[14.95rem] ${className}`.trim()}
     >
       <div className="relative h-full w-full min-h-[inherit]">
         {imageUrl ? (
@@ -85,7 +86,9 @@ export function CavenderCommitmentSection({
     [cms.pageSection, locale, t],
   );
 
-  const headlineLines = content.headline.split(/\n+/).filter(Boolean);
+  /** Homepage copy — always from i18n (CMS often has stale headline/body). */
+  const headline = t("commitment.headline").replace(/\s*\n+\s*/g, " ").trim();
+  const body = t("commitment.body");
   const primaryHref =
     content.primaryCtaHref ?? learnMoreCta.url ?? "/cavender-commitment";
   const secondaryHref =
@@ -96,35 +99,29 @@ export function CavenderCommitmentSection({
   return (
     <section
       id="cavender-commitment"
-      className="relative scroll-mt-20 overflow-x-hidden bg-[var(--cream)] py-12 sm:py-16 lg:py-20"
+      className="homepage-commitment relative scroll-mt-20 overflow-x-hidden"
     >
       <CommitmentStarPattern />
 
       <div className="portal-container relative">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.15fr)_minmax(0,0.88fr)] lg:items-center lg:gap-8 xl:gap-10">
+        <div className="homepage-commitment-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.15fr)_minmax(0,0.88fr)] lg:items-stretch lg:gap-8 xl:gap-10">
           <div className="relative z-10 order-1 flex min-w-0 flex-col items-center text-center sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:px-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              {t("cavender_commitment_label")}
-            </p>
+            <div className="homepage-commitment-logo-wrap flex w-full justify-center">
+              <Image
+                src={COMMITMENT_LOGO}
+                alt="Cavender Commitment"
+                width={1177}
+                height={217}
+                className="homepage-commitment-logo"
+                priority={false}
+              />
+            </div>
 
-            <h2 className="mt-5 w-full max-w-lg break-words font-serif font-semibold leading-[1.05] tracking-[-0.035em] hyphens-auto lg:max-w-[28rem]">
-              {headlineLines.map((line, index) => (
-                <span
-                  key={index}
-                  className={`block text-[clamp(1.65rem,4.5vw,2.75rem)] ${
-                    index === headlineLines.length - 1 &&
-                    headlineLines.length > 1
-                      ? "text-[#9a9288]"
-                      : "text-[var(--ink)]"
-                  }`}
-                >
-                  {line}
-                </span>
-              ))}
+            <h2 className="homepage-commitment-headline mt-5 w-full max-w-lg break-words font-sans text-[clamp(1.65rem,4.5vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.02em] text-[var(--ink)] hyphens-auto lg:max-w-[28rem]">
+              {headline}
             </h2>
-
             <p className="mt-5 max-w-lg break-words text-base leading-relaxed text-[var(--muted)] sm:text-[1.0625rem] sm:leading-[1.58] lg:max-w-[28rem]">
-              {content.body}
+              {body}
             </p>
 
             <div className="mt-8 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
@@ -149,22 +146,6 @@ export function CavenderCommitmentSection({
             className="order-3 hidden sm:block lg:col-start-1 lg:row-start-1"
           />
         </div>
-
-        <ul className="relative z-10 mt-8 hidden gap-5 border-t border-[var(--line)]/80 pt-8 sm:grid sm:grid-cols-2 lg:mt-10 lg:grid-cols-4 lg:gap-6">
-          {content.values.map((item) => (
-            <li key={item.id} className="flex min-w-0 gap-2.5">
-              <CommitmentValueIcon id={item.id} />
-              <div className="min-w-0">
-                <h3 className="break-words text-sm font-semibold leading-tight text-[var(--ink)]">
-                  {item.title}
-                </h3>
-                <p className="mt-0.5 break-words text-xs leading-snug text-[var(--muted)]">
-                  {item.description}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );

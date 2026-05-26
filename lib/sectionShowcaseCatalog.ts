@@ -8,8 +8,18 @@ import {
   getSectionShowcaseEntries,
   type SectionShowcaseEntry,
 } from "./sectionShowcasePresets";
+import {
+  LAYOUT_LIBRARY_PRESET_DEFS,
+  type LayoutLibraryPresetDef,
+} from "./layoutLibraryPresets";
 
 export const SHOWCASE_CATEGORIES = [
+  {
+    id: "homepage-layouts",
+    title: "Homepage Layouts",
+    description:
+      "Saved full-width homepage section designs — preview here and wire into the live homepage when ready.",
+  },
   {
     id: "page-headers",
     title: "Page Headers",
@@ -172,6 +182,23 @@ export interface SectionShowcaseCatalogEntry extends SectionShowcaseEntry {
   tags: string[];
 }
 
+export interface LayoutLibraryCatalogEntry {
+  kind: "layout-library";
+  id: string;
+  presetKey: string;
+  label: string;
+  description: string;
+  categoryId: ShowcaseCategoryId;
+  bestUseCase: string;
+  supportedFields: string[];
+  recommendedImageSize: string;
+  tags: string[];
+}
+
+export type UnifiedCatalogEntry =
+  | (SectionShowcaseCatalogEntry & { kind: "cms" })
+  | LayoutLibraryCatalogEntry;
+
 function buildTags(def: SectionShowcasePresetDef, presetKey: string): string[] {
   const tags = new Set<string>([def.section_type, presetKey.split("-")[0] ?? ""]);
   const settings = def.fields.settings ?? {};
@@ -211,11 +238,42 @@ export function getSectionShowcaseCatalogEntries(): SectionShowcaseCatalogEntry[
   });
 }
 
+export function getLayoutLibraryCatalogEntries(): LayoutLibraryCatalogEntry[] {
+  return LAYOUT_LIBRARY_PRESET_DEFS.map((def) => layoutDefToCatalogEntry(def));
+}
+
+function layoutDefToCatalogEntry(
+  def: LayoutLibraryPresetDef,
+): LayoutLibraryCatalogEntry {
+  return {
+    kind: "layout-library",
+    id: def.id,
+    presetKey: def.id,
+    label: def.label,
+    description: def.description,
+    categoryId: def.categoryId,
+    bestUseCase: def.bestUseCase,
+    supportedFields: def.supportedFields,
+    recommendedImageSize: def.recommendedImageSize,
+    tags: def.tags,
+  };
+}
+
+export function getUnifiedCatalogEntries(): UnifiedCatalogEntry[] {
+  return [
+    ...getLayoutLibraryCatalogEntries(),
+    ...getSectionShowcaseCatalogEntries().map((entry) => ({
+      ...entry,
+      kind: "cms" as const,
+    })),
+  ];
+}
+
 export function groupCatalogByCategory(
-  entries: SectionShowcaseCatalogEntry[],
+  entries: UnifiedCatalogEntry[],
 ): Array<{
   category: (typeof SHOWCASE_CATEGORIES)[number];
-  presets: SectionShowcaseCatalogEntry[];
+  presets: UnifiedCatalogEntry[];
 }> {
   return SHOWCASE_CATEGORIES.map((category) => ({
     category,
@@ -224,12 +282,12 @@ export function groupCatalogByCategory(
 }
 
 export function filterCatalogEntries(
-  entries: SectionShowcaseCatalogEntry[],
+  entries: UnifiedCatalogEntry[],
   options: {
     query?: string;
     categoryId?: ShowcaseCategoryId | "all";
   },
-): SectionShowcaseCatalogEntry[] {
+): UnifiedCatalogEntry[] {
   const q = options.query?.trim().toLowerCase() ?? "";
   const cat = options.categoryId ?? "all";
 
@@ -239,10 +297,10 @@ export function filterCatalogEntries(
     const haystack = [
       entry.label,
       entry.presetKey,
-      entry.section.section_type,
       entry.bestUseCase,
       entry.description,
       ...entry.tags,
+      entry.kind === "cms" ? entry.section.section_type : "layout-library",
     ]
       .join(" ")
       .toLowerCase();

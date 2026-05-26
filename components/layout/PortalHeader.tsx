@@ -12,6 +12,7 @@ import { CavenderLogo } from "@/components/brand/CavenderLogo";
 
 import { useCta } from "@/components/cta/CtaProvider";
 
+import { HeaderSpanishLanguageHint } from "@/components/i18n/HeaderSpanishLanguageHint";
 import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 
 import { useLanguage } from "@/components/i18n/LanguageProvider";
@@ -38,6 +39,7 @@ export function PortalHeader() {
 
   const pathname = usePathname();
 
+  const isHome = pathname === "/";
   const isInventory = pathname.startsWith("/inventory");
 
   const openLead = useOptionalLeadCapture();
@@ -99,9 +101,15 @@ export function PortalHeader() {
 
   return (
 
-    <header className="fixed top-0 z-50 w-full border-b border-[var(--line)] bg-[var(--cream)]">
+    <header
+      className={`fixed top-0 z-50 w-full border-b ${
+        isHome
+          ? "homepage-header border-transparent bg-[var(--hp-page)]"
+          : "border-[var(--line)] bg-[var(--cream)]"
+      }`}
+    >
 
-      <div className="mx-auto flex h-14 max-w-[90rem] items-center justify-between gap-4 px-4 sm:h-16 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[4.125rem] max-w-[90rem] items-center justify-between gap-4 px-4 sm:h-[4.625rem] sm:px-6 lg:px-8">
 
         <CavenderLogo href="/" size="header" variant="dark" priority />
 
@@ -123,7 +131,11 @@ export function PortalHeader() {
 
         <div className="flex shrink-0 items-center gap-2">
 
-          <LanguageToggle />
+          {isHome ? (
+            <HeaderSpanishLanguageHint />
+          ) : (
+            <LanguageToggle />
+          )}
 
           <button
 
@@ -189,67 +201,41 @@ export function PortalHeader() {
 
           </button>
 
-
-
-          <button
-
-            type="button"
-
-            onClick={() =>
-
-              openLead?.({
-
-                action: "general-shortlist",
-
-                shopperIntent: "Get my shortlist",
-
-              })
-
-            }
-
-            className={`hidden sm:inline-flex ${btnSecondarySm}`}
-
-          >
-
-            {headerShortlist.label}
-
-          </button>
-
-          {isInventory ? (
-
-            <Link href={discoveryHref} className={btnPrimarySm}>
-
-              {discoveryPrimary.label}
-
-            </Link>
-
-          ) : (
-
+          {!isHome ? (
             <>
-
-              <Link href={browseHref} className={`hidden sm:inline-flex ${btnSecondarySm}`}>
-
-                {discoveryBrowse.label}
-
-              </Link>
-
               <button
-
                 type="button"
-
-                onClick={() => scrollToId("guided-discovery")}
-
-                className={btnPrimarySm}
-
+                onClick={() =>
+                  openLead?.({
+                    action: "general-shortlist",
+                    shopperIntent: "Get my shortlist",
+                  })
+                }
+                className={`hidden sm:inline-flex ${btnSecondarySm}`}
               >
-
-                {discoveryPrimary.label}
-
+                {headerShortlist.label}
               </button>
 
+              {isInventory ? (
+                <Link href={discoveryHref} className={btnPrimarySm}>
+                  {discoveryPrimary.label}
+                </Link>
+              ) : (
+                <>
+                  <Link href={browseHref} className={`hidden sm:inline-flex ${btnSecondarySm}`}>
+                    {discoveryBrowse.label}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("guided-discovery")}
+                    className={btnPrimarySm}
+                  >
+                    {discoveryPrimary.label}
+                  </button>
+                </>
+              )}
             </>
-
-          )}
+          ) : null}
 
         </div>
 
@@ -265,7 +251,7 @@ export function PortalHeader() {
 
             type="button"
 
-            className="fixed inset-0 top-14 z-40 bg-[var(--ink)]/25 lg:hidden"
+            className="fixed inset-0 top-[4.125rem] z-40 bg-[var(--ink)]/25 sm:top-[4.625rem] lg:hidden"
 
             aria-label={t("nav.closeMenu")}
 
@@ -277,7 +263,11 @@ export function PortalHeader() {
 
             id="mobile-main-nav"
 
-            className="absolute inset-x-0 top-full z-50 max-h-[min(70vh,28rem)] overflow-y-auto border-b border-[var(--line)] bg-[var(--cream)] px-4 py-2 shadow-card lg:hidden"
+            className={`absolute inset-x-0 top-full z-50 max-h-[min(70vh,28rem)] overflow-y-auto border-b px-4 py-2 shadow-card lg:hidden ${
+              isHome
+                ? "border-[var(--hp-line-cool)] bg-[var(--hp-page)]"
+                : "border-[var(--line)] bg-[var(--cream)]"
+            }`}
 
             aria-label="Main navigation"
 

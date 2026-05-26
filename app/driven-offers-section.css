@@ -5,6 +5,7 @@
 .homepage-driven-offers {
   --hp-navy: #09213f;
   --hp-page: #f4f6f8;
+  --hp-gray: #e8ecf0;
   --hp-frost: #f7f9fb;
   --hp-bronze: #b78338;
   --hp-line-cool-dark: #c5ced8;
@@ -12,10 +13,27 @@
   position: relative;
   background: linear-gradient(
     180deg,
-    var(--hp-frost) 0%,
-    color-mix(in srgb, var(--hp-page) 88%, white) 100%
+    color-mix(in srgb, var(--hp-frost) 22%, var(--hp-page)) 0%,
+    var(--hp-page) 42%,
+    color-mix(in srgb, var(--hp-gray) 22%, var(--hp-page)) 100%
   );
   overflow: hidden;
+}
+
+.homepage-driven-offers::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5rem;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--hp-gray) 28%, var(--hp-page)) 100%
+  );
 }
 
 .homepage-driven-offers__texture {

@@ -76,7 +76,7 @@ export function DiscoveryCategoriesSection({
   }
 
   return (
-    <section id="categories" className="scroll-mt-20 py-16 sm:py-24">
+    <section id="categories" className="scroll-mt-20">
       <div className="portal-container">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:self-start">
@@ -104,7 +104,7 @@ export function DiscoveryCategoriesSection({
                   key={cat.id}
                   type="button"
                   onClick={() => navigateToCategory(cat.id)}
-                  className={`${cardCategory} relative flex min-h-[148px] items-center sm:min-h-[160px]`}
+                  className={`${cardCategory} homepage-life-card group relative flex min-h-[148px] items-center sm:min-h-[160px]`}
                 >
                   <LifeCategoryCardVisual
                     categoryId={cat.id}
@@ -126,7 +126,7 @@ export function DiscoveryCategoriesSection({
                     <p className="mt-2 max-w-sm text-sm leading-snug text-[var(--muted)]">
                       {localized.description}
                     </p>
-                    <span className="mt-4 inline-flex text-sm font-semibold text-[var(--ink)]">
+                    <span className="life-card-cta-arrow mt-4 inline-flex text-sm font-semibold text-[var(--ink)]">
                       {localized.cta} →
                     </span>
                   </div>
@@ -136,7 +136,7 @@ export function DiscoveryCategoriesSection({
           </div>
         </div>
 
-        <div className="mt-12 flex justify-center lg:hidden">
+        <div className="mt-8 flex justify-center lg:hidden">
           <DiscoveryCTA />
         </div>
       </div>

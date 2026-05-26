@@ -1,7 +1,59 @@
-import type { ScheduleServicePageContent } from "./serviceSchedulingTypes";
+import type { ScheduleServiceFeature } from "./serviceSchedulingTypes";
 
-export const SCHEDULE_SERVICE_PAGE_CONTENT: ScheduleServicePageContent = {
-  eyebrow: "Service Scheduling",
-  headline: "Schedule Service at Your Cavender Dealership",
-  body: "Choose your dealership below to schedule service online or call the service department directly.",
+export const SCHEDULE_SERVICE_PAGE_CONTENT = {
+  hero: {
+    kicker: "Cavender Auto Group Service",
+    title: "Schedule Service",
+    tagline:
+      "Fast. Easy. Convenient. Schedule service at any of our locations.",
+    imageUrl: "/images/hero/dealership.jpg",
+  },
+  intro: {
+    headline: "Choose your location below",
+    subheadline: "Select your preferred dealership to schedule service.",
+  },
+  features: [
+    {
+      id: "scheduling",
+      title: "Easy Scheduling",
+      description: "Schedule online anytime, from anywhere.",
+      icon: "calendar",
+    },
+    {
+      id: "techs",
+      title: "Certified Techs",
+      description: "Factory-trained technicians on every visit.",
+      icon: "techs",
+    },
+    {
+      id: "quality",
+      title: "Quality Service",
+      description: "Genuine parts and expert care you can trust.",
+      icon: "quality",
+    },
+    {
+      id: "time",
+      title: "Save Time",
+      description: "Book ahead and skip the wait at the counter.",
+      icon: "time",
+    },
+    {
+      id: "support",
+      title: "We're Here For You",
+      description: "Questions? Call your local service team anytime.",
+      icon: "support",
+    },
+  ] satisfies ScheduleServiceFeature[],
 };
+
+/** Rotating storefront imagery when a location has no dedicated photo. */
+export const SERVICE_LOCATION_IMAGE_POOL = [
+  "/images/hero/dealership.jpg",
+  "/images/hero/community.jpg",
+  "/images/hero/vehicle.jpg",
+  "/images/hero/lifestyle.jpg",
+] as const;
+
+export function serviceLocationImageUrl(index: number): string {
+  return SERVICE_LOCATION_IMAGE_POOL[index % SERVICE_LOCATION_IMAGE_POOL.length];
+}

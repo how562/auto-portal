@@ -75,7 +75,7 @@ function HeroCollageTile({
 function HeroCollage({ content }: { content: CommunityHeroContent }) {
   return (
     <div className="relative w-full lg:pl-1">
-      <div className="hero-collage-grid min-h-[22rem] sm:min-h-[26rem] lg:min-h-[30rem] xl:min-h-[34rem]">
+      <div className="hero-collage-grid">
         {content.images.map((slot) => (
           <HeroCollageTile
             key={slot.position}
@@ -169,10 +169,13 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
   const titleLines = splitTitleLines(portalTitle);
 
   return (
-    <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-14 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-20">
-      <div className="portal-container">
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20 xl:gap-24">
-          <div className="order-1 flex max-w-xl flex-col lg:max-w-none lg:py-2">
+    <section className="homepage-hero relative overflow-hidden">
+      <div className="homepage-hero-tread-left" aria-hidden />
+      <div className="homepage-hero-tread-right" aria-hidden />
+      <div className="homepage-hero-blueprint" aria-hidden />
+      <div className="portal-container relative z-[1]">
+        <div className="homepage-hero__content grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start lg:gap-20 xl:gap-24">
+          <div className="order-1 flex max-w-xl flex-col lg:max-w-none">
             {titleLines.length > 0 ? (
               <h1 className="headline-stack text-balance font-sans">
                 {titleLines.map((line) => (
@@ -197,12 +200,12 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
             <HeroButtons content={content} />
           </div>
 
-          <div className="order-2 lg:flex lg:items-center lg:justify-end">
+          <div className="order-2 lg:flex lg:items-start lg:justify-end">
             <HeroCollage content={content} />
           </div>
         </div>
 
-        <div className="mt-10 sm:mt-12 lg:mt-14">
+        <div className="mt-8 sm:mt-10 lg:mt-11">
           <HomepageInventorySearchBridge variant="hero" hideEyebrow hideHelperLine />
         </div>
       </div>

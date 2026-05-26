@@ -1,7 +1,6 @@
-import { HomepageSectionsScreen } from "@/components/admin/HomepageSectionsScreen";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function AdminHomepageSectionsPage() {
-  return <HomepageSectionsScreen />;
+/** @deprecated Use /admin/homepage */
+export default function AdminHomepageSectionsRedirect() {
+  redirect("/admin/homepage");
 }
