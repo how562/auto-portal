@@ -1,15 +1,4 @@
-/** Gold star texture behind Cavender Commitment copy (see public/stars-texture.png). */
+/** Gold star texture — scoped to commitment with soft vertical fade (see homepage-visual.css). */
 export function CommitmentStarPattern() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{
-        backgroundImage: "url('/stars-texture.png')",
-        opacity: 0.08,
-        backgroundSize: "400px",
-        backgroundRepeat: "repeat",
-      }}
-      aria-hidden
-    />
-  );
+  return <div className="homepage-commitment-stars" aria-hidden />;
 }

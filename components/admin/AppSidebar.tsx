@@ -9,7 +9,10 @@ export interface AdminNavItem {
 }
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+  { title: "Dashboard", href: "/admin/dashboard" },
   { title: "Pages", href: "/admin/pages" },
+  { title: "Section showcase", href: "/admin/section-showcase" },
+  { title: "Branding", href: "/admin/branding" },
   { title: "Homepage Sections", href: "/admin/homepage-sections" },
   { title: "Collections", href: "/admin/collections" },
   { title: "Notes", href: "/admin/notes" },
@@ -34,7 +37,7 @@ export function AppSidebar() {
     <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--line)] bg-white">
       <div className="border-b border-[var(--line)] px-4 py-5">
         <Link
-          href="/admin/pages"
+          href="/admin/dashboard"
           className="text-sm font-semibold tracking-tight text-[var(--ink)]"
         >
           CMS Admin

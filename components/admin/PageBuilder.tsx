@@ -2,27 +2,37 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { useCallback, useState } from "react";
+import { AddSectionModal } from "@/components/admin/AddSectionModal";
 import {
   CmsSectionEditorCard,
   type CollectionOption,
 } from "@/components/admin/CmsSectionEditorCard";
 import { CmsSectionDebugPanel } from "@/components/admin/CmsSectionDebugPanel";
 import type { CMSSection } from "@/lib/cmsSectionModel";
-import { listRegistryEntriesForBuilder } from "@/lib/cmsSectionRegistry";
-import type { CMSSectionType, SitePage } from "@/lib/cmsTypes";
+import { getSectionStarter } from "@/lib/cmsSectionStarters";
+import type { PageBuilderAddTarget } from "@/lib/pageBuilderLibrary";
+import {
+  getPresetSectionStarter,
+  getSectionTypeForPreset,
+} from "@/lib/presetSectionStarters";
+import type { SitePage } from "@/lib/cmsTypes";
+import type { Store } from "@/lib/types";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface PageBuilderProps {
   page: SitePage;
   initialSections: CMSSection[];
   collections: CollectionOption[];
+  stores?: Store[];
 }
 
 export function PageBuilder({
   page: initialPage,
   initialSections,
   collections,
+  stores = [],
 }: PageBuilderProps) {
   const router = useRouter();
   const [page, setPage] = useState(initialPage);
@@ -33,9 +43,10 @@ export function PageBuilder({
   const [status, setStatus] = useState<"draft" | "published">(
     page.status === "published" ? "published" : "draft",
   );
-  const [newSectionType, setNewSectionType] = useState<CMSSectionType>("hero");
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [savingPage, setSavingPage] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
+  const [addingTarget, setAddingTarget] = useState<PageBuilderAddTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const savePage = useCallback(async () => {
@@ -69,28 +80,41 @@ export function PageBuilder({
     }
   }, [page.id, title, slug, metaDescription, status, router]);
 
-  async function addSection() {
+  async function addSection(target: PageBuilderAddTarget) {
     setAddingSection(true);
+    setAddingTarget(target);
     setError(null);
     try {
+      const section_type =
+        target.kind === "preset"
+          ? getSectionTypeForPreset(target.presetKey)
+          : target.type;
+      const starter =
+        target.kind === "preset"
+          ? getPresetSectionStarter(target.presetKey)
+          : getSectionStarter(target.type);
+
       const res = await fetch("/api/admin/page-sections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           page_id: page.id,
-          section_type: newSectionType,
+          section_type,
+          starter,
         }),
       });
       const data = (await res.json()) as { section?: CMSSection; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Add failed");
       if (data.section) {
         setSections((prev) => [...prev, data.section!]);
+        setAddModalOpen(false);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Add failed");
     } finally {
       setAddingSection(false);
+      setAddingTarget(null);
     }
   }
 
@@ -157,7 +181,12 @@ export function PageBuilder({
           ← All pages
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Page builder</h1>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Visual page builder</h1>
+            <p className="mt-1 max-w-xl text-sm text-[var(--muted)]">
+              Preview blocks, tune design, and publish — no code required.
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/admin/pages/${page.id}/preview`}
@@ -243,36 +272,31 @@ export function PageBuilder({
       </section>
 
       <section className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="block space-y-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-              Add section
-            </span>
-            <select
-              value={newSectionType}
-              onChange={(e) => setNewSectionType(e.target.value as CMSSectionType)}
-              className="block min-w-[12rem] rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Page sections
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <AdminNavLink href="/admin/section-showcase" className={btnSecondaryMd}>
+              Section catalog
+            </AdminNavLink>
+            <button
+              type="button"
+              disabled={addingSection}
+              onClick={() => {
+                setAddModalOpen(true);
+              }}
+              className={`${btnPrimaryMd} disabled:opacity-60`}
             >
-              {listRegistryEntriesForBuilder().map((entry) => (
-                <option key={entry.type} value={entry.type}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            disabled={addingSection}
-            onClick={addSection}
-            className={`${btnPrimaryMd} disabled:opacity-60`}
-          >
-            {addingSection ? "Adding…" : "Add section"}
-          </button>
+              Add section
+            </button>
+          </div>
         </div>
 
         {sections.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">
-            No sections yet. Add a section above.
+            No sections yet. Use <strong>Add section</strong> to pick a layout with starter
+            content.
           </p>
         ) : (
           <div className="space-y-3">
@@ -283,6 +307,7 @@ export function PageBuilder({
                 isFirst={index === 0}
                 isLast={index === sections.length - 1}
                 collections={collections}
+                stores={stores}
                 onMoveUp={() => reorder(index, "up")}
                 onMoveDown={() => reorder(index, "down")}
                 onDelete={() => deleteSection(section.id)}
@@ -297,7 +322,15 @@ export function PageBuilder({
         )}
       </section>
 
-      <CmsSectionDebugPanel sections={sections} />
+      <CmsSectionDebugPanel sections={sections} defaultCollapsed />
+
+      <AddSectionModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAdd={addSection}
+        adding={addingSection}
+        addingTarget={addingTarget}
+      />
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

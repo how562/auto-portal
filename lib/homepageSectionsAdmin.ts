@@ -77,7 +77,7 @@ export async function listHomepageSectionsAdmin(): Promise<HomepageSectionAdminR
     .order("sort_order", { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to load homepage sections: ${error.message}`);
+    throw new Error(formatHomepageSectionsDbError("load", error.message));
   }
 
   return (data ?? [])
@@ -214,4 +214,11 @@ export async function swapHomepageSectionOrder(
     .update({ sort_order: a.sort_order, updated_at: now })
     .eq("id", b.id);
   if (e2) throw new Error(e2.message);
+}
+
+function formatHomepageSectionsDbError(action: string, message: string): string {
+  if (/column homepage_sections\.updated_at does not exist/i.test(message)) {
+    return `Failed to ${action} homepage sections: run migration supabase/migrations/20260525181000_cms_collections_homepage_columns.sql.`;
+  }
+  return `Failed to ${action} homepage section${action === "load" ? "s" : ""}: ${message}`;
 }

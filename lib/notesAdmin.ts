@@ -60,7 +60,7 @@ export async function listNotesAdmin(options?: {
 
   const { data, error } = await query;
   if (error) {
-    throw new Error(`Failed to load notes: ${error.message}`);
+    throw new Error(formatNotesDbError("load", error.message));
   }
 
   return (data ?? [])
@@ -82,7 +82,7 @@ export async function createNote(input: NoteCreateInput = {}): Promise<NoteAdmin
     .single();
 
   if (error) {
-    throw new Error(`Failed to create note: ${error.message}`);
+    throw new Error(formatNotesDbError("create", error.message));
   }
 
   const row = normalizeRow(data as Record<string, unknown>);
@@ -117,7 +117,7 @@ export async function updateNote(
     .single();
 
   if (error) {
-    throw new Error(`Failed to update note: ${error.message}`);
+    throw new Error(formatNotesDbError("update", error.message));
   }
 
   const row = normalizeRow(data as Record<string, unknown>);
@@ -127,4 +127,17 @@ export async function updateNote(
 
 export async function archiveNote(id: string): Promise<NoteAdminRow> {
   return updateNote(id, { archived: true, pinned: false });
+}
+
+function formatNotesDbError(action: string, message: string): string {
+  if (/relation.*notes.*does not exist/i.test(message)) {
+    return `Failed to ${action} note: the notes table is missing. Run the Supabase migration supabase/migrations/20260524160000_cms_collections_homepage_notes.sql.`;
+  }
+  if (/column notes\.archived does not exist/i.test(message)) {
+    return `Failed to ${action} note: run migration supabase/migrations/20260525180000_notes_archived_column.sql (adds notes.archived).`;
+  }
+  if (/null value in column "user_id"/i.test(message)) {
+    return `Failed to ${action} note: notes.user_id must be nullable for shared admin notes — run migration 20260525180000_notes_archived_column.sql.`;
+  }
+  return `Failed to ${action} note: ${message}`;
 }

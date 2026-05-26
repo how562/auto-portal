@@ -5,21 +5,29 @@ import { inspectCMSSections } from "@/lib/cmsSectionDebug";
 
 interface CmsSectionDebugPanelProps {
   sections: CMSSection[];
+  defaultCollapsed?: boolean;
 }
 
-export function CmsSectionDebugPanel({ sections }: CmsSectionDebugPanelProps) {
+export function CmsSectionDebugPanel({
+  sections,
+  defaultCollapsed = false,
+}: CmsSectionDebugPanelProps) {
   const rows = inspectCMSSections(sections);
 
   return (
-    <section className="rounded-2xl border border-[var(--line)] bg-[var(--cream-dark)]/50 p-4 sm:p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
-        Section debug
-      </h2>
-      <p className="mt-1 text-xs text-[var(--muted)]">
-        Canonical fields only. Legacy title/content are migrated on read, cleared on
-        save.
-      </p>
-      <div className="mt-4 space-y-3">
+    <details
+      className="rounded-2xl border border-[var(--line)] bg-[var(--cream-dark)]/50"
+      open={!defaultCollapsed}
+    >
+      <summary className="cursor-pointer list-none px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
+        <span className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
+          Section debug (field panel)
+        </span>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Canonical fields only — expand to inspect raw values.
+        </p>
+      </summary>
+      <div className="space-y-3 border-t border-[var(--line)] px-4 pb-4 sm:px-5 sm:pb-5">
         {rows.map((row) => (
           <div
             key={row.id}
@@ -57,6 +65,6 @@ export function CmsSectionDebugPanel({ sections }: CmsSectionDebugPanelProps) {
           </div>
         ))}
       </div>
-    </section>
+    </details>
   );
 }

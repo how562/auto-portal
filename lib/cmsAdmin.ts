@@ -84,6 +84,8 @@ export interface SitePageCreateInput {
   slug?: string;
   meta_description?: string | null;
   status?: "draft" | "published";
+  /** Prebuilt section stack from lib/cmsPageTemplates */
+  template_id?: string;
 }
 
 export interface SitePageUpdateInput {
@@ -121,6 +123,17 @@ export async function createSitePage(
   if (error) throw new Error(`Failed to create page: ${error.message}`);
   const row = normalizePageRow(data as Record<string, unknown>);
   if (!row) throw new Error("Created page could not be read");
+
+  const templateId = input.template_id?.trim();
+  if (templateId) {
+    const { applyPageTemplateToPage } = await import("./cmsPageTemplatesApply");
+    const { isPageTemplateId } = await import("./cmsPageTemplates");
+    if (!isPageTemplateId(templateId)) {
+      throw new Error(`Unknown page template: ${templateId}`);
+    }
+    await applyPageTemplateToPage(row.id, templateId);
+  }
+
   return row;
 }
 
@@ -202,12 +215,6 @@ export async function fetchAllPageSectionsForAdmin(
   return fetchPageSectionsForAdmin(pageId, { includeInactive: true });
 }
 
-export interface PageSectionCreateInput {
-  page_id: string;
-  section_type: CMSSection["section_type"];
-  sort_order?: number;
-}
-
 /** Canonical fields only — no title/content. */
 export type PageSectionUpdateInput = Partial<
   Pick<
@@ -233,6 +240,14 @@ export type PageSectionUpdateInput = Partial<
   >
 >;
 
+export interface PageSectionCreateInput {
+  page_id: string;
+  section_type: CMSSection["section_type"];
+  sort_order?: number;
+  /** Optional starter copy/settings applied on insert (visual section picker). */
+  starter?: PageSectionUpdateInput;
+}
+
 export async function createPageSection(
   input: PageSectionCreateInput,
 ): Promise<CMSSection> {
@@ -252,6 +267,11 @@ export async function createPageSection(
     input.sort_order ??
     (typeof maxRow?.sort_order === "number" ? maxRow.sort_order + 10 : 0);
 
+  const starterPayload = input.starter
+    ? canonicalSectionToDbPayload(input.starter)
+    : {};
+  const { updated_at: _u, ...starterFields } = starterPayload;
+
   const { data, error } = await supabase
     .from("page_sections")
     .insert({
@@ -261,6 +281,7 @@ export async function createPageSection(
       is_active: true,
       settings: {},
       updated_at: new Date().toISOString(),
+      ...starterFields,
     })
     .select(PAGE_SECTION_SELECT)
     .single();

@@ -1,0 +1,25 @@
+import { NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/adminAuthConfig";
+import { loadBrandingCmsBundle, seedBrandingCmsIfEmpty } from "@/lib/brandingCmsAdmin";
+import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
+
+export async function POST(request: Request) {
+  if (!isAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isSupabaseAdminConfigured()) {
+    return NextResponse.json(
+      { error: "Set SUPABASE_SERVICE_ROLE_KEY in .env.local" },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const seeded = await seedBrandingCmsIfEmpty();
+    const bundle = await loadBrandingCmsBundle();
+    return NextResponse.json({ seeded, source: bundle.source });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Seed failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

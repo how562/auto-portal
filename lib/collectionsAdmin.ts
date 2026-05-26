@@ -112,7 +112,7 @@ export async function listCollectionsAdmin(): Promise<CollectionAdminRow[]> {
     .order("name", { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to load collections: ${error.message}`);
+    throw new Error(formatCollectionsDbError("load", error.message));
   }
 
   const { data: ruleRows } = await supabase
@@ -312,4 +312,11 @@ export async function deactivateCollection(
     created_at: detail.created_at,
     updated_at: detail.updated_at,
   };
+}
+
+function formatCollectionsDbError(action: string, message: string): string {
+  if (/column collections\.sort_order does not exist/i.test(message)) {
+    return `Failed to ${action} collections: run migration supabase/migrations/20260525181000_cms_collections_homepage_columns.sql.`;
+  }
+  return `Failed to ${action} collection${action === "load" ? "s" : ""}: ${message}`;
 }
