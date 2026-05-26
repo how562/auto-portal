@@ -12,6 +12,14 @@ const nextConfig = {
       "ssh2",
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/hero/:path*",
+        destination: "/images/hero/:path*",
+      },
+    ];
+  },
   images: supabaseHost
     ? {
         remotePatterns: [

@@ -1,0 +1,545 @@
+/**
+ * Locations page — hero, map finder, dealership grid, help footer.
+ */
+
+.locations-page {
+  --loc-gold: var(--gold, #b8956b);
+  --loc-ink: #1a1a1a;
+  --loc-dark: #1e1e1e;
+  --loc-muted: #6b6560;
+  --loc-gray: #f0f0f0;
+  background: #fff;
+}
+
+/* —— Hero —— */
+.locations-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  height: clamp(300px, 42vw, 480px);
+  overflow: hidden;
+}
+
+.locations-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.locations-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.locations-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.6) 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.locations-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 48rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.locations-hero__kicker {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+@media (min-width: 640px) {
+  .locations-hero__kicker {
+    font-size: 0.75rem;
+  }
+}
+
+.locations-hero__title {
+  margin: 0;
+  font-size: clamp(2.5rem, 6.5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.4);
+}
+
+.locations-hero__divider {
+  display: block;
+  width: 3.5rem;
+  height: 3px;
+  margin: 1.25rem auto 1.25rem;
+  background: var(--loc-gold);
+}
+
+.locations-hero__tagline {
+  margin: 0;
+  font-size: clamp(0.9375rem, 2vw, 1.125rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* —— Map section (light) —— */
+.locations-map-section {
+  padding: clamp(2.75rem, 5vw, 4rem) 0;
+  background: var(--loc-gray);
+}
+
+.locations-map-section__inner {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .locations-map-section__inner {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 3rem;
+  }
+}
+
+.locations-map-section__eyebrow {
+  margin: 0 0 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--loc-gold);
+}
+
+.locations-map-section__eyebrow::after {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  height: 2px;
+  margin-top: 0.5rem;
+  background: var(--loc-gold);
+}
+
+.locations-map-section__headline {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--loc-ink);
+}
+
+.locations-map-section__body {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--loc-muted);
+}
+
+.locations-map-section__body:last-of-type {
+  margin-bottom: 1.75rem;
+}
+
+.locations-map-section__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.5rem;
+  border-radius: 0.25rem;
+  background: var(--loc-dark);
+  color: var(--loc-gold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.locations-map-section__cta:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+/* —— Map panel —— */
+.locations-map-panel {
+  width: 100%;
+}
+
+.locations-map-panel__surface {
+  position: relative;
+  min-height: 320px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #e4eaf0;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.locations-map-panel__terrain {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+}
+
+.locations-map-panel__legend {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  max-width: min(14rem, 42%);
+  list-style: none;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.locations-map-panel__legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--loc-ink);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.locations-map-panel__legend-item:hover {
+  color: var(--loc-gold);
+}
+
+.locations-map-panel__legend-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--loc-ink);
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+}
+
+.locations-map-panel__legend-name {
+  flex: 1;
+}
+
+.locations-map-panel__markers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.locations-map-panel__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.locations-map-panel__marker span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--loc-ink);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.locations-map-panel__inset {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  width: 5.5rem;
+  padding: 0.35rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.locations-map-panel__inset-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.locations-map-panel__inset-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: var(--loc-ink);
+  line-height: 1.2;
+}
+
+.locations-map-panel__inset-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--loc-ink);
+  color: #fff;
+  font-size: 0.5rem;
+}
+
+/* —— Dealership grid (dark) —— */
+.locations-grid-section {
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+  background: var(--loc-dark);
+}
+
+.locations-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .locations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .locations-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.locations-grid-section__empty {
+  margin: 0;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* —— Location card —— */
+.locations-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #252525;
+}
+
+.locations-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.locations-card__badge {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--loc-gold);
+  color: var(--loc-ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.locations-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.locations-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.15rem 1rem 1.35rem;
+  text-align: center;
+}
+
+.locations-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.locations-card__address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.6rem 0 1.15rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.locations-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  margin-top: auto;
+  padding: 0 1.25rem;
+  border: 1.5px solid var(--loc-gold);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--loc-gold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.locations-card__cta:hover {
+  background: var(--loc-gold);
+  color: var(--loc-dark);
+}
+
+/* —— Help footer —— */
+.locations-help {
+  background: var(--loc-dark);
+  border-top: 1px solid color-mix(in srgb, var(--loc-gold) 45%, transparent);
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(3rem, 6vw, 4rem);
+}
+
+.locations-help__inner {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .locations-help__inner {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 3rem;
+    align-items: center;
+  }
+}
+
+.locations-help__headline {
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.locations-help__body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.locations-help__features {
+  display: grid;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .locations-help__features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .locations-help__features {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .locations-help__feature:not(:first-child) {
+    border-left: 1px solid color-mix(in srgb, var(--loc-gold) 40%, transparent);
+    padding-left: 1.25rem;
+    margin-left: 1.25rem;
+  }
+}
+
+.locations-help__feature {
+  text-align: center;
+  color: #fff;
+}
+
+.locations-help__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 1rem;
+  color: var(--loc-gold);
+}
+
+.locations-help__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.locations-help__feature-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--loc-gold);
+}
+
+.locations-help__feature-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}

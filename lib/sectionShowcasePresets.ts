@@ -1,90 +1,137 @@
-/**
- * @deprecated Import from @/lib/sectionPresetCatalog for full metadata.
- * Re-exports catalog entries for backwards compatibility.
- */
-
+import type { EnrichedCMSSection } from "./cmsSectionModel";
+import { getRegistryEntry } from "./cmsSectionRegistry";
 import {
-  PRESET_LIBRARY_CATEGORIES,
-  SECTION_PRESET_CATALOG,
-  getPresetsByCategory,
-  type PresetLibraryCategory,
-  type SectionPresetCatalogEntry,
-} from "./sectionPresetCatalog";
+  SECTION_SHOWCASE_PRESET_DEFS,
+  type SectionShowcasePresetDef,
+} from "./sectionShowcasePresetData";
+import type { Store, Vehicle } from "./types";
 
-export type PresetStatus = "saved" | "draft";
+export { SECTION_SHOWCASE_PRESET_DEFS, SHOWCASE_HERO_IMAGES } from "./sectionShowcasePresetData";
 
-/** @deprecated Use PresetLibraryCategory */
-export type PresetCategory = PresetLibraryCategory;
+const SHOWCASE_PAGE_ID = "section-showcase";
 
-export interface SectionShowcasePresetMeta {
-  section_key: string;
-  title: string;
-  status: PresetStatus;
-  category: PresetCategory;
-  recommended_cms_fields: string[];
-  default_settings: Record<string, string | boolean | number>;
-  layout_variants: string[];
-  maps_to_library_type?: string;
-  component_path?: string;
-}
+export const SECTION_SHOWCASE_PRESET_COUNT = SECTION_SHOWCASE_PRESET_DEFS.length;
 
-function toLegacyMeta(entry: SectionPresetCatalogEntry): SectionShowcasePresetMeta {
-  return {
-    section_key: entry.preset_key,
-    title: entry.display_name,
-    status: "saved",
-    category: entry.library_category,
-    recommended_cms_fields: entry.supported_fields,
-    default_settings: entry.default_settings,
-    layout_variants: entry.layout_variants,
-    maps_to_library_type: entry.maps_to_library_type,
-    component_path: entry.component_path,
+const MOCK_STORES: Store[] = [
+  {
+    id: "showcase-store-1",
+    name: "Cavender Chevrolet",
+    city: "San Antonio",
+    state: "TX",
+    phone: "(210) 555-0100",
+    website: "https://example.com",
+  },
+  {
+    id: "showcase-store-2",
+    name: "Cavender Ford",
+    city: "Boerne",
+    state: "TX",
+    phone: "(830) 555-0200",
+    website: "https://example.com",
+  },
+];
+
+const MOCK_VEHICLES: Vehicle[] = [
+  {
+    id: "showcase-v-1",
+    year: 2024,
+    make: "Chevrolet",
+    model: "Traverse",
+    trim: "LT",
+    condition: "New",
+    body_style: "SUV",
+    stock_number: "DEMO-001",
+    internet_price: 42990,
+    mileage: 12,
+    primary_image_url: "/hero/vehicle.jpg",
+  },
+  {
+    id: "showcase-v-2",
+    year: 2023,
+    make: "Ford",
+    model: "F-150",
+    trim: "XLT",
+    condition: "Used",
+    body_style: "Truck",
+    stock_number: "DEMO-002",
+    internet_price: 38950,
+    mileage: 18420,
+    primary_image_url: "/hero/dealership.jpg",
+  },
+];
+
+function materializePreset(
+  def: SectionShowcasePresetDef,
+  index: number,
+): EnrichedCMSSection {
+  const sort_order = (index + 1) * 10;
+  const section: EnrichedCMSSection = {
+    id: `showcase-${index + 1}-${def.section_type}`,
+    page_id: SHOWCASE_PAGE_ID,
+    section_type: def.section_type,
+    sort_order,
+    is_active: true,
+    layout_variant: def.fields.layout_variant ?? null,
+    eyebrow: def.fields.eyebrow ?? null,
+    headline: def.fields.headline ?? null,
+    subheadline: def.fields.subheadline ?? null,
+    body: def.fields.body ?? null,
+    headline_es: def.fields.headline_es ?? null,
+    subheadline_es: def.fields.subheadline_es ?? null,
+    body_es: def.fields.body_es ?? null,
+    cta_text_es: def.fields.cta_text_es ?? null,
+    image_url: def.fields.image_url ?? null,
+    image_url_es: def.fields.image_url_es ?? null,
+    cta_text: def.fields.cta_text ?? null,
+    cta_url: def.fields.cta_url ?? null,
+    cta_url_es: def.fields.cta_url_es ?? null,
+    settings: def.fields.settings ?? {},
+    vehicles: def.fields.vehicles,
+    stores: def.fields.stores,
   };
+
+  if (
+    def.section_type === "inventory_collection" &&
+    def.variantLabel.includes("With vehicles")
+  ) {
+    section.vehicles = MOCK_VEHICLES;
+  }
+
+  if (def.section_type === "locations") {
+    section.stores =
+      def.variantLabel.includes("Two stores") ? MOCK_STORES : MOCK_STORES.slice(0, 1);
+  }
+
+  return section;
 }
 
-const legacyAll = SECTION_PRESET_CATALOG.map(toLegacyMeta);
+/** All premade showcase sections (44 layout presets). */
+export const SECTION_SHOWCASE_PRESETS: EnrichedCMSSection[] =
+  SECTION_SHOWCASE_PRESET_DEFS.map(materializePreset);
 
-export const SECTION_SHOWCASE_PRESETS = legacyAll;
-
-export const SAVED_SECTION_PRESETS = legacyAll;
-
-export const DRAFT_SECTION_PRESETS: SectionShowcasePresetMeta[] = [];
-
-function byCat(cat: PresetLibraryCategory) {
-  return getPresetsByCategory(cat).map(toLegacyMeta);
+export interface SectionShowcaseEntry {
+  section: EnrichedCMSSection;
+  /** Human-readable variant name, e.g. "Hero · Dark with image" */
+  label: string;
+  sectionTypeLabel: string;
+  description: string;
+  hasDedicatedRenderer: boolean;
 }
 
-export const CONTENT_SECTION_PRESETS = byCat("content");
-export const GALLERY_SECTION_PRESETS = byCat("galleries");
-export const HEADER_SECTION_PRESETS = byCat("page_headers");
-export const UTILITY_SECTION_PRESETS = [
-  ...byCat("forms_contact"),
-  ...byCat("memos_notices"),
-];
-export const STAFF_SECTION_PRESETS = byCat("staff_dynamic");
-export const TESTIMONIAL_SECTION_PRESETS = byCat("social_proof").filter((p) =>
-  p.section_key.startsWith("testimonial"),
-);
-export const REVIEWS_SECTION_PRESETS = byCat("social_proof").filter((p) =>
-  p.section_key.startsWith("reviews"),
-);
-export const PROCESS_SECTION_PRESETS = byCat("process_steps").filter((p) =>
-  p.section_key.startsWith("process"),
-);
-export const TIMELINE_SECTION_PRESETS = byCat("process_steps").filter((p) =>
-  p.section_key.startsWith("timeline"),
-);
-export const LOCATION_SECTION_PRESETS = [
-  ...byCat("locations").filter((p) => p.section_key.startsWith("location")),
-];
-export const MAPS_SECTION_PRESETS = [
-  ...byCat("locations").filter((p) => p.section_key.startsWith("map") || p.section_key === "directions_panel"),
-];
-export const VIDEO_SECTION_PRESETS = byCat("content").filter((p) =>
-  p.section_key.startsWith("video"),
-);
-export const CONVERSION_SECTION_PRESETS = byCat("conversion_cta");
-export const MEMOS_SECTION_PRESETS = byCat("memos_notices");
-export const FORMS_SECTION_PRESETS = byCat("forms_contact");
+export function getSectionShowcaseEntries(): SectionShowcaseEntry[] {
+  return SECTION_SHOWCASE_PRESET_DEFS.map((def, index) => {
+    const section = SECTION_SHOWCASE_PRESETS[index];
+    const entry = getRegistryEntry(def.section_type);
+    return {
+      section,
+      label: def.variantLabel,
+      sectionTypeLabel: entry.label,
+      description: def.description ?? entry.description,
+      hasDedicatedRenderer: entry.hasDedicatedRenderer,
+    };
+  });
+}
 
-export { PRESET_LIBRARY_CATEGORIES, SECTION_PRESET_CATALOG };
+export function getSectionShowcaseMockVehicles(): Vehicle[] {
+  return MOCK_VEHICLES;
+}

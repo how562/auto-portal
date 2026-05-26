@@ -1,0 +1,318 @@
+/**
+ * About Us page — matches editorial dealership about layout.
+ */
+
+.about-us-page {
+  --about-gold: var(--gold, #b8956b);
+  --about-ink: var(--ink, #1a1a1a);
+  --about-muted: var(--muted, #6b6560);
+  --about-gray: #f3f3f3;
+  background: #fff;
+}
+
+/* —— Hero —— */
+.about-us-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  height: clamp(280px, 38vw, 420px);
+  overflow: hidden;
+}
+
+.about-us-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.about-us-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.about-us-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+.about-us-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.about-us-hero__title {
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+}
+
+.about-us-hero__divider {
+  display: block;
+  width: 3.5rem;
+  height: 3px;
+  margin: 1.25rem auto 1.5rem;
+  background: var(--about-gold);
+}
+
+.about-us-hero__tagline {
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* —— Bands —— */
+.about-us-band {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+}
+
+.about-us-band--white {
+  background: #fff;
+}
+
+.about-us-band--gray {
+  background: var(--about-gray);
+}
+
+/* —— Split sections —— */
+.about-us-split {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .about-us-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3.5rem 4rem;
+  }
+
+  .about-us-split--reverse .about-us-split__media {
+    order: -1;
+  }
+}
+
+.about-us-eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--about-gold);
+}
+
+.about-us-headline {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.8vw, 2.65rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--about-ink);
+}
+
+.about-us-headline-accent {
+  display: inline-block;
+  border-bottom: 3px solid var(--about-gold);
+  padding-bottom: 0.1em;
+}
+
+.about-us-body {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+.about-us-body p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.72;
+  color: color-mix(in srgb, var(--about-ink) 78%, transparent);
+}
+
+.about-us-signature {
+  margin: 2rem 0 0;
+  font-family: "Gopadel", Georgia, "Times New Roman", serif;
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--about-gold);
+}
+
+.about-us-photo {
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.06);
+}
+
+.about-us-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* —— Approach features —— */
+.about-us-features {
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.about-us-feature {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.about-us-feature__title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--about-ink);
+}
+
+.about-us-feature__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--about-muted);
+}
+
+.about-us-icon-shell {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: var(--about-ink);
+  color: var(--about-gold);
+}
+
+.about-us-icon-shell svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.about-us-values .about-us-icon-shell {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 1rem;
+  background: transparent;
+  border: 1.5px solid var(--about-gold);
+  color: var(--about-gold);
+}
+
+.about-us-values .about-us-icon-shell svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+/* —— Values —— */
+.about-us-values__header {
+  text-align: center;
+  max-width: 36rem;
+  margin: 0 auto 2.75rem;
+}
+
+.about-us-values__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--about-gold);
+}
+
+.about-us-values__eyebrow-line {
+  flex: 1;
+  max-width: 4rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--about-gold) 55%, transparent);
+}
+
+.about-us-values__headline {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--about-ink);
+}
+
+.about-us-values__grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 640px) {
+  .about-us-values__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .about-us-values__grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+  }
+}
+
+.about-us-value {
+  text-align: center;
+  padding: 0 1rem;
+}
+
+@media (min-width: 1024px) {
+  .about-us-value--divider {
+    border-left: 1px solid color-mix(in srgb, var(--about-ink) 12%, transparent);
+  }
+}
+
+.about-us-value__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--about-ink);
+}
+
+.about-us-value__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--about-muted);
+}

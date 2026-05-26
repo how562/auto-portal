@@ -8,28 +8,28 @@ export function ExploreOurBrandsSection() {
   return (
     <section
       id="explore-brands"
-      className="scroll-mt-20 overflow-visible border-y border-[var(--line)] bg-white py-14 sm:py-20"
+      className="homepage-brands scroll-mt-20 overflow-visible"
       aria-labelledby="explore-brands-heading"
     >
       <div className="portal-container">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">
+        <div className="homepage-brands__header text-center">
+          <p className="homepage-brands__eyebrow font-semibold uppercase text-[var(--muted)]">
             Cavender Auto Group
           </p>
           <h2
             id="explore-brands-heading"
-            className="mt-3 headline-stack text-3xl text-[var(--ink)] sm:text-4xl"
+            className="homepage-brands__title headline-stack font-semibold text-[var(--ink)]"
           >
             Explore Our Brands
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
-            Access inventory across our entire network of trusted automotive brands.
+          <p className="homepage-brands__lead text-[var(--muted)]">
+            Shop every brand in our network from one place.
           </p>
         </div>
-      </div>
 
-      <div className="mt-8 w-full sm:mt-10">
-        <BrandLogoCarousel brands={EXPLORE_BRANDS} />
+        <div className="homepage-brands__marquee-slot w-full">
+          <BrandLogoCarousel brands={EXPLORE_BRANDS} />
+        </div>
       </div>
     </section>
   );

@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
+import { PortalHeader } from "@/components/layout/PortalHeader";
 import { SectionShowcaseView } from "@/components/section-showcase/SectionShowcaseView";
 
-export const metadata: Metadata = {
-  title: "Section showcase | CMS layout kit",
-  description:
-    "Saved CMS section presets: content blocks, galleries, page headers, forms, and memos.",
-  robots: { index: false, follow: false },
-};
+export const dynamic = "force-dynamic";
 
 export default function SectionShowcasePage() {
-  return <SectionShowcaseView />;
+  return (
+    <>
+      <PortalHeader />
+      <main>
+        <SectionShowcaseView />
+      </main>
+    </>
+  );
 }

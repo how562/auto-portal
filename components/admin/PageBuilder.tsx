@@ -2,37 +2,30 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminNavLink } from "@/components/admin/AdminNavLink";
-import { useCallback, useState } from "react";
-import { AddSectionModal } from "@/components/admin/AddSectionModal";
+import { useCallback, useEffect, useState } from "react";
 import {
   CmsSectionEditorCard,
   type CollectionOption,
 } from "@/components/admin/CmsSectionEditorCard";
 import { CmsSectionDebugPanel } from "@/components/admin/CmsSectionDebugPanel";
 import type { CMSSection } from "@/lib/cmsSectionModel";
-import { getSectionStarter } from "@/lib/cmsSectionStarters";
-import type { PageBuilderAddTarget } from "@/lib/pageBuilderLibrary";
-import {
-  getPresetSectionStarter,
-  getSectionTypeForPreset,
-} from "@/lib/presetSectionStarters";
-import type { SitePage } from "@/lib/cmsTypes";
-import type { Store } from "@/lib/types";
+import { listRegistryEntriesForBuilder } from "@/lib/cmsSectionRegistry";
+import type { CMSSectionType, SitePage } from "@/lib/cmsTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface PageBuilderProps {
+  /** Canonical page id from the route (used for all section writes). */
+  pageId: string;
   page: SitePage;
   initialSections: CMSSection[];
   collections: CollectionOption[];
-  stores?: Store[];
 }
 
 export function PageBuilder({
+  pageId,
   page: initialPage,
   initialSections,
   collections,
-  stores = [],
 }: PageBuilderProps) {
   const router = useRouter();
   const [page, setPage] = useState(initialPage);
@@ -40,20 +33,53 @@ export function PageBuilder({
   const [title, setTitle] = useState(page.title);
   const [slug, setSlug] = useState(page.slug);
   const [metaDescription, setMetaDescription] = useState(page.meta_description ?? "");
-  const [status, setStatus] = useState<"draft" | "published">(
-    page.status === "published" ? "published" : "draft",
-  );
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [newSectionType, setNewSectionType] = useState<CMSSectionType>("hero");
   const [savingPage, setSavingPage] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [exportingBlueprint, setExportingBlueprint] = useState(false);
+  const [blueprintCopied, setBlueprintCopied] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
-  const [addingTarget, setAddingTarget] = useState<PageBuilderAddTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pageMissing, setPageMissing] = useState(false);
 
-  const savePage = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await fetch(`/api/admin/site-pages/${pageId}`, {
+        credentials: "include",
+      });
+      if (cancelled) return;
+      if (res.status === 404) {
+        setPageMissing(true);
+        setError(
+          "This page is not in the database. Go to Site pages and open the page from the list.",
+        );
+      } else if (res.status === 503) {
+        const data = (await res.json()) as { error?: string };
+        setError(
+          data.error ??
+            "Add SUPABASE_SERVICE_ROLE_KEY to .env.local and restart the dev server.",
+        );
+      } else if (res.ok) {
+        const data = (await res.json()) as { page?: SitePage };
+        if (data.page) {
+          setPage(data.page);
+          setTitle(data.page.title);
+          setSlug(data.page.slug);
+          setPageMissing(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pageId]);
+
+  const savePageSettings = useCallback(async () => {
     setSavingPage(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/site-pages/${page.id}`, {
+      const res = await fetch(`/api/admin/site-pages/${pageId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -61,7 +87,6 @@ export function PageBuilder({
           title: title.trim(),
           slug: slug.trim(),
           meta_description: metaDescription.trim() || null,
-          status,
         }),
       });
       const data = (await res.json()) as { page?: SitePage; error?: string };
@@ -70,7 +95,6 @@ export function PageBuilder({
         setPage(data.page);
         setTitle(data.page.title);
         setSlug(data.page.slug);
-        setStatus(data.page.status === "published" ? "published" : "draft");
         router.refresh();
       }
     } catch (err: unknown) {
@@ -78,43 +102,80 @@ export function PageBuilder({
     } finally {
       setSavingPage(false);
     }
-  }, [page.id, title, slug, metaDescription, status, router]);
+  }, [pageId, title, slug, metaDescription, router]);
 
-  async function addSection(target: PageBuilderAddTarget) {
-    setAddingSection(true);
-    setAddingTarget(target);
+  async function setPageStatus(nextStatus: "draft" | "published") {
+    setPublishing(true);
     setError(null);
     try {
-      const section_type =
-        target.kind === "preset"
-          ? getSectionTypeForPreset(target.presetKey)
-          : target.type;
-      const starter =
-        target.kind === "preset"
-          ? getPresetSectionStarter(target.presetKey)
-          : getSectionStarter(target.type);
+      const res = await fetch(`/api/admin/site-pages/${pageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: title.trim(),
+          slug: slug.trim(),
+          meta_description: metaDescription.trim() || null,
+          status: nextStatus,
+        }),
+      });
+      const data = (await res.json()) as { page?: SitePage; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Update failed");
+      if (data.page) {
+        setPage(data.page);
+        router.refresh();
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setPublishing(false);
+    }
+  }
 
+  async function exportBlueprint() {
+    setExportingBlueprint(true);
+    setBlueprintCopied(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/site-pages/${pageId}/blueprint`, {
+        credentials: "include",
+      });
+      const data = (await res.json()) as { json?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Export failed");
+      if (data.json) {
+        await navigator.clipboard.writeText(data.json);
+        setBlueprintCopied(true);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExportingBlueprint(false);
+    }
+  }
+
+  async function addSection() {
+    if (pageMissing) return;
+    setAddingSection(true);
+    setError(null);
+    try {
       const res = await fetch("/api/admin/page-sections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          page_id: page.id,
-          section_type,
-          starter,
+          page_id: pageId,
+          section_type: newSectionType,
         }),
       });
       const data = (await res.json()) as { section?: CMSSection; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Add failed");
       if (data.section) {
         setSections((prev) => [...prev, data.section!]);
-        setAddModalOpen(false);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Add failed");
     } finally {
       setAddingSection(false);
-      setAddingTarget(null);
     }
   }
 
@@ -158,7 +219,7 @@ export function PageBuilder({
 
   async function deletePage() {
     if (!confirm(`Delete page "${page.title}" and all sections?`)) return;
-    const res = await fetch(`/api/admin/site-pages/${page.id}`, {
+    const res = await fetch(`/api/admin/site-pages/${pageId}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -181,20 +242,15 @@ export function PageBuilder({
           ← All pages
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Visual page builder</h1>
-            <p className="mt-1 max-w-xl text-sm text-[var(--muted)]">
-              Preview blocks, tune design, and publish — no code required.
-            </p>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Page builder</h1>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`/admin/pages/${page.id}/preview`}
+              href={`/admin/pages/${pageId}/preview`}
               target="_blank"
               rel="noreferrer"
               className={btnSecondaryMd}
             >
-              Preview
+              Preview draft
             </Link>
             {page.status === "published" ? (
               <Link
@@ -206,6 +262,21 @@ export function PageBuilder({
                 Live URL
               </Link>
             ) : null}
+            <button
+              type="button"
+              disabled={exportingBlueprint}
+              onClick={exportBlueprint}
+              className={`${btnSecondaryMd} disabled:opacity-60`}
+            >
+              {exportingBlueprint
+                ? "Exporting…"
+                : blueprintCopied
+                  ? "Blueprint copied"
+                  : "Export blueprint"}
+            </button>
+            <Link href="/admin/page-blueprints" className={btnSecondaryMd}>
+              Import blueprint
+            </Link>
           </div>
         </div>
       </div>
@@ -242,29 +313,44 @@ export function PageBuilder({
               className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
             />
           </label>
-          <label className="block space-y-1">
+          <div className="block space-y-1">
             <span className="text-xs font-medium text-[var(--muted)]">Status</span>
-            <select
-              value={status}
-              onChange={(e) =>
-                setStatus(e.target.value === "published" ? "published" : "draft")
-              }
-              className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </label>
+            <p className="rounded-xl border border-[var(--line)] bg-[var(--cream)] px-4 py-2.5 text-sm capitalize">
+              {page.status}
+              {page.status !== "published" ? (
+                <span className="text-[var(--muted)]"> — not visible on the public site</span>
+              ) : null}
+            </p>
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={savingPage}
-            onClick={savePage}
+            onClick={savePageSettings}
             className={`${btnPrimaryMd} disabled:opacity-60`}
           >
-            {savingPage ? "Saving…" : "Save page"}
+            {savingPage ? "Saving…" : "Save settings"}
           </button>
+          {page.status === "published" ? (
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={() => setPageStatus("draft")}
+              className={`${btnSecondaryMd} disabled:opacity-60`}
+            >
+              {publishing ? "Updating…" : "Unpublish"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={() => setPageStatus("published")}
+              className={`${btnSecondaryMd} disabled:opacity-60`}
+            >
+              {publishing ? "Publishing…" : "Publish"}
+            </button>
+          )}
           <button type="button" onClick={deletePage} className={`${btnSecondaryMd} text-red-700`}>
             Delete page
           </button>
@@ -272,31 +358,42 @@ export function PageBuilder({
       </section>
 
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
-            Page sections
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            <AdminNavLink href="/admin/section-showcase" className={btnSecondaryMd}>
-              Section catalog
-            </AdminNavLink>
-            <button
-              type="button"
-              disabled={addingSection}
-              onClick={() => {
-                setAddModalOpen(true);
-              }}
-              className={`${btnPrimaryMd} disabled:opacity-60`}
-            >
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
               Add section
-            </button>
-          </div>
+            </span>
+            <select
+              value={newSectionType}
+              onChange={(e) => setNewSectionType(e.target.value as CMSSectionType)}
+              disabled={pageMissing}
+              className="block min-w-[12rem] rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm disabled:opacity-60"
+            >
+              {listRegistryEntriesForBuilder().map((entry) => (
+                <option key={entry.type} value={entry.type}>
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={addingSection || pageMissing}
+            onClick={addSection}
+            className={`${btnPrimaryMd} disabled:opacity-60`}
+          >
+            {addingSection ? "Adding…" : "Add section"}
+          </button>
+          {pageMissing ? (
+            <Link href="/admin/pages" className={btnSecondaryMd}>
+              Back to Site pages
+            </Link>
+          ) : null}
         </div>
 
         {sections.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">
-            No sections yet. Use <strong>Add section</strong> to pick a layout with starter
-            content.
+            No sections yet. Add a section above.
           </p>
         ) : (
           <div className="space-y-3">
@@ -307,7 +404,6 @@ export function PageBuilder({
                 isFirst={index === 0}
                 isLast={index === sections.length - 1}
                 collections={collections}
-                stores={stores}
                 onMoveUp={() => reorder(index, "up")}
                 onMoveDown={() => reorder(index, "down")}
                 onDelete={() => deleteSection(section.id)}
@@ -322,15 +418,7 @@ export function PageBuilder({
         )}
       </section>
 
-      <CmsSectionDebugPanel sections={sections} defaultCollapsed />
-
-      <AddSectionModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onAdd={addSection}
-        adding={addingSection}
-        addingTarget={addingTarget}
-      />
+      <CmsSectionDebugPanel sections={sections} />
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

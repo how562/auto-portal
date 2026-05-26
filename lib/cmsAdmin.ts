@@ -1,3 +1,10 @@
+import type { PageBlueprint } from "./cmsPageBlueprint";
+import {
+  getPageTemplate,
+  isPageTemplateId,
+  type PageTemplateId,
+  type PageTemplateSectionSeed,
+} from "./cmsPageTemplates";
 import type { CMSSection } from "./cmsSectionModel";
 import {
   canonicalSectionPatchFromInput,
@@ -9,6 +16,19 @@ import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
 const PAGE_SELECT = "id, slug, title, meta_description, status, created_at, updated_at";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidPageUuid(value: string): boolean {
+  return UUID_RE.test(value.trim());
+}
+
+function coercePageId(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value != null) return String(value).trim();
+  return "";
+}
+
 export function slugifyPageSlug(value: string): string {
   return value
     .toLowerCase()
@@ -18,10 +38,20 @@ export function slugifyPageSlug(value: string): string {
 }
 
 function normalizePageRow(row: Record<string, unknown>): SitePage | null {
-  const id = typeof row.id === "string" ? row.id : "";
-  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
-  const title = typeof row.title === "string" ? row.title.trim() : "";
-  if (!id || !slug || !title) return null;
+  const id = coercePageId(row.id);
+  if (!id) return null;
+
+  const slug =
+    typeof row.slug === "string" && row.slug.trim()
+      ? row.slug.trim()
+      : slugifyPageSlug(
+          typeof row.title === "string" ? row.title : "page",
+        ) || "page";
+
+  const title =
+    typeof row.title === "string" && row.title.trim()
+      ? row.title.trim()
+      : "Untitled page";
 
   return {
     id,
@@ -64,6 +94,50 @@ export async function fetchSitePageById(pageId: string): Promise<SitePage | null
   return normalizePageRow(data as Record<string, unknown>);
 }
 
+export async function sitePageRecordExists(pageId: string): Promise<boolean> {
+  if (!isSupabaseAdminConfigured()) return false;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("site_pages")
+    .select("id")
+    .eq("id", pageId.trim())
+    .maybeSingle();
+  if (error) throw new Error(`Failed to verify page: ${error.message}`);
+  return Boolean(data && coercePageId(data.id));
+}
+
+export async function assertSitePageExists(pageId: string): Promise<void> {
+  const id = pageId.trim();
+  if (!id) throw new Error("page id is required");
+  if (!isValidPageUuid(id)) {
+    throw new Error(
+      "Invalid page id. Open the page from Admin → Site pages (do not bookmark a stale URL).",
+    );
+  }
+  if (!isSupabaseAdminConfigured()) {
+    throw new Error(
+      "Supabase admin is not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env.local and restart the dev server (npm run dev).",
+    );
+  }
+  const exists = await sitePageRecordExists(id);
+  if (!exists) {
+    throw new Error(
+      "This page was not found in site_pages. Open it again from Admin → Site pages, or create a new page.",
+    );
+  }
+}
+
+export async function requireSitePage(pageId: string): Promise<SitePage> {
+  await assertSitePageExists(pageId);
+  const page = await fetchSitePageById(pageId);
+  if (!page) {
+    throw new Error(
+      "Page exists but could not be loaded. Check the site_pages row in Supabase.",
+    );
+  }
+  return page;
+}
+
 export async function fetchSitePageBySlugAdmin(
   slug: string,
 ): Promise<SitePage | null> {
@@ -79,13 +153,51 @@ export async function fetchSitePageBySlugAdmin(
   return normalizePageRow(data as Record<string, unknown>);
 }
 
+export async function isPageSlugTaken(
+  slug: string,
+  excludePageId?: string,
+): Promise<boolean> {
+  const existing = await fetchSitePageBySlugAdmin(slug);
+  if (!existing) return false;
+  if (excludePageId && existing.id === excludePageId.trim()) return false;
+  return true;
+}
+
+/** Picks base slug or base-2, base-3, … when slug already exists. */
+export async function resolveUniquePageSlug(
+  desired: string,
+  options?: { excludePageId?: string },
+): Promise<string> {
+  const base = slugifyPageSlug(desired);
+  if (!base) throw new Error("slug is required");
+  if (RESERVED_CMS_SLUGS.has(base)) {
+    throw new Error(`Slug "${base}" is reserved for app routes`);
+  }
+
+  const excludePageId = options?.excludePageId?.trim();
+
+  if (!(await isPageSlugTaken(base, excludePageId))) {
+    return base;
+  }
+
+  for (let n = 2; n <= 99; n++) {
+    const candidate = `${base}-${n}`;
+    if (RESERVED_CMS_SLUGS.has(candidate)) continue;
+    if (!(await isPageSlugTaken(candidate, excludePageId))) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Could not find an available slug for "${base}". Edit the blueprint slug and try again.`,
+  );
+}
+
 export interface SitePageCreateInput {
   title: string;
   slug?: string;
   meta_description?: string | null;
   status?: "draft" | "published";
-  /** Prebuilt section stack from lib/cmsPageTemplates */
-  template_id?: string;
 }
 
 export interface SitePageUpdateInput {
@@ -101,11 +213,8 @@ export async function createSitePage(
   const title = input.title?.trim();
   if (!title) throw new Error("title is required");
 
-  const slug = slugifyPageSlug(input.slug?.trim() || title);
-  if (!slug) throw new Error("slug is required");
-  if (RESERVED_CMS_SLUGS.has(slug)) {
-    throw new Error(`Slug "${slug}" is reserved for app routes`);
-  }
+  const desiredSlug = slugifyPageSlug(input.slug?.trim() || title);
+  const slug = await resolveUniquePageSlug(desiredSlug);
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -120,20 +229,16 @@ export async function createSitePage(
     .select(PAGE_SELECT)
     .single();
 
-  if (error) throw new Error(`Failed to create page: ${error.message}`);
-  const row = normalizePageRow(data as Record<string, unknown>);
-  if (!row) throw new Error("Created page could not be read");
-
-  const templateId = input.template_id?.trim();
-  if (templateId) {
-    const { applyPageTemplateToPage } = await import("./cmsPageTemplatesApply");
-    const { isPageTemplateId } = await import("./cmsPageTemplates");
-    if (!isPageTemplateId(templateId)) {
-      throw new Error(`Unknown page template: ${templateId}`);
+  if (error) {
+    if (error.message.includes("site_pages_slug_key")) {
+      throw new Error(
+        `Slug "/${slug}" is already in use. Change the slug in your blueprint and try again.`,
+      );
     }
-    await applyPageTemplateToPage(row.id, templateId);
+    throw new Error(`Failed to create page: ${error.message}`);
   }
-
+  const row = normalizePageRow(data as Record<string, unknown>);
+  if (!row?.id) throw new Error("Created page could not be read");
   return row;
 }
 
@@ -158,6 +263,11 @@ export async function updateSitePage(
     if (!slug) throw new Error("slug cannot be empty");
     if (RESERVED_CMS_SLUGS.has(slug)) {
       throw new Error(`Slug "${slug}" is reserved for app routes`);
+    }
+    if (await isPageSlugTaken(slug, id)) {
+      throw new Error(
+        `Slug "/${slug}" is already used by another page. Choose a different slug.`,
+      );
     }
     payload.slug = slug;
   }
@@ -215,6 +325,12 @@ export async function fetchAllPageSectionsForAdmin(
   return fetchPageSectionsForAdmin(pageId, { includeInactive: true });
 }
 
+export interface PageSectionCreateInput {
+  page_id: string;
+  section_type: CMSSection["section_type"];
+  sort_order?: number;
+}
+
 /** Canonical fields only — no title/content. */
 export type PageSectionUpdateInput = Partial<
   Pick<
@@ -240,12 +356,11 @@ export type PageSectionUpdateInput = Partial<
   >
 >;
 
-export interface PageSectionCreateInput {
-  page_id: string;
-  section_type: CMSSection["section_type"];
-  sort_order?: number;
-  /** Optional starter copy/settings applied on insert (visual section picker). */
-  starter?: PageSectionUpdateInput;
+function formatPageSectionInsertError(message: string, pageId: string): string {
+  if (message.includes("page_sections_page_id_fkey")) {
+    return `Could not add section: page ${pageId} was not found in site_pages. Open the page again from Admin → Site pages, or create a new page.`;
+  }
+  return `Failed to create section: ${message}`;
 }
 
 export async function createPageSection(
@@ -253,6 +368,8 @@ export async function createPageSection(
 ): Promise<CMSSection> {
   const pageId = input.page_id.trim();
   if (!pageId) throw new Error("page_id is required");
+
+  await assertSitePageExists(pageId);
 
   const supabase = getSupabaseAdmin();
   const { data: maxRow } = await supabase
@@ -267,11 +384,6 @@ export async function createPageSection(
     input.sort_order ??
     (typeof maxRow?.sort_order === "number" ? maxRow.sort_order + 10 : 0);
 
-  const starterPayload = input.starter
-    ? canonicalSectionToDbPayload(input.starter)
-    : {};
-  const { updated_at: _u, ...starterFields } = starterPayload;
-
   const { data, error } = await supabase
     .from("page_sections")
     .insert({
@@ -281,12 +393,13 @@ export async function createPageSection(
       is_active: true,
       settings: {},
       updated_at: new Date().toISOString(),
-      ...starterFields,
     })
     .select(PAGE_SECTION_SELECT)
     .single();
 
-  if (error) throw new Error(`Failed to create section: ${error.message}`);
+  if (error) {
+    throw new Error(formatPageSectionInsertError(error.message, pageId));
+  }
   const row = parsePageSectionFromDb(data as Record<string, unknown>);
   if (!row) throw new Error("Created section could not be read");
   return row;
@@ -325,6 +438,173 @@ export async function deletePageSection(sectionId: string): Promise<void> {
     .delete()
     .eq("id", sectionId.trim());
   if (error) throw new Error(`Failed to delete section: ${error.message}`);
+}
+
+export type PageSectionSeedInput = PageTemplateSectionSeed;
+
+function sectionSeedToInsertRow(
+  pageId: string,
+  seed: PageSectionSeedInput,
+): Record<string, unknown> {
+  const now = new Date().toISOString();
+  const patch = canonicalSectionPatchFromInput({
+    section_type: seed.section_type,
+    headline: seed.headline ?? null,
+    subheadline: seed.subheadline ?? null,
+    body: seed.body ?? null,
+    image_url: seed.image_url ?? null,
+    cta_text: seed.cta_text ?? null,
+    cta_url: seed.cta_url ?? null,
+    settings: seed.settings ?? {},
+    sort_order: seed.sort_order,
+    is_active: seed.is_active ?? true,
+  });
+
+  return {
+    page_id: pageId,
+    section_type: seed.section_type,
+    ...canonicalSectionToDbPayload(patch),
+    sort_order: seed.sort_order,
+    is_active: seed.is_active ?? true,
+    updated_at: now,
+  };
+}
+
+export async function createPageSectionsBulk(
+  pageId: string,
+  seeds: PageSectionSeedInput[],
+): Promise<CMSSection[]> {
+  const id = pageId.trim();
+  if (!id) throw new Error("page_id is required");
+  if (!seeds.length) return [];
+
+  const supabase = getSupabaseAdmin();
+  const rows = seeds.map((seed) => sectionSeedToInsertRow(id, seed));
+  const { data, error } = await supabase
+    .from("page_sections")
+    .insert(rows)
+    .select(PAGE_SECTION_SELECT);
+
+  if (error) {
+    throw new Error(formatPageSectionInsertError(error.message, id));
+  }
+  return (data ?? [])
+    .map((row) => parsePageSectionFromDb(row as Record<string, unknown>))
+    .filter((s): s is CMSSection => s != null);
+}
+
+export interface SitePageFromTemplateInput {
+  templateId: PageTemplateId;
+  title: string;
+  slug?: string;
+  meta_description?: string | null;
+}
+
+export async function createSitePageFromTemplate(
+  input: SitePageFromTemplateInput,
+): Promise<SitePage> {
+  if (!isPageTemplateId(input.templateId)) {
+    throw new Error(`Unknown template: ${input.templateId}`);
+  }
+
+  const template = getPageTemplate(input.templateId);
+  const title = input.title.trim();
+  if (!title) throw new Error("title is required");
+
+  const slug = slugifyPageSlug(
+    input.slug?.trim() || template.suggestedSlug || title,
+  );
+
+  const page = await createSitePage({
+    title,
+    slug,
+    meta_description: input.meta_description,
+    status: "draft",
+  });
+
+  await createPageSectionsBulk(page.id, template.sections);
+  return page;
+}
+
+export interface DuplicateSitePageInput {
+  title: string;
+  slug?: string;
+}
+
+export async function duplicateSitePage(
+  sourcePageId: string,
+  input: DuplicateSitePageInput,
+): Promise<SitePage> {
+  const source = await fetchSitePageById(sourcePageId);
+  if (!source) throw new Error("Source page not found");
+
+  const sections = await fetchAllPageSectionsForAdmin(sourcePageId);
+  const title = input.title.trim();
+  if (!title) throw new Error("title is required");
+
+  const slug = slugifyPageSlug(input.slug?.trim() || `${source.slug}-copy`);
+
+  const page = await createSitePage({
+    title,
+    slug,
+    meta_description: source.meta_description,
+    status: "draft",
+  });
+
+  const seeds: PageSectionSeedInput[] = sections.map((section) => ({
+    section_type: section.section_type,
+    sort_order: section.sort_order,
+    is_active: section.is_active,
+    headline: section.headline,
+    subheadline: section.subheadline,
+    body: section.body,
+    image_url: section.image_url,
+    cta_text: section.cta_text,
+    cta_url: section.cta_url,
+    settings: section.settings ?? {},
+  }));
+
+  await createPageSectionsBulk(page.id, seeds);
+  return page;
+}
+
+export async function createSitePageFromBlueprint(
+  blueprint: PageBlueprint,
+): Promise<{
+  page: SitePage;
+  sections: CMSSection[];
+  slugUsed: string;
+  slugAdjusted: boolean;
+}> {
+  const desiredSlug = slugifyPageSlug(blueprint.slug);
+
+  const page = await createSitePage({
+    title: blueprint.title,
+    slug: desiredSlug,
+    meta_description: blueprint.meta_description,
+    status: blueprint.status === "published" ? "published" : "draft",
+  });
+
+  const seeds: PageSectionSeedInput[] = blueprint.sections.map((section) => ({
+    section_type: section.section_type,
+    sort_order: section.sort_order,
+    is_active: section.is_active,
+    headline: section.headline,
+    subheadline: section.subheadline,
+    body: section.body,
+    image_url: section.image_url,
+    cta_text: section.cta_text,
+    cta_url: section.cta_url,
+    settings: section.settings ?? {},
+  }));
+
+  const sections = await createPageSectionsBulk(page.id, seeds);
+  return {
+    page,
+    sections,
+    slugUsed: page.slug,
+    slugAdjusted: page.slug !== desiredSlug,
+  };
 }
 
 export async function swapPageSectionOrder(

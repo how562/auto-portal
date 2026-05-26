@@ -45,6 +45,9 @@ export const RESERVED_CMS_SLUGS = new Set([
   "admin",
   "api",
   "mathbox-settings",
+  "schedule-service",
+  "locations",
+  "section-showcase",
   "_next",
   "favicon.ico",
 ]);

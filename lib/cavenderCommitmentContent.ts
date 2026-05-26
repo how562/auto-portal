@@ -56,6 +56,11 @@ function resolveImageUrl(
   return en;
 }
 
+const COMMITMENT_IMAGE_FALLBACKS = {
+  left: "/hero/community.jpg",
+  right: "/hero/dealership.jpg",
+} as const;
+
 function cmsValueMap(
   settings: Record<string, unknown>,
 ): Map<CommitmentValueId, CmsValueRow> {
@@ -108,6 +113,7 @@ export function resolveCavenderCommitmentContent(
     null;
 
   const imageItems = settingItems<{
+    position?: string;
     url?: string;
     image_url?: string;
     url_es?: string;
@@ -115,15 +121,26 @@ export function resolveCavenderCommitmentContent(
     alt?: string;
   }>(settings, "images");
 
+  const leftItem = imageItems.find(
+    (item) => item.position?.trim().toLowerCase() === "left",
+  );
+  const rightItem = imageItems.find(
+    (item) => item.position?.trim().toLowerCase() === "right",
+  );
+
   const leftImageUrl = resolveImageUrl(
     locale,
     settingString(parseSettings(cmsSection?.settings), "image_url_left").trim() ||
       settingString(parseSettings(cmsSection?.settings), "left_image_url").trim() ||
+      leftItem?.url?.trim() ||
+      leftItem?.image_url?.trim() ||
       imageItems[0]?.url?.trim() ||
       imageItems[0]?.image_url?.trim() ||
       null,
     settingString(parseSettings(cmsSection?.settings), "image_url_left_es").trim() ||
       settingString(parseSettings(cmsSection?.settings), "left_image_url_es").trim() ||
+      leftItem?.url_es?.trim() ||
+      leftItem?.image_url_es?.trim() ||
       imageItems[0]?.url_es?.trim() ||
       imageItems[0]?.image_url_es?.trim() ||
       null,
@@ -133,11 +150,15 @@ export function resolveCavenderCommitmentContent(
     locale,
     settingString(parseSettings(cmsSection?.settings), "image_url_right").trim() ||
       settingString(parseSettings(cmsSection?.settings), "right_image_url").trim() ||
+      rightItem?.url?.trim() ||
+      rightItem?.image_url?.trim() ||
       imageItems[1]?.url?.trim() ||
       imageItems[1]?.image_url?.trim() ||
       legacyImageEn,
     settingString(parseSettings(cmsSection?.settings), "image_url_right_es").trim() ||
       settingString(parseSettings(cmsSection?.settings), "right_image_url_es").trim() ||
+      rightItem?.url_es?.trim() ||
+      rightItem?.image_url_es?.trim() ||
       imageItems[1]?.url_es?.trim() ||
       imageItems[1]?.image_url_es?.trim() ||
       legacyImageEs,
@@ -146,10 +167,12 @@ export function resolveCavenderCommitmentContent(
   const defaultAlt = t("commitment.imageAlt");
   const leftImageAlt =
     settingString(settings, "image_alt_left").trim() ||
+    leftItem?.alt?.trim() ||
     imageItems[0]?.alt?.trim() ||
     defaultAlt;
   const rightImageAlt =
     settingString(settings, "image_alt_right").trim() ||
+    rightItem?.alt?.trim() ||
     imageItems[1]?.alt?.trim() ||
     settingString(settings, "image_alt").trim() ||
     defaultAlt;
@@ -184,8 +207,8 @@ export function resolveCavenderCommitmentContent(
   return {
     headline: resolvedHeadline,
     body: resolvedBody,
-    leftImageUrl,
-    rightImageUrl,
+    leftImageUrl: leftImageUrl || COMMITMENT_IMAGE_FALLBACKS.left,
+    rightImageUrl: rightImageUrl || COMMITMENT_IMAGE_FALLBACKS.right,
     leftImageAlt,
     rightImageAlt,
     values,

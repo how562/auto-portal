@@ -1,9 +1,14 @@
+import "@/app/homepage-visual.css";
 import { PortalExperience } from "@/components/portal/PortalExperience";
 
 import { getCommunityHeroContent } from "@/lib/communityHero";
 
 import { fetchCavenderCommitmentCmsPayload } from "@/lib/cavenderCommitment";
+import { fetchFacebookFeed } from "@/lib/facebookFeed";
+import { getFacebookPageConfig } from "@/lib/facebookPageConfig";
+import { isSocialFeedPlaceholderMode } from "@/lib/socialFeedPlaceholder";
 
+import { fetchHomepageLayout } from "@/lib/homepageLayout";
 import { fetchPortalVehicles } from "@/lib/vehicles";
 
 import type { Vehicle } from "@/lib/types";
@@ -23,11 +28,18 @@ async function loadPortalData(): Promise<{ vehicles: Vehicle[] }> {
 
 export default async function Home() {
 
-  const [{ vehicles }, communityHero, commitmentCms] = await Promise.all([
-    loadPortalData(),
-    getCommunityHeroContent(),
-    fetchCavenderCommitmentCmsPayload(),
-  ]);
+  const facebookPage = getFacebookPageConfig();
+
+  const useLiveSocial = !isSocialFeedPlaceholderMode();
+
+  const [{ vehicles }, communityHero, commitmentCms, facebookFeed, homepageLayout] =
+    await Promise.all([
+      loadPortalData(),
+      getCommunityHeroContent(),
+      fetchCavenderCommitmentCmsPayload(),
+      useLiveSocial ? fetchFacebookFeed() : Promise.resolve(null),
+      fetchHomepageLayout(),
+    ]);
 
 
 
@@ -41,6 +53,9 @@ export default async function Home() {
         communityHero={communityHero}
 
         commitmentCms={commitmentCms}
+        facebookPage={facebookPage}
+        facebookFeed={facebookFeed}
+        homepageLayout={homepageLayout}
 
       />
 

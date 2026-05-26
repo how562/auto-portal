@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
 import {
@@ -21,11 +21,11 @@ import {
   getRegistryEntry,
   registryHasDedicatedRenderer,
 } from "@/lib/cmsSectionRegistry";
-import { resolveSectionDesign } from "@/lib/cmsSectionDesign";
-import { PresetPageSectionRenderer } from "@/components/cms/PresetPageSectionRenderer";
 import { parseSettings, settingItems, settingString } from "@/lib/cmsSettings";
-import { getPresetKeyFromSettings } from "@/lib/presetSectionStarters";
-import { isSavedSectionPreset } from "@/lib/savedSectionPresets";
+import {
+  resolvePageHeaderMedia,
+  shouldUsePageHeaderHero,
+} from "@/lib/cmsPageHeaderLayout";
 import { isProbablySafeHtml, sanitizeCmsHtml } from "@/lib/sanitizeHtml";
 import type { Store } from "@/lib/types";
 import { btnLightMd, btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
@@ -43,35 +43,19 @@ import {
 } from "@/lib/cardClasses";
 
 function SectionShell({
-  section,
   children,
   className = "",
   dark = false,
 }: {
-  section: EnrichedCMSSection;
   children: React.ReactNode;
   className?: string;
   dark?: boolean;
 }) {
-  const design = resolveSectionDesign(section);
-  const effectiveDark = dark || design.isDarkBg;
-
   return (
     <section
-      className={`relative ${design.className} ${
-        effectiveDark && !design.style.backgroundColor
-          ? "bg-[var(--charcoal)] text-white"
-          : ""
-      } ${effectiveDark ? "text-white" : ""} ${className}`.trim()}
-      style={Object.keys(design.style).length > 0 ? design.style : undefined}
+      className={`section-pad-tight ${dark ? "bg-[var(--charcoal)] text-white" : ""} ${className}`.trim()}
     >
-      {design.hasBgImage ? (
-        <div
-          className="pointer-events-none absolute inset-0 bg-black/20"
-          aria-hidden
-        />
-      ) : null}
-      <div className="relative">{children}</div>
+      {children}
     </section>
   );
 }
@@ -136,13 +120,120 @@ function CmsLink({
   );
 }
 
-function HeroSection({
+function PageHeaderHeroSection({
   section,
   copy,
+  pageTitle,
+  bannerUrl,
+  sideImageUrl,
 }: {
   section: EnrichedCMSSection;
   copy: SectionCopy;
+  pageTitle: string;
+  bannerUrl?: string;
+  sideImageUrl?: string;
 }) {
+  const s = parseSettings(section.settings);
+  const ctaLabel = settingString(s, "cta_label") || copy.ctaText;
+  const ctaHref = copy.ctaUrl || settingString(s, "cta_href", "/inventory");
+  const subheadline = copy.subheadline || copy.body;
+
+  return (
+    <section className="cms-page-header">
+      <div
+        className={`cms-page-header__banner ${
+          bannerUrl ? "" : "cms-page-header__banner--placeholder"
+        }`.trim()}
+      >
+        {bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bannerUrl} alt="" />
+        ) : null}
+        <div className="cms-page-header__overlay" aria-hidden />
+        <h1 className="cms-page-header__title">{pageTitle}</h1>
+      </div>
+
+      <div className="portal-container cms-page-header__intro">
+        <div className="cms-page-header__grid">
+          <div className="min-w-0">
+            {copy.eyebrow ? (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
+                {copy.eyebrow}
+              </p>
+            ) : null}
+            {copy.headline ? (
+              <h2 className="mt-4 headline-stack text-3xl sm:text-4xl lg:text-[2.75rem]">
+                {copy.headline}
+              </h2>
+            ) : null}
+            {subheadline && subheadline !== copy.body ? (
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
+                {subheadline}
+              </p>
+            ) : copy.body && !copy.subheadline ? (
+              <div className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
+                <SectionBodyText body={copy.body} className="mt-0" />
+              </div>
+            ) : null}
+            {ctaLabel ? (
+              <div className="mt-10">
+                <CmsLink href={ctaHref} label={ctaLabel} variant="primary" />
+              </div>
+            ) : null}
+          </div>
+
+          {sideImageUrl ? (
+            <div
+              className={`${cardImageFrame} cms-page-header__side-image aspect-[4/3] min-w-0`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={sideImageUrl} alt="" className="h-full w-full object-cover" />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroSection({
+  section,
+  copy,
+  pageTitle,
+  pageSlug,
+  sectionIndex,
+  allSections,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+  pageTitle?: string;
+  pageSlug?: string;
+  sectionIndex?: number;
+  allSections?: EnrichedCMSSection[];
+}) {
+  const isPageHeader =
+    pageSlug &&
+    pageTitle &&
+    sectionIndex === 0 &&
+    shouldUsePageHeaderHero(section, pageSlug, true);
+
+  if (isPageHeader) {
+    const { bannerUrl, sideImageUrl } = resolvePageHeaderMedia(
+      allSections ?? [section],
+      sectionIndex ?? 0,
+      section,
+    );
+    return (
+      <PageHeaderHeroSection
+        section={section}
+        copy={copy}
+        pageTitle={pageTitle}
+        bannerUrl={bannerUrl}
+        sideImageUrl={sideImageUrl}
+      />
+    );
+  }
+
   const s = parseSettings(section.settings);
   const imageUrl = copy.imageUrl;
   const ctaLabel = settingString(s, "cta_label") || copy.ctaText;
@@ -151,7 +242,7 @@ function HeroSection({
   const subheadline = copy.subheadline || copy.body;
 
   return (
-    <SectionShell section={section} dark={dark}>
+    <SectionShell dark={dark}>
       <div className="portal-container">
         <div className={dark ? cardHeroDark : cardHeroLight}>
           {imageUrl ? (
@@ -224,7 +315,7 @@ function TextBlockSection({
   const align = settingString(s, "alignment", "left") === "center" ? "center" : "left";
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container">
         <div
           className={`mx-auto max-w-3xl ${align === "center" ? "text-center" : ""}`}
@@ -236,6 +327,30 @@ function TextBlockSection({
   );
 }
 
+/** Body copy tuned for long-form readability (image + text sections). */
+function CmsReadableBody({ body, className = "mt-6" }: { body: string; className?: string }) {
+  const trimmed = body.trim();
+  if (!trimmed) return null;
+
+  const paragraphs = trimmed
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const blocks = paragraphs.length > 0 ? paragraphs : [trimmed];
+
+  return (
+    <div
+      className={`max-w-[34rem] space-y-4 text-base leading-[1.65] text-[var(--ink)]/80 sm:text-[1.0625rem] sm:leading-[1.72] ${className}`.trim()}
+    >
+      {blocks.map((paragraph, index) => (
+        <p key={index} className="whitespace-pre-wrap">
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function ImageTextSection({
   section,
   copy,
@@ -244,24 +359,30 @@ function ImageTextSection({
   copy: SectionCopy;
 }) {
   const s = parseSettings(section.settings);
-  const mediaSide = resolveImageTextMediaSide(section);
-  const mediaFirst = mediaSide === "left";
-  const imageUrl = copy.imageUrl;
+  const imageOnLeft = resolveImageTextMediaSide(section) === "left";
+  const imageUrl = copy.imageUrl?.trim();
+  const hasImage = Boolean(imageUrl);
   const mediaType = settingString(s, "media_type", "image");
   const videoTitle = settingString(s, "video_title");
+  const showMedia = hasImage || mediaType === "video";
 
   const textBlock = (
-    <div className="min-w-0">
+    <div className={`min-w-0 ${showMedia && imageOnLeft ? "md:order-2" : ""}`}>
       <StandardSectionCopy
-        copy={copy}
+        copy={{ ...copy, body: "" }}
         subheadlineClassName="mt-3 text-sm font-medium text-[var(--gold)]"
       />
+      {copy.body ? <CmsReadableBody body={copy.body} /> : null}
     </div>
   );
 
-  const mediaBlock = (
-    <div className={`${cardImageFrame} min-h-[12rem] aspect-[4/3] lg:min-h-0`}>
-      {imageUrl ? (
+  const mediaBlock = showMedia ? (
+    <div
+      className={`${cardImageFrame} min-h-[12rem] aspect-[4/3] min-w-0 lg:min-h-0 ${
+        imageOnLeft ? "md:order-1" : ""
+      }`}
+    >
+      {hasImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       ) : (
@@ -273,23 +394,20 @@ function ImageTextSection({
         </div>
       )}
     </div>
-  );
+  ) : null;
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container">
-        <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
-          {mediaFirst ? (
-            <>
-              {mediaBlock}
-              {textBlock}
-            </>
-          ) : (
-            <>
-              {textBlock}
-              {mediaBlock}
-            </>
-          )}
+        <div
+          className={
+            showMedia
+              ? "grid grid-cols-1 items-start gap-10 md:grid-cols-2 md:gap-12 lg:gap-14"
+              : undefined
+          }
+        >
+          {textBlock}
+          {mediaBlock}
         </div>
       </div>
     </SectionShell>
@@ -313,7 +431,7 @@ function SplitFeatureSection({
   const rightBody = settingString(s, "right_body") || items[1]?.body;
 
   return (
-    <SectionShell section={section} className="bg-white">
+    <SectionShell className="bg-white">
       <div className="portal-container">
         {sectionTitle ? (
           <h2 className="mb-10 text-center headline-stack text-3xl sm:text-4xl">
@@ -351,14 +469,7 @@ function SplitFeatureSection({
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 px-6 text-center text-sm text-[var(--muted)]">
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Image
-                </span>
-                <span>Add image_url to show photography</span>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -382,7 +493,7 @@ function CtaBandSection({
   const dark = settingString(s, "variant") !== "light";
 
   return (
-    <SectionShell section={section} dark={dark}>
+    <SectionShell dark={dark}>
       <div className="portal-container text-center">
         {headline ? (
           <h2 className="headline-stack text-3xl sm:text-4xl">{headline}</h2>
@@ -426,15 +537,10 @@ function FaqSection({
   const items = settingItems<{ question?: string; answer?: string }>(s, "items");
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container max-w-3xl">
         <StandardSectionCopy copy={copy} />
         <dl className="mt-10 space-y-4">
-          {items.length === 0 ? (
-            <p className={`text-sm ${cardEmptyState}`}>
-              Add questions in section settings (items JSON).
-            </p>
-          ) : null}
           {items.map((item, i) => (
             <div key={i} className={cardFaqItem}>
               {item.question ? (
@@ -464,33 +570,27 @@ function StatsSection({
   const items = settingItems<{ value?: string; label?: string }>(s, "items");
 
   return (
-    <SectionShell section={section} className="bg-white border-y border-[var(--line)]">
+    <SectionShell className="bg-white border-y border-[var(--line)]">
       <div className="portal-container">
         {copy.headline ? (
           <h2 className="text-center headline-stack text-3xl sm:text-4xl">
             {copy.headline}
           </h2>
         ) : null}
-        {items.length > 0 ? (
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {items.map((item, i) => (
-              <div key={i} className="text-center">
-                {item.value ? (
-                  <p className="text-4xl font-semibold tracking-tight text-[var(--ink)]">
-                    {item.value}
-                  </p>
-                ) : null}
-                {item.label ? (
-                  <p className="mt-2 text-sm text-[var(--muted)]">{item.label}</p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className={`mt-10 text-center text-sm ${cardEmptyState}`}>
-            Add stats in section settings (items JSON).
-          </p>
-        )}
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item, i) => (
+            <div key={i} className="text-center">
+              {item.value ? (
+                <p className="text-4xl font-semibold tracking-tight text-[var(--ink)]">
+                  {item.value}
+                </p>
+              ) : null}
+              {item.label ? (
+                <p className="mt-2 text-sm text-[var(--muted)]">{item.label}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
       </div>
     </SectionShell>
   );
@@ -513,26 +613,22 @@ function CardGridSection({
   }>(s, "cards");
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container">
         <StandardSectionCopy copy={copy} />
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card, i) => (
             <article key={i} className={cardGridArticle}>
-              <div className="aspect-[16/10] overflow-hidden bg-[var(--cream-dark)]">
-                {card.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+              {card.image_url ? (
+                <div className="aspect-[16/10] overflow-hidden bg-[var(--cream-dark)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={card.image_url}
                     alt=""
                     className="h-full w-full object-cover"
                   />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-[var(--muted)]">
-                    Image
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : null}
               <div className={cardGridBody}>
                 {card.title ? (
                   <h3 className="text-lg font-semibold leading-snug">{card.title}</h3>
@@ -570,7 +666,7 @@ function InventoryCollectionSection({
   const vehicles = section.vehicles ?? [];
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container mb-8">
         {copy.headline ? (
           <h2 className="headline-stack text-3xl sm:text-4xl">{copy.headline}</h2>
@@ -605,11 +701,9 @@ function InventoryCollectionSection({
 }
 
 function LocationsSection({
-  section,
   copy,
   stores,
 }: {
-  section: EnrichedCMSSection;
   copy: SectionCopy;
   stores: Store[];
 }) {
@@ -617,7 +711,7 @@ function LocationsSection({
   const subheadline = copy.subheadline;
 
   return (
-    <SectionShell section={section} className="border-t border-[var(--line)] bg-white">
+    <SectionShell className="border-t border-[var(--line)] bg-white">
       <div className="portal-container">
         <p className="text-center text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--muted)]">
           {headline}
@@ -675,7 +769,7 @@ function CustomHtmlSection({
   const plainBody = !safe && copy.body;
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container max-w-3xl">
         {copy.headline ? (
           <h2 className="mb-6 headline-stack text-2xl sm:text-3xl">{copy.headline}</h2>
@@ -717,7 +811,7 @@ function GenericSection({
   const entry = getRegistryEntry(section.section_type);
 
   return (
-    <SectionShell section={section}>
+    <SectionShell>
       <div className="portal-container max-w-3xl">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
           {entry.label} ({section.section_type})
@@ -737,16 +831,19 @@ function GenericSection({
 function CMSSectionBlock({
   section,
   copy,
+  pageTitle,
+  pageSlug,
+  sectionIndex,
+  allSections,
 }: {
   section: EnrichedCMSSection;
   copy: SectionCopy;
+  pageTitle?: string;
+  pageSlug?: string;
+  sectionIndex: number;
+  allSections: EnrichedCMSSection[];
 }) {
   const stores = section.stores ?? [];
-  const presetKey = getPresetKeyFromSettings(section.settings);
-
-  if (presetKey && isSavedSectionPreset(presetKey)) {
-    return <PresetPageSectionRenderer section={section} presetKey={presetKey} />;
-  }
 
   if (!registryHasDedicatedRenderer(section.section_type)) {
     return <GenericSection section={section} copy={copy} />;
@@ -754,7 +851,16 @@ function CMSSectionBlock({
 
   switch (section.section_type) {
     case "hero":
-      return <HeroSection section={section} copy={copy} />;
+      return (
+        <HeroSection
+          section={section}
+          copy={copy}
+          pageTitle={pageTitle}
+          pageSlug={pageSlug}
+          sectionIndex={sectionIndex}
+          allSections={allSections}
+        />
+      );
     case "text_block":
       return <TextBlockSection section={section} copy={copy} />;
     case "image_text":
@@ -774,7 +880,7 @@ function CMSSectionBlock({
     case "form":
       return <CMSFormSection section={section} />;
     case "locations":
-      return <LocationsSection section={section} copy={copy} stores={stores} />;
+      return <LocationsSection copy={copy} stores={stores} />;
     case "custom_html":
       return <CustomHtmlSection section={section} copy={copy} />;
     default:
@@ -784,9 +890,15 @@ function CMSSectionBlock({
 
 interface CMSSectionRendererProps {
   sections: EnrichedCMSSection[];
+  pageTitle?: string;
+  pageSlug?: string;
 }
 
-export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
+export function CMSSectionRenderer({
+  sections,
+  pageTitle,
+  pageSlug,
+}: CMSSectionRendererProps) {
   const { locale } = useLanguage();
   const localizedSections = useMemo(
     () => localizeCMSSections(sections, locale),
@@ -803,11 +915,15 @@ export function CMSSectionRenderer({ sections }: CMSSectionRendererProps) {
 
   return (
     <div className="flex flex-col">
-      {localizedSections.map((section) => (
+      {localizedSections.map((section, index) => (
         <CMSSectionBlock
           key={section.id}
           section={section}
           copy={getSectionCopy(section)}
+          pageTitle={pageTitle}
+          pageSlug={pageSlug}
+          sectionIndex={index}
+          allSections={localizedSections}
         />
       ))}
     </div>

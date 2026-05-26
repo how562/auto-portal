@@ -6,9 +6,9 @@ import { createPortal } from "react-dom";
 import type { ExploreBrand } from "@/lib/exploreBrands";
 
 const MARQUEE_COPIES = 2;
-const LOGO_HEIGHT = "h-32 sm:h-36 md:h-40";
-const LOGO_SLOT_W = "w-[11rem] sm:w-[13rem] md:w-[14.5rem]";
-const LOGO_MAX_W = "max-w-[11rem] sm:max-w-[13rem] md:max-w-[14.5rem]";
+const LOGO_HEIGHT = "h-28 sm:h-32 md:h-36 lg:h-40";
+const LOGO_SLOT_W = "w-[10.5rem] sm:w-[12rem] md:w-[13rem] lg:w-[15rem]";
+const LOGO_MAX_W = "max-w-[10.5rem] sm:max-w-[12rem] md:max-w-[13rem] lg:max-w-[15rem]";
 
 interface BrandLogoCarouselProps {
   brands: ExploreBrand[];
@@ -85,7 +85,7 @@ function BrandLogoItem({
     <li className="group/logo flex shrink-0 items-center">
       <Link
         href={brand.inventoryUrl}
-        className="relative flex flex-col items-center rounded-md px-2 outline-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-2.5 motion-safe:hover:scale-[1.04] motion-safe:focus-visible:scale-[1.04] hover:brightness-[1.06] focus-visible:brightness-[1.06]"
+        className="relative flex flex-col items-center rounded-md px-2.5 outline-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:px-4 motion-safe:hover:scale-[1.03] motion-safe:focus-visible:scale-[1.03] hover:brightness-[1.04] focus-visible:brightness-[1.04]"
         aria-label={`${brand.brandName} inventory at ${dealership}`}
         onMouseEnter={(e) => onTooltipShow(brand, e.currentTarget)}
         onMouseLeave={onTooltipHide}
@@ -99,9 +99,9 @@ function BrandLogoItem({
           <img
             src={brand.logoUrl}
             alt=""
-            width={232}
-            height={160}
-            className={`${LOGO_MAX_W} max-h-full w-auto object-contain opacity-[0.94]`}
+            width={288}
+            height={208}
+            className={`${LOGO_MAX_W} max-h-full w-auto object-contain`}
           />
         </span>
       </Link>
@@ -182,7 +182,7 @@ export function BrandLogoCarousel({ brands }: BrandLogoCarouselProps) {
   return (
     <>
       <div
-        className={`brand-marquee-viewport relative w-full overflow-hidden py-6 sm:py-8 ${
+        className={`brand-marquee-viewport homepage-brand-marquee relative w-full overflow-hidden py-2 sm:py-3 ${
           paused ? "brand-marquee-paused" : ""
         }`}
         role="region"
@@ -203,7 +203,7 @@ export function BrandLogoCarousel({ brands }: BrandLogoCarouselProps) {
         }}
       >
         <div className="brand-marquee-reduced flex w-max min-w-full motion-reduce:w-full motion-reduce:justify-center">
-          <div className="brand-marquee-track flex w-max items-center gap-0 motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-x-3">
+          <div className="brand-marquee-track flex w-max items-center gap-x-1 sm:gap-x-2 motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-x-4">
             {Array.from({ length: MARQUEE_COPIES }, (_, copyIndex) => (
               <BrandMarqueeStrip
                 key={copyIndex}

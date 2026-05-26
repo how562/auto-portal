@@ -1,0 +1,982 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
+import type {
+  PortalManagedLinkRow,
+  PortalManagedLinkUpdateInput,
+} from "@/lib/managedLinksAdmin";
+import type { ManagedLinkMenuLocation } from "@/lib/managedLinksTypes";
+import { PORTAL_CTA_FALLBACKS, PORTAL_CTA_KEYS } from "@/lib/portalCtaFallbacks";
+import type { PortalCtaKey } from "@/lib/portalCtaTypes";
+import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
+
+type Tab = "header" | "footer" | "cta";
+
+interface PortalNavigationEditorProps {
+  initialRows: PortalManagedLinkRow[];
+}
+
+const URL_HINT =
+  "/path, #section-id, /#section from other pages, action:general-shortlist, or https://…";
+
+const INPUT_CLASS =
+  "w-full rounded-lg border border-[var(--line-dark)] px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]";
+
+function navRowsFor(
+  rows: PortalManagedLinkRow[],
+  location: ManagedLinkMenuLocation,
+): PortalManagedLinkRow[] {
+  return rows
+    .filter((r) => r.link_type === "nav" && r.menu_location === location)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function ctaRows(rows: PortalManagedLinkRow[]): PortalManagedLinkRow[] {
+  return rows
+    .filter((r) => r.link_type === "cta")
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function suggestLinkKey(prefix: string, label: string): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 32);
+  return `${prefix}-${slug || "item"}-${Date.now().toString(36).slice(-4)}`;
+}
+
+export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorProps) {
+  const [rows, setRows] = useState(initialRows);
+  const [tab, setTab] = useState<Tab>("header");
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const headerNav = useMemo(() => navRowsFor(rows, "header"), [rows]);
+  const footerNav = useMemo(() => navRowsFor(rows, "footer"), [rows]);
+  const ctas = useMemo(() => ctaRows(rows), [rows]);
+
+  const patchRow = useCallback(async (linkKey: string, updates: PortalManagedLinkUpdateInput) => {
+    setBusyKey(linkKey);
+    setError(null);
+    const res = await fetch("/api/admin/managed-links", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ link_key: linkKey.trim(), updates }),
+    });
+    const data = (await res.json()) as { row?: PortalManagedLinkRow; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Save failed");
+      return false;
+    }
+    if (data.row) {
+      setRows((prev) => prev.map((r) => (r.link_key === linkKey ? data.row! : r)));
+    }
+    return true;
+  }, []);
+
+  const reorder = useCallback(async (linkKey: string, direction: "up" | "down") => {
+    setBusyKey(linkKey);
+    setError(null);
+    const res = await fetch("/api/admin/managed-links/reorder", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ link_key: linkKey, direction }),
+    });
+    const data = (await res.json()) as { rows?: PortalManagedLinkRow[]; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Reorder failed");
+      return;
+    }
+    if (data.rows) setRows(data.rows);
+  }, []);
+
+  const removeRow = useCallback(async (linkKey: string) => {
+    if (!confirm(`Delete "${linkKey}"? Child links may lose their parent.`)) return;
+    setBusyKey(linkKey);
+    setError(null);
+    const res = await fetch(
+      `/api/admin/managed-links?link_key=${encodeURIComponent(linkKey)}`,
+      { method: "DELETE", credentials: "include" },
+    );
+    const data = (await res.json()) as { error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Delete failed");
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.link_key !== linkKey));
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2 border-b border-[var(--line)] pb-1">
+        {(
+          [
+            ["header", `Header (${headerNav.filter((r) => !r.is_group && !r.parent_key).length} links)`],
+            ["footer", `Footer (${footerNav.filter((r) => r.is_group).length} groups)`],
+            ["cta", `Portal CTAs (${PORTAL_CTA_KEYS.length} keys)`],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`border-b-2 px-3 py-2 text-sm font-semibold transition ${
+              tab === id
+                ? "border-[var(--ink)] text-[var(--ink)]"
+                : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search labels, keys, URLs…"
+          className="min-w-[200px] flex-1 rounded-lg border border-[var(--line-dark)] px-3 py-2 text-sm"
+        />
+        <Link href="/" target="_blank" rel="noreferrer" className={`${btnSecondarySm} no-underline`}>
+          Preview site
+        </Link>
+      </div>
+
+      {error ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </p>
+      ) : null}
+
+      <p className="text-xs text-[var(--muted)]">
+        Changes save to{" "}
+        <code className="rounded bg-[var(--cream)] px-1 py-0.5">portal_managed_links</code>. The
+        public header, footer, and CTA labels refresh after save (reload the storefront if needed).
+        URL formats: {URL_HINT}
+      </p>
+
+      {tab === "header" ? (
+        <HeaderNavPanel
+          rows={headerNav}
+          search={search}
+          busyKey={busyKey}
+          onPatch={patchRow}
+          onReorder={reorder}
+          onDelete={removeRow}
+          onCreated={(row) => setRows((prev) => [...prev, row])}
+          setError={setError}
+          setBusyKey={setBusyKey}
+        />
+      ) : null}
+
+      {tab === "footer" ? (
+        <FooterNavPanel
+          rows={footerNav}
+          search={search}
+          busyKey={busyKey}
+          onPatch={patchRow}
+          onReorder={reorder}
+          onDelete={removeRow}
+          onCreated={(row) => setRows((prev) => [...prev, row])}
+          setError={setError}
+          setBusyKey={setBusyKey}
+        />
+      ) : null}
+
+      {tab === "cta" ? (
+        <CtaPanel
+          rows={ctas}
+          search={search}
+          busyKey={busyKey}
+          onPatch={patchRow}
+          onReorder={reorder}
+          setError={setError}
+          setBusyKey={setBusyKey}
+          onCreated={(row) => setRows((prev) => [...prev, row])}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function matchesSearch(row: PortalManagedLinkRow, q: string): boolean {
+  if (!q) return true;
+  const hay = [row.link_key, row.label, row.label_es ?? "", row.url ?? ""].join(" ").toLowerCase();
+  return hay.includes(q);
+}
+
+function HeaderNavPanel({
+  rows,
+  search,
+  busyKey,
+  onPatch,
+  onReorder,
+  onDelete,
+  onCreated,
+  setError,
+  setBusyKey,
+}: {
+  rows: PortalManagedLinkRow[];
+  search: string;
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+  onDelete: (key: string) => Promise<void>;
+  onCreated: (row: PortalManagedLinkRow) => void;
+  setError: (msg: string | null) => void;
+  setBusyKey: (key: string | null) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const roots = rows.filter((r) => !r.is_group && !r.parent_key);
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, PortalManagedLinkRow[]>();
+    for (const item of rows) {
+      if (!item.parent_key || item.is_group) continue;
+      const list = map.get(item.parent_key) ?? [];
+      list.push(item);
+      map.set(item.parent_key, list);
+    }
+    return map;
+  }, [rows]);
+
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const [newParent, setNewParent] = useState("");
+
+  async function addLink() {
+    const label = newLabel.trim();
+    if (!label) {
+      setError("Label is required");
+      return;
+    }
+    setBusyKey("new");
+    setError(null);
+    const link_key = suggestLinkKey("nav-header", label);
+    const siblings = rows.filter(
+      (r) => (r.parent_key ?? "") === (newParent || "") && !r.is_group,
+    );
+    const res = await fetch("/api/admin/managed-links", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        link_key,
+        link_type: "nav",
+        menu_location: "header",
+        parent_key: newParent || null,
+        label,
+        url: newUrl.trim() || null,
+        sort_order: siblings.length + 1,
+      }),
+    });
+    const data = (await res.json()) as { row?: PortalManagedLinkRow; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Create failed");
+      return;
+    }
+    if (data.row) {
+      onCreated(data.row);
+      setNewLabel("");
+      setNewUrl("");
+      setNewParent("");
+    }
+  }
+
+  const parentOptions = roots;
+
+  return (
+    <div className="space-y-6">
+      <NavItemTable
+        title="Top-level header links"
+        items={roots.filter((r) => matchesSearch(r, q))}
+        busyKey={busyKey}
+        onPatch={onPatch}
+        onReorder={onReorder}
+        onDelete={onDelete}
+      />
+
+      {parentOptions.map((parent) => {
+        const kids = (childrenByParent.get(parent.link_key) ?? []).filter((r) =>
+          matchesSearch(r, q),
+        );
+        if (kids.length === 0 && q && !matchesSearch(parent, q)) return null;
+        return (
+          <NavItemTable
+            key={parent.link_key}
+            title={`Dropdown under “${parent.label}”`}
+            items={kids}
+            busyKey={busyKey}
+            onPatch={onPatch}
+            onReorder={onReorder}
+            onDelete={onDelete}
+          />
+        );
+      })}
+
+      <section className="rounded-xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/50 p-4">
+        <h3 className="text-sm font-semibold text-[var(--ink)]">Add header link</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Label">
+            <input
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              className={INPUT_CLASS}
+              placeholder="Inventory"
+            />
+          </Field>
+          <Field label="URL">
+            <input
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              className={INPUT_CLASS}
+              placeholder="/inventory"
+            />
+          </Field>
+          <Field label="Parent (dropdown)">
+            <select
+              value={newParent}
+              onChange={(e) => setNewParent(e.target.value)}
+              className={INPUT_CLASS}
+            >
+              <option value="">Top level</option>
+              {parentOptions.map((p) => (
+                <option key={p.link_key} value={p.link_key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="flex items-end">
+            <button
+              type="button"
+              disabled={busyKey === "new"}
+              onClick={() => void addLink()}
+              className={btnPrimarySm}
+            >
+              Add link
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FooterNavPanel({
+  rows,
+  search,
+  busyKey,
+  onPatch,
+  onReorder,
+  onDelete,
+  onCreated,
+  setError,
+  setBusyKey,
+}: {
+  rows: PortalManagedLinkRow[];
+  search: string;
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+  onDelete: (key: string) => Promise<void>;
+  onCreated: (row: PortalManagedLinkRow) => void;
+  setError: (msg: string | null) => void;
+  setBusyKey: (key: string | null) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const groups = rows.filter((r) => r.is_group);
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, PortalManagedLinkRow[]>();
+    for (const item of rows) {
+      if (item.is_group || !item.parent_key) continue;
+      const list = map.get(item.parent_key) ?? [];
+      list.push(item);
+      map.set(item.parent_key, list);
+    }
+    return map;
+  }, [rows]);
+
+  const [newGroupTitle, setNewGroupTitle] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const [newParent, setNewParent] = useState(groups[0]?.link_key ?? "");
+
+  async function addGroup() {
+    const label = newGroupTitle.trim();
+    if (!label) {
+      setError("Group title is required");
+      return;
+    }
+    setBusyKey("new-group");
+    setError(null);
+    const link_key = suggestLinkKey("nav-footer-group", label);
+    const res = await fetch("/api/admin/managed-links", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        link_key,
+        link_type: "nav",
+        menu_location: "footer",
+        is_group: true,
+        label,
+        sort_order: groups.length + 1,
+      }),
+    });
+    const data = (await res.json()) as { row?: PortalManagedLinkRow; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Create failed");
+      return;
+    }
+    if (data.row) {
+      onCreated(data.row);
+      setNewGroupTitle("");
+      setNewParent(data.row.link_key);
+    }
+  }
+
+  async function addLink() {
+    const label = newLabel.trim();
+    const parent = newParent.trim();
+    if (!label || !parent) {
+      setError("Label and footer group are required");
+      return;
+    }
+    setBusyKey("new");
+    setError(null);
+    const link_key = suggestLinkKey("nav-footer", label);
+    const siblings = rows.filter((r) => r.parent_key === parent);
+    const res = await fetch("/api/admin/managed-links", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        link_key,
+        link_type: "nav",
+        menu_location: "footer",
+        parent_key: parent,
+        label,
+        url: newUrl.trim() || null,
+        sort_order: siblings.length + 1,
+      }),
+    });
+    const data = (await res.json()) as { row?: PortalManagedLinkRow; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Create failed");
+      return;
+    }
+    if (data.row) {
+      onCreated(data.row);
+      setNewLabel("");
+      setNewUrl("");
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <NavItemTable
+        title="Footer column groups"
+        items={groups.filter((r) => matchesSearch(r, q))}
+        busyKey={busyKey}
+        onPatch={onPatch}
+        onReorder={onReorder}
+        onDelete={onDelete}
+        hideUrl
+      />
+
+      {groups.map((group) => {
+        const kids = (childrenByParent.get(group.link_key) ?? []).filter((r) =>
+          matchesSearch(r, q),
+        );
+        if (kids.length === 0 && q && !matchesSearch(group, q)) return null;
+        return (
+          <NavItemTable
+            key={group.link_key}
+            title={`Links in “${group.label}”`}
+            items={kids}
+            busyKey={busyKey}
+            onPatch={onPatch}
+            onReorder={onReorder}
+            onDelete={onDelete}
+          />
+        );
+      })}
+
+      <section className="rounded-xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/50 p-4 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--ink)]">Add footer group</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              value={newGroupTitle}
+              onChange={(e) => setNewGroupTitle(e.target.value)}
+              className={`${INPUT_CLASS} min-w-[200px] flex-1`}
+              placeholder="Column title (e.g. Shop)"
+            />
+            <button
+              type="button"
+              disabled={busyKey === "new-group"}
+              onClick={() => void addGroup()}
+              className={btnSecondarySm}
+            >
+              Add group
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--ink)]">Add footer link</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Group">
+              <select
+                value={newParent}
+                onChange={(e) => setNewParent(e.target.value)}
+                className={INPUT_CLASS}
+              >
+                {groups.map((g) => (
+                  <option key={g.link_key} value={g.link_key}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Label">
+              <input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </Field>
+            <Field label="URL">
+              <input
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </Field>
+            <div className="flex items-end">
+              <button
+                type="button"
+                disabled={busyKey === "new" || groups.length === 0}
+                onClick={() => void addLink()}
+                className={btnPrimarySm}
+              >
+                Add link
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CtaPanel({
+  rows,
+  search,
+  busyKey,
+  onPatch,
+  onReorder,
+  setError,
+  setBusyKey,
+  onCreated,
+}: {
+  rows: PortalManagedLinkRow[];
+  search: string;
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+  setError: (msg: string | null) => void;
+  setBusyKey: (key: string | null) => void;
+  onCreated: (row: PortalManagedLinkRow) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const byKey = useMemo(() => new Map(rows.map((r) => [r.link_key, r])), [rows]);
+
+  async function seedCta(key: PortalCtaKey) {
+    const fb = PORTAL_CTA_FALLBACKS[key];
+    setBusyKey(key);
+    setError(null);
+    const res = await fetch("/api/admin/managed-links", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        link_key: key,
+        link_type: "cta",
+        label: fb.label,
+        label_es: fb.labelEs,
+        url: fb.url,
+        sort_order: PORTAL_CTA_KEYS.indexOf(key) + 1,
+      }),
+    });
+    const data = (await res.json()) as { row?: PortalManagedLinkRow; error?: string };
+    setBusyKey(null);
+    if (!res.ok) {
+      setError(data.error ?? "Seed failed");
+      return;
+    }
+    if (data.row) onCreated(data.row);
+  }
+
+  const visibleKeys = PORTAL_CTA_KEYS.filter((key) => {
+    const row = byKey.get(key);
+    const fb = PORTAL_CTA_FALLBACKS[key];
+    if (!q) return true;
+    const hay = [key, row?.label ?? fb.label, row?.label_es ?? fb.labelEs ?? "", row?.url ?? fb.url ?? ""]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead className="border-b border-[var(--line)] bg-[var(--cream)] text-xs uppercase tracking-wide text-[var(--muted)]">
+          <tr>
+            <th className="px-3 py-2 w-28">Order</th>
+            <th className="px-3 py-2">Key</th>
+            <th className="px-3 py-2">English label</th>
+            <th className="px-3 py-2">Spanish label</th>
+            <th className="px-3 py-2">URL</th>
+            <th className="px-3 py-2 w-24">Active</th>
+            <th className="px-3 py-2 w-28" />
+          </tr>
+        </thead>
+        <tbody>
+          {visibleKeys.map((key) => {
+            const row = byKey.get(key);
+            const fb = PORTAL_CTA_FALLBACKS[key];
+            if (!row) {
+              return (
+                <tr key={key} className="border-b border-[var(--line)] bg-amber-50/40">
+                  <td className="px-3 py-2 text-[var(--muted)]">—</td>
+                  <td className="px-3 py-2 font-mono text-xs">{key}</td>
+                  <td className="px-3 py-2" colSpan={3}>
+                    <span className="text-[var(--muted)]">
+                      Using code fallback: {fb.label}
+                      {fb.url ? ` → ${fb.url}` : " (modal/action)"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">—</td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      disabled={busyKey === key}
+                      onClick={() => void seedCta(key)}
+                      className={btnSecondarySm}
+                    >
+                      Add to DB
+                    </button>
+                  </td>
+                </tr>
+              );
+            }
+            return (
+              <CtaEditableRow
+                key={row.link_key}
+                row={row}
+                busyKey={busyKey}
+                onPatch={onPatch}
+                onReorder={onReorder}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function NavItemTable({
+  title,
+  items,
+  busyKey,
+  onPatch,
+  onReorder,
+  onDelete,
+  hideUrl,
+}: {
+  title: string;
+  items: PortalManagedLinkRow[];
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+  onDelete: (key: string) => Promise<void>;
+  hideUrl?: boolean;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
+      <h3 className="border-b border-[var(--line)] bg-[var(--cream)] px-3 py-2 text-sm font-semibold text-[var(--ink)]">
+        {title}
+      </h3>
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead className="border-b border-[var(--line)] text-xs uppercase tracking-wide text-[var(--muted)]">
+          <tr>
+            <th className="px-3 py-2 w-28">Order</th>
+            <th className="px-3 py-2">Label</th>
+            {!hideUrl ? <th className="px-3 py-2">URL / action</th> : null}
+            <th className="px-3 py-2">Spanish</th>
+            <th className="px-3 py-2 w-20">New tab</th>
+            <th className="px-3 py-2 w-24">Active</th>
+            <th className="px-3 py-2 w-28" />
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((row) => (
+            <EditableNavRow
+              key={row.link_key}
+              row={row}
+              busyKey={busyKey}
+              onPatch={onPatch}
+              onReorder={onReorder}
+              onDelete={onDelete}
+              hideUrl={hideUrl}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function EditableNavRow({
+  row,
+  busyKey,
+  onPatch,
+  onReorder,
+  onDelete,
+  hideUrl,
+  hideDelete,
+}: {
+  row: PortalManagedLinkRow;
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+  onDelete: (key: string) => Promise<void>;
+  hideUrl?: boolean;
+  hideDelete?: boolean;
+}) {
+  const [label, setLabel] = useState(row.label);
+  const [labelEs, setLabelEs] = useState(row.label_es ?? "");
+  const [url, setUrl] = useState(row.url ?? "");
+  const [active, setActive] = useState(row.is_active !== false);
+  const [newTab, setNewTab] = useState(row.opens_new_tab === true);
+  const isBusy = busyKey === row.link_key;
+
+  const dirty =
+    label !== row.label ||
+    labelEs !== (row.label_es ?? "") ||
+    url !== (row.url ?? "") ||
+    active !== (row.is_active !== false) ||
+    newTab !== (row.opens_new_tab === true);
+
+  async function save() {
+    await onPatch(row.link_key, {
+      label,
+      label_es: labelEs || null,
+      url: hideUrl ? row.url : url || null,
+      is_active: active,
+      opens_new_tab: newTab,
+    });
+  }
+
+  return (
+    <tr className="border-b border-[var(--line)] align-top">
+      <td className="px-3 py-2">
+        <div className="flex gap-1">
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void onReorder(row.link_key, "up")}
+            className="rounded border border-[var(--line)] px-1.5 py-0.5 text-xs hover:bg-[var(--cream)]"
+            aria-label="Move up"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void onReorder(row.link_key, "down")}
+            className="rounded border border-[var(--line)] px-1.5 py-0.5 text-xs hover:bg-[var(--cream)]"
+            aria-label="Move down"
+          >
+            ↓
+          </button>
+        </div>
+        <p className="mt-1 font-mono text-[10px] text-[var(--muted)]">{row.link_key}</p>
+      </td>
+      <td className="px-3 py-2">
+        <input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          className={`${INPUT_CLASS} min-w-[120px]`}
+        />
+      </td>
+      {!hideUrl ? (
+        <td className="px-3 py-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className={`${INPUT_CLASS} min-w-[160px]`}
+            placeholder={URL_HINT}
+          />
+        </td>
+      ) : null}
+      <td className="px-3 py-2">
+        <input
+          value={labelEs}
+          onChange={(e) => setLabelEs(e.target.value)}
+          className={`${INPUT_CLASS} min-w-[100px]`}
+        />
+      </td>
+      <td className="px-3 py-2">
+        <input
+          type="checkbox"
+          checked={newTab}
+          onChange={(e) => setNewTab(e.target.checked)}
+          aria-label="Open in new tab"
+        />
+      </td>
+      <td className="px-3 py-2">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+          aria-label="Active on site"
+        />
+      </td>
+      <td className="px-3 py-2">
+        <div className="flex flex-col gap-1">
+          {dirty ? (
+            <button type="button" disabled={isBusy} onClick={() => void save()} className={btnPrimarySm}>
+              Save
+            </button>
+          ) : null}
+          {!hideDelete ? (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => void onDelete(row.link_key)}
+              className="text-xs text-red-700 hover:underline"
+            >
+              Delete
+            </button>
+          ) : null}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function CtaEditableRow({
+  row,
+  busyKey,
+  onPatch,
+  onReorder,
+}: {
+  row: PortalManagedLinkRow;
+  busyKey: string | null;
+  onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
+  onReorder: (key: string, dir: "up" | "down") => Promise<void>;
+}) {
+  const [label, setLabel] = useState(row.label);
+  const [labelEs, setLabelEs] = useState(row.label_es ?? "");
+  const [url, setUrl] = useState(row.url ?? "");
+  const [active, setActive] = useState(row.is_active !== false);
+  const isBusy = busyKey === row.link_key;
+  const dirty =
+    label !== row.label ||
+    labelEs !== (row.label_es ?? "") ||
+    url !== (row.url ?? "") ||
+    active !== (row.is_active !== false);
+
+  return (
+    <tr className="border-b border-[var(--line)] align-top">
+      <td className="px-3 py-2">
+        <div className="flex gap-1">
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void onReorder(row.link_key, "up")}
+            className="rounded border border-[var(--line)] px-1.5 py-0.5 text-xs"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void onReorder(row.link_key, "down")}
+            className="rounded border border-[var(--line)] px-1.5 py-0.5 text-xs"
+          >
+            ↓
+          </button>
+        </div>
+      </td>
+      <td className="px-3 py-2 font-mono text-xs">{row.link_key}</td>
+      <td className="px-3 py-2">
+        <input value={label} onChange={(e) => setLabel(e.target.value)} className={INPUT_CLASS} />
+      </td>
+      <td className="px-3 py-2">
+        <input value={labelEs} onChange={(e) => setLabelEs(e.target.value)} className={INPUT_CLASS} />
+      </td>
+      <td className="px-3 py-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className={INPUT_CLASS}
+          placeholder="Leave empty for modal actions"
+        />
+      </td>
+      <td className="px-3 py-2">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) => setActive(e.target.checked)}
+          aria-label="Active"
+        />
+      </td>
+      <td className="px-3 py-2">
+        {dirty ? (
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() =>
+              void onPatch(row.link_key, {
+                label,
+                label_es: labelEs || null,
+                url: url || null,
+                is_active: active,
+              })
+            }
+            className={btnPrimarySm}
+          >
+            Save
+          </button>
+        ) : null}
+      </td>
+    </tr>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-semibold text-[var(--muted)]">
+      {label}
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}

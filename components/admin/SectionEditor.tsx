@@ -49,9 +49,13 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
 
  const settings = section.settings ?? {};
  const isCommunityHero = section.section_type === "community_hero";
+ const isCavenderCommitment = section.section_type === "cavender_commitment";
  const settingsImages = getSettingsImages(settings);
  const hasSettingsImages =
- isCommunityHero || settingsImages.length > 0 || Array.isArray(settings.images);
+ isCommunityHero ||
+ isCavenderCommitment ||
+ settingsImages.length > 0 ||
+ Array.isArray(settings.images);
 
  async function save(patch: Record<string, unknown>) {
  setSaving(true);
@@ -215,7 +219,16 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
  Settings images
  </p>
- {(settingsImages.length > 0 ? settingsImages : [{ position: "", url: "" }]).map(
+ {(
+ settingsImages.length > 0
+ ? settingsImages
+ : isCavenderCommitment
+ ? [
+ { position: "left", url: "" },
+ { position: "right", url: "" },
+ ]
+ : [{ position: "", url: "" }]
+ ).map(
  (item, index) => (
  <div
  key={`${item.position ?? "img"}-${index}`}
@@ -226,7 +239,7 @@ export function SectionEditor({ section: initial }: SectionEditorProps) {
  value={urlForImageItem(item)}
  onChange={(url) => {
  const items = [...settingsImages];
- if (items.length === 0) items.push({});
+ while (items.length < index + 1) items.push({});
  items[index] = { ...items[index], url, image_url: undefined };
  updateLocal({
  settings: buildGenericImagesSettings(settings, items),

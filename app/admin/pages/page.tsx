@@ -13,8 +13,8 @@ export default async function AdminPagesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Site pages</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Create marketing pages, manage SEO, add bilingual sections, and preview
-          before publishing.
+          Create pages from templates or blueprints, duplicate existing pages, preview
+          drafts, and publish when ready.
         </p>
       </div>
 

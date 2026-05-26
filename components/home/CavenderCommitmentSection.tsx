@@ -11,7 +11,6 @@ import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 const COMMITMENT_LOGO = "/brand/cavender-commitment.png";
-
 interface CavenderCommitmentSectionProps {
   cms: CavenderCommitmentCmsPayload;
 }
@@ -57,7 +56,7 @@ function CommitmentImageCard({
 }) {
   return (
     <div
-      className={`hero-collage-tile min-h-[12.65rem] sm:min-h-[14.95rem] lg:min-h-[19.55rem] lg:max-h-[23rem] ${className}`.trim()}
+      className={`homepage-commitment-image hero-collage-tile min-h-[12.65rem] sm:min-h-[14.95rem] ${className}`.trim()}
     >
       <div className="relative h-full w-full min-h-[inherit]">
         {imageUrl ? (
@@ -87,6 +86,7 @@ export function CavenderCommitmentSection({
     [cms.pageSection, locale, t],
   );
 
+  /** Homepage copy — always from i18n (CMS often has stale headline/body). */
   const headline = t("commitment.headline").replace(/\s*\n+\s*/g, " ").trim();
   const body = t("commitment.body");
   const primaryHref =
@@ -99,12 +99,12 @@ export function CavenderCommitmentSection({
   return (
     <section
       id="cavender-commitment"
-      className="homepage-commitment relative scroll-mt-20 overflow-x-hidden py-12 sm:py-16 lg:py-20"
+      className="homepage-commitment relative scroll-mt-20 overflow-x-hidden"
     >
       <CommitmentStarPattern />
 
       <div className="portal-container relative">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.15fr)_minmax(0,0.88fr)] lg:items-center lg:gap-8 xl:gap-10">
+        <div className="homepage-commitment-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.15fr)_minmax(0,0.88fr)] lg:items-stretch lg:gap-8 xl:gap-10">
           <div className="relative z-10 order-1 flex min-w-0 flex-col items-center text-center sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:px-3">
             <div className="homepage-commitment-logo-wrap flex w-full justify-center">
               <Image

@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminNavLink } from "@/components/admin/AdminNavLink";
 import { useState } from "react";
-import { PageTemplatePicker } from "@/components/admin/PageTemplatePicker";
-import {
-  listPageTemplates,
-  type PageTemplateId,
-} from "@/lib/cmsPageTemplates";
+import { CreatePageFromTemplate } from "@/components/admin/CreatePageFromTemplate";
+import { DuplicatePageDialog } from "@/components/admin/DuplicatePageDialog";
+import { slugifyBlueprintSlug } from "@/lib/cmsPageBlueprint";
 import type { SitePage } from "@/lib/cmsTypes";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
@@ -16,16 +13,20 @@ interface SitePagesManagerProps {
   initialPages: SitePage[];
 }
 
+type CreateMode = "template" | "blank" | null;
+
 export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const router = useRouter();
   const [pages, setPages] = useState(initialPages);
+  const [createMode, setCreateMode] = useState<CreateMode>(null);
+  const [duplicatePage, setDuplicatePage] = useState<SitePage | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [templateId, setTemplateId] = useState<PageTemplateId | "">("landing");
+  const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function createPage(e: React.FormEvent) {
+  async function createBlankPage(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
     setError(null);
@@ -37,7 +38,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
         body: JSON.stringify({
           title: title.trim(),
           slug: slug.trim() || undefined,
-          template_id: templateId || undefined,
+          status: "draft",
         }),
       });
       const data = (await res.json()) as { page?: SitePage; error?: string };
@@ -52,24 +53,35 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
     }
   }
 
-  function applyTemplateDefaults(id: PageTemplateId) {
-    const t = listPageTemplates().find((p) => p.id === id);
-    if (!t) return;
-    setTitle(t.suggestedTitle);
-    setSlug(t.suggestedSlug);
-    setTemplateId(id);
-  }
-
-  async function setStatus(page: SitePage, status: "draft" | "published") {
+  async function publishPage(page: SitePage) {
     const res = await fetch(`/api/admin/site-pages/${page.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: "published" }),
     });
     const data = (await res.json()) as { page?: SitePage; error?: string };
     if (!res.ok) {
-      setError(data.error ?? "Update failed");
+      setError(data.error ?? "Publish failed");
+      return;
+    }
+    if (data.page) {
+      setPages((prev) =>
+        prev.map((p) => (p.id === data.page!.id ? data.page! : p)),
+      );
+    }
+  }
+
+  async function unpublishPage(page: SitePage) {
+    const res = await fetch(`/api/admin/site-pages/${page.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ status: "draft" }),
+    });
+    const data = (await res.json()) as { page?: SitePage; error?: string };
+    if (!res.ok) {
+      setError(data.error ?? "Unpublish failed");
       return;
     }
     if (data.page) {
@@ -81,67 +93,101 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
 
   return (
     <div className="space-y-8">
-      <form
-        onSubmit={createPage}
-        className="space-y-6 rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6"
-      >
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={
+              createMode === "template" ? btnPrimaryMd : btnSecondaryMd
+            }
+            onClick={() =>
+              setCreateMode(createMode === "template" ? null : "template")
+            }
+          >
+            Create from template
+          </button>
+          <button
+            type="button"
+            className={createMode === "blank" ? btnPrimaryMd : btnSecondaryMd}
+            onClick={() => setCreateMode(createMode === "blank" ? null : "blank")}
+          >
+            Blank page
+          </button>
+        </div>
+        <Link href="/admin/page-blueprints" className={btnSecondaryMd}>
+          Page blueprints
+        </Link>
+      </div>
+
+      {createMode === "template" ? (
+        <section className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6">
+          <CreatePageFromTemplate onCancel={() => setCreateMode(null)} />
+        </section>
+      ) : null}
+
+      {createMode === "blank" ? (
+        <form
+          onSubmit={createBlankPage}
+          className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6"
+        >
           <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
-            New page
+            Blank page
           </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Pick a template to start with a full layout, then customize in the visual
-            builder.
+            Empty draft — add sections manually in the page builder.
           </p>
-        </div>
-
-        <PageTemplatePicker
-          selectedId={templateId}
-          onSelect={(id) => applyTemplateDefaults(id)}
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1 sm:col-span-2">
-            <span className="text-xs font-medium text-[var(--muted)]">Page title</span>
-            <input
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
-              placeholder="About us"
-            />
-          </label>
-          <label className="block space-y-1 sm:col-span-2">
-            <span className="text-xs font-medium text-[var(--muted)]">
-              URL slug (optional)
-            </span>
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
-              placeholder="about-us"
-            />
-          </label>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={creating || !title.trim()}
-            className={`${btnPrimaryMd} disabled:opacity-60`}
-          >
-            {creating ? "Creating…" : "Create page & open builder"}
-          </button>
-          <AdminNavLink href="/admin/section-library" className={btnSecondaryMd}>
-            Section library
-          </AdminNavLink>
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        </div>
-      </form>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-1 sm:col-span-2">
+              <span className="text-xs font-medium text-[var(--muted)]">Title</span>
+              <input
+                required
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (!slugTouched) {
+                    setSlug(slugifyBlueprintSlug(e.target.value));
+                  }
+                }}
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+                placeholder="About us"
+              />
+            </label>
+            <label className="block space-y-1 sm:col-span-2">
+              <span className="text-xs font-medium text-[var(--muted)]">Slug</span>
+              <input
+                value={slug}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setSlug(e.target.value);
+                }}
+                onBlur={() => setSlug(slugifyBlueprintSlug(slug))}
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-mono"
+                placeholder="about-us"
+              />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={creating || !title.trim()}
+              className={`${btnPrimaryMd} disabled:opacity-60`}
+            >
+              {creating ? "Creating…" : "Create draft"}
+            </button>
+            <button
+              type="button"
+              className={btnSecondaryMd}
+              onClick={() => setCreateMode(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {pages.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-[var(--line-dark)] px-6 py-12 text-center text-sm text-[var(--muted)]">
-          No pages yet. Create one above with a template.
+          No pages yet. Create one from a template above.
         </p>
       ) : (
         <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
@@ -179,6 +225,13 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
                 >
                   Preview
                 </Link>
+                <button
+                  type="button"
+                  className={btnSecondaryMd}
+                  onClick={() => setDuplicatePage(page)}
+                >
+                  Duplicate
+                </button>
                 {page.status === "published" ? (
                   <>
                     <Link
@@ -192,7 +245,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
                     <button
                       type="button"
                       className={btnSecondaryMd}
-                      onClick={() => setStatus(page, "draft")}
+                      onClick={() => unpublishPage(page)}
                     >
                       Unpublish
                     </button>
@@ -201,7 +254,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
                   <button
                     type="button"
                     className={btnPrimaryMd}
-                    onClick={() => setStatus(page, "published")}
+                    onClick={() => publishPage(page)}
                   >
                     Publish
                   </button>
@@ -214,6 +267,15 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
           ))}
         </ul>
       )}
+
+      {duplicatePage ? (
+        <DuplicatePageDialog
+          page={duplicatePage}
+          onClose={() => setDuplicatePage(null)}
+        />
+      ) : null}
+
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }

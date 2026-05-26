@@ -28,5 +28,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "_lovable-handoff"]
+  "exclude": ["node_modules", "_lovable-handoff", "auto-portal/_lovable-handoff", "auto-portal"]
 }

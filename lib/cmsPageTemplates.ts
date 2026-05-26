@@ -1,170 +1,140 @@
-import type { PageSectionUpdateInput } from "./cmsAdmin";
-import type { CMSLibrarySectionType } from "./cmsSectionLibrary";
-import { getSectionStarter } from "./cmsSectionStarters";
+import type { CMSSectionType } from "./cmsTypes";
 
-export type PageTemplateId =
-  | "landing"
-  | "about"
-  | "community"
-  | "service"
-  | "finance"
-  | "campaign";
+export const PAGE_TEMPLATE_IDS = [
+  "landing",
+  "about",
+  "community",
+  "service",
+  "finance",
+  "campaign",
+  "schedule_service",
+  "cavender_commitment",
+] as const;
 
-export interface PageTemplateSectionSpec {
-  type: CMSLibrarySectionType;
-  /** Overrides default starter for this template */
-  starter?: PageSectionUpdateInput;
+export type PageTemplateId = (typeof PAGE_TEMPLATE_IDS)[number];
+
+export interface PageTemplateSectionSeed {
+  section_type: CMSSectionType;
+  sort_order: number;
+  is_active?: boolean;
+  headline?: string | null;
+  subheadline?: string | null;
+  body?: string | null;
+  image_url?: string | null;
+  cta_text?: string | null;
+  cta_url?: string | null;
+  settings?: Record<string, unknown>;
 }
 
-export interface PageTemplate {
+export interface PageTemplateDefinition {
   id: PageTemplateId;
   label: string;
   description: string;
-  bestFor: string;
-  suggestedTitle: string;
   suggestedSlug: string;
-  suggestedMeta?: string;
-  /** Wireframe section types in order (for template card preview) */
-  sectionTypes: CMSLibrarySectionType[];
-  sections: PageTemplateSectionSpec[];
+  sections: PageTemplateSectionSeed[];
 }
 
-function mergeStarter(
-  type: CMSLibrarySectionType,
-  override?: PageSectionUpdateInput,
-): PageSectionUpdateInput {
-  const base = getSectionStarter(type);
-  if (!override) return base;
-  return {
-    ...base,
-    ...override,
-    settings: { ...(base.settings ?? {}), ...(override.settings ?? {}) },
-  };
-}
-
-export const PAGE_TEMPLATES: PageTemplate[] = [
+export const PAGE_TEMPLATES: PageTemplateDefinition[] = [
   {
     id: "landing",
-    label: "Basic Landing Page",
-    description: "Hero, story, proof points, and conversion bands.",
-    bestFor: "Campaign landings, model launches, and paid traffic destinations.",
-    suggestedTitle: "Landing page",
+    label: "Landing Page",
+    description: "Hero, proof points, featured inventory, and a closing CTA.",
     suggestedSlug: "landing",
-    suggestedMeta: "Discover inventory, offers, and next steps.",
-    sectionTypes: ["hero", "image_text", "stats", "cta_band", "faq"],
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Cavender Auto Group",
-          headline: "Drive home something you'll love",
-          subheadline:
-            "Real inventory, transparent pricing, and advisors who listen first.",
-          cta_text: "Shop inventory",
-          cta_url: "/inventory",
-          settings: {
-            variant: "light",
-            padding_top: "spacious",
-            padding_bottom: "default",
-          },
+        section_type: "hero",
+        sort_order: 10,
+        headline: "Drive home your next vehicle",
+        subheadline: "Browse inventory, schedule service, and connect with Cavender stores.",
+        cta_text: "Shop inventory",
+        cta_url: "/inventory",
+        settings: { variant: "dark" },
+      },
+      {
+        section_type: "stats",
+        sort_order: 20,
+        headline: "Why Cavender",
+        settings: {
+          items: [
+            { value: "50+", label: "Years serving Texas" },
+            { value: "8", label: "Dealership locations" },
+            { value: "24/7", label: "Online shopping tools" },
+          ],
         },
       },
       {
-        type: "image_text",
-        starter: {
-          headline: "Why shop with us",
-          subheadline: "The Cavender difference",
-          body: "From first click to keys in hand, we keep the process simple.\n\nBrowse online, narrow your list, then visit a store that already knows what you're looking for.",
-          settings: { image_position: "right" },
-        },
+        section_type: "card_grid",
+        sort_order: 30,
+        headline: "Explore our brands",
+        subheadline: "New and pre-owned vehicles across our family of stores.",
+        settings: { cards: [] },
       },
-      { type: "stats" },
       {
-        type: "cta_band",
-        starter: {
-          headline: "See what's on the lot today",
-          subheadline: "Thousands of vehicles across Texas — updated daily.",
-          settings: { variant: "dark" },
+        section_type: "inventory_collection",
+        sort_order: 40,
+        headline: "Featured inventory",
+        settings: { limit: 8 },
+      },
+      {
+        section_type: "cta_band",
+        sort_order: 50,
+        headline: "Ready to get started?",
+        subheadline: "Contact a store or start your purchase online.",
+        settings: {
+          buttons: [
+            { label: "Contact us", url: "/about-us" },
+            { label: "Shop inventory", url: "/inventory" },
+          ],
         },
       },
-      { type: "faq" },
     ],
   },
   {
     id: "about",
     label: "About Page",
-    description: "Brand story, team proof, programs, and locations.",
-    bestFor: "Company overview, leadership, and trust-building content.",
-    suggestedTitle: "About us",
+    description: "Brand story, imagery, milestones, and contact CTA.",
     suggestedSlug: "about-us",
-    sectionTypes: ["hero", "text_block", "split_feature", "card_grid", "locations"],
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Our story",
-          headline: "Built on relationships, not transactions",
-          subheadline: "Family-owned dealerships serving Texas drivers for generations.",
-          settings: { variant: "light", background_color: "#f7f4ef" },
-        },
+        section_type: "text_block",
+        sort_order: 10,
+        headline: "About page",
+        body: "The /about-us route uses the dedicated About Us layout. Edit lib/aboutUsPageContent.ts for copy and imagery.",
+        settings: { alignment: "left" },
       },
-      {
-        type: "text_block",
-        starter: {
-          headline: "Who we are",
-          body: "We started with one store and a simple promise: treat every guest like a neighbor.\n\nToday we're a growing group of dealerships — still guided by transparency, community, and long-term trust.",
-          settings: { alignment: "left" },
-        },
-      },
-      { type: "split_feature" },
-      { type: "card_grid" },
-      { type: "locations" },
     ],
   },
   {
     id: "community",
     label: "Community Page",
-    description: "Local impact, events, and ways to get involved.",
-    bestFor: "Sponsorships, charity drives, and hometown storytelling.",
-    suggestedTitle: "Community",
+    description: "Community hero collage, stories, cards, and engagement CTA.",
     suggestedSlug: "community",
-    sectionTypes: ["hero", "text_block", "image_text", "card_grid", "cta_band"],
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Community",
-          headline: "Proud to serve the places we call home",
-          subheadline: "Partnerships, events, and giving back across Texas.",
-          settings: { variant: "dark", background_color: "#1e3556" },
-        },
+        section_type: "community_hero",
+        sort_order: 10,
+        headline: "Cavender in the community",
+        body: "Celebrating the people and places we serve across Texas.",
+        settings: { images: [] },
       },
       {
-        type: "text_block",
-        starter: {
-          headline: "More than a dealership",
-          body: "Our teams volunteer, sponsor youth sports, and support local nonprofits year-round.\n\nTell your story here — highlight recent events, photos, and quotes from partners.",
-        },
+        section_type: "text_block",
+        sort_order: 20,
+        headline: "Giving back",
+        body: "Share sponsorships, events, and local partnerships.",
       },
       {
-        type: "image_text",
-        starter: {
-          headline: "Recent highlights",
-          subheadline: "On the ground in your city",
-          body: "Swap in photos from your latest event or fundraiser.\n\nKeep copy short and celebratory — this section should feel human, not corporate.",
-          settings: { image_position: "left" },
-        },
+        section_type: "card_grid",
+        sort_order: 30,
+        headline: "Recent highlights",
+        settings: { cards: [] },
       },
-      { type: "card_grid" },
       {
-        type: "cta_band",
-        starter: {
-          headline: "Partner with us",
-          subheadline: "Reach out for sponsorships, donations, or community requests.",
-          settings: {
-            variant: "dark",
-            buttons: [{ label: "Contact us", url: "/#contact" }],
-          },
+        section_type: "cta_band",
+        sort_order: 40,
+        headline: "Partner with Cavender",
+        settings: {
+          buttons: [{ label: "Contact our team", url: "/about-us" }],
         },
       },
     ],
@@ -172,90 +142,98 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     id: "service",
     label: "Service Page",
-    description: "Service promise, amenities, and appointment CTAs.",
-    bestFor: "Service departments, maintenance menus, and warranty info.",
-    suggestedTitle: "Service & parts",
+    description: "Service overview, offerings grid, lead form, and locations.",
     suggestedSlug: "service",
-    sectionTypes: ["hero", "image_text", "split_feature", "faq", "cta_band"],
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Service center",
-          headline: "Expert care for every mile",
-          subheadline: "Factory-trained technicians, genuine parts, and convenient scheduling.",
-          cta_text: "Schedule service",
-          cta_url: "/#contact",
+        section_type: "hero",
+        sort_order: 10,
+        headline: "Expert service you can trust",
+        subheadline: "Factory-trained technicians and genuine parts at every Cavender store.",
+        cta_text: "Schedule service",
+        cta_url: "/schedule-service",
+      },
+      {
+        section_type: "text_block",
+        sort_order: 20,
+        headline: "Service departments",
+        body: "Describe maintenance, repairs, express lane, and OEM certifications.",
+      },
+      {
+        section_type: "card_grid",
+        sort_order: 30,
+        headline: "Popular services",
+        settings: {
+          cards: [
+            { title: "Oil change", description: "Quick, manufacturer-recommended service." },
+            { title: "Brakes", description: "Inspections and repairs for safe stopping." },
+            { title: "Tires", description: "Rotation, balance, and replacement options." },
+          ],
         },
       },
       {
-        type: "image_text",
-        starter: {
-          headline: "What to expect",
-          body: "Transparent estimates, loaner options where available, and status updates you don't have to chase.\n\nAdd your store's hours, amenities, and certification badges here.",
-          settings: { image_position: "right" },
-        },
+        section_type: "form",
+        sort_order: 40,
+        headline: "Request service",
+        settings: { form_type: "service" },
       },
-      { type: "split_feature" },
-      { type: "faq" },
       {
-        type: "cta_band",
-        starter: {
-          headline: "Book your visit",
-          subheadline: "Pick a time online or call your nearest store.",
-          settings: { variant: "light", background_color: "#ffffff" },
-        },
+        section_type: "locations",
+        sort_order: 50,
+        headline: "Service locations",
+        subheadline: "Find hours and contact info for your nearest store.",
       },
     ],
   },
   {
     id: "finance",
     label: "Finance Page",
-    description: "Financing options, numbers, and common questions.",
-    bestFor: "Credit applications, lease vs buy, and payment education.",
-    suggestedTitle: "Financing",
+    description: "Financing hero, overview, FAQ, application form, and CTA.",
     suggestedSlug: "finance",
-    sectionTypes: ["hero", "text_block", "stats", "faq", "cta_band"],
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Financing",
-          headline: "Payments that fit your budget",
-          subheadline: "Competitive rates, flexible terms, and advisors who explain every line.",
-          cta_text: "Get pre-qualified",
-          cta_url: "/#contact",
+        section_type: "hero",
+        sort_order: 10,
+        headline: "Financing made simple",
+        subheadline: "Competitive rates and flexible terms from Cavender finance teams.",
+        cta_text: "Apply now",
+        cta_url: "#apply",
+      },
+      {
+        section_type: "text_block",
+        sort_order: 20,
+        headline: "How financing works",
+        body: "Explain credit applications, trade-ins, and working with our finance managers.",
+      },
+      {
+        section_type: "faq",
+        sort_order: 30,
+        headline: "Common questions",
+        settings: {
+          items: [
+            {
+              question: "What do I need to apply?",
+              answer: "A valid ID, proof of income, and your preferred vehicle details.",
+            },
+            {
+              question: "Can I get pre-approved?",
+              answer: "Yes — start an application online or visit any Cavender store.",
+            },
+          ],
         },
       },
       {
-        type: "text_block",
-        starter: {
-          headline: "Simple, transparent process",
-          body: "We work with multiple lenders to find options for a wide range of credit profiles.\n\nReplace this with your compliance-approved disclosures and process steps.",
-          settings: { alignment: "left" },
-        },
+        section_type: "form",
+        sort_order: 40,
+        headline: "Start your application",
+        settings: { form_type: "finance" },
       },
       {
-        type: "stats",
-        starter: {
-          headline: "Financing at a glance",
-          settings: {
-            items: [
-              { value: "24hr", label: "Typical pre-qual response" },
-              { value: "0%", label: "Promo APR offers*" },
-              { value: "72mo", label: "Terms up to" },
-              { value: "100%", label: "Online applications" },
-            ],
-          },
-        },
-      },
-      { type: "faq" },
-      {
-        type: "cta_band",
-        starter: {
-          headline: "Ready to explore your options?",
-          subheadline: "Apply online or visit a finance manager in store.",
-          settings: { variant: "dark" },
+        section_type: "cta_band",
+        sort_order: 50,
+        headline: "Questions about financing?",
+        settings: {
+          buttons: [{ label: "Contact a store", url: "/about-us" }],
         },
       },
     ],
@@ -263,75 +241,123 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     id: "campaign",
     label: "Campaign Page",
-    description: "High-impact promo with inventory and repeated CTAs.",
-    bestFor: "Seasonal sales, model events, and limited-time offers.",
-    suggestedTitle: "Special offer",
-    suggestedSlug: "offer",
-    sectionTypes: ["hero", "cta_band", "inventory_collection", "stats", "cta_band"],
+    description: "Promotional landing with offer copy, CTA band, and lead capture.",
+    suggestedSlug: "campaign",
     sections: [
       {
-        type: "hero",
-        starter: {
-          eyebrow: "Limited time",
-          headline: "Event pricing ends soon",
-          subheadline: "Shop select inventory with reduced rates and bonus offers.",
-          cta_text: "View event inventory",
-          cta_url: "/inventory",
-          settings: {
-            variant: "dark",
-            background_color: "#0c1628",
-            padding_top: "spacious",
-          },
+        section_type: "hero",
+        sort_order: 10,
+        headline: "Limited-time offer",
+        subheadline: "Add campaign dates, eligibility, and primary offer details.",
+        cta_text: "Claim offer",
+        cta_url: "#offer",
+        settings: { variant: "dark" },
+      },
+      {
+        section_type: "text_block",
+        sort_order: 20,
+        headline: "Offer details",
+        body: "Terms, participating stores, and how customers can redeem.",
+      },
+      {
+        section_type: "cta_band",
+        sort_order: 30,
+        headline: "Don't miss out",
+        settings: {
+          buttons: [
+            { label: "Shop inventory", url: "/inventory" },
+            { label: "Contact us", url: "/about-us" },
+          ],
         },
       },
       {
-        type: "cta_band",
-        starter: {
-          headline: "Don't miss these deals",
-          subheadline: "Availability changes daily — reserve online or visit today.",
-          settings: {
-            variant: "light",
-            background_color: "#ffffff",
-            buttons: [{ label: "Shop now", url: "/inventory" }],
-          },
-        },
+        section_type: "form",
+        sort_order: 40,
+        headline: "Get offer details",
+        settings: { form_type: "general" },
       },
-      { type: "inventory_collection" },
-      { type: "stats" },
+    ],
+  },
+  {
+    id: "schedule_service",
+    label: "Schedule Service Page",
+    description: "Service scheduling hero, instructions, form, and store list.",
+    suggestedSlug: "schedule-service-page",
+    sections: [
       {
-        type: "cta_band",
-        starter: {
-          headline: "Questions? We're here to help.",
-          subheadline: "Call, chat, or stop by your nearest Cavender store.",
-          settings: {
-            variant: "dark",
-            buttons: [
-              { label: "Browse inventory", url: "/inventory" },
-              { label: "Find a store", url: "/#locations" },
-            ],
-          },
+        section_type: "hero",
+        sort_order: 10,
+        headline: "Schedule your service appointment",
+        subheadline: "Book maintenance or repairs at your preferred Cavender location.",
+        cta_text: "Book now",
+        cta_url: "#schedule",
+      },
+      {
+        section_type: "text_block",
+        sort_order: 20,
+        headline: "What to expect",
+        body: "Explain appointment steps, loaner vehicles, and what to bring.",
+      },
+      {
+        section_type: "form",
+        sort_order: 30,
+        headline: "Request an appointment",
+        settings: { form_type: "service" },
+      },
+      {
+        section_type: "locations",
+        sort_order: 40,
+        headline: "Choose a location",
+        subheadline: "Select the store that is most convenient for you.",
+      },
+    ],
+  },
+  {
+    id: "cavender_commitment",
+    label: "Cavender Commitment Page",
+    description: "Brand promise hero, commitment band, supporting copy, and CTA.",
+    suggestedSlug: "cavender-commitment",
+    sections: [
+      {
+        section_type: "hero",
+        sort_order: 10,
+        headline: "The Cavender Commitment",
+        subheadline: "Our promise to every customer, every visit.",
+        settings: { variant: "light" },
+      },
+      {
+        section_type: "cavender_commitment",
+        sort_order: 20,
+        headline: "Built on trust",
+        body: "Edit commitment pillars and supporting copy in the page builder.",
+      },
+      {
+        section_type: "text_block",
+        sort_order: 30,
+        headline: "What it means for you",
+        body: "Expand on transparency, service, and community values.",
+      },
+      {
+        section_type: "cta_band",
+        sort_order: 40,
+        headline: "Experience the difference",
+        settings: {
+          buttons: [
+            { label: "Shop inventory", url: "/inventory" },
+            { label: "Find a store", url: "/about-us" },
+          ],
         },
       },
     ],
   },
 ];
 
-export function getPageTemplate(id: PageTemplateId): PageTemplate {
-  const t = PAGE_TEMPLATES.find((p) => p.id === id);
-  if (!t) throw new Error(`Unknown page template: ${id}`);
-  return t;
+export function getPageTemplate(id: PageTemplateId): PageTemplateDefinition {
+  const template = PAGE_TEMPLATES.find((t) => t.id === id);
+  if (!template) throw new Error(`Unknown page template: ${id}`);
+  return template;
 }
 
-export function listPageTemplates(): PageTemplate[] {
-  return PAGE_TEMPLATES;
-}
-
-export function isPageTemplateId(id: string): id is PageTemplateId {
-  return PAGE_TEMPLATES.some((t) => t.id === id);
-}
-
-export function buildTemplateSectionStarter(
-  spec: PageTemplateSectionSpec,
-): PageSectionUpdateInput {
-  return mergeStarter(spec.type, spec.starter);
+export function isPageTemplateId(value: string): value is PageTemplateId {
+  return (PAGE_TEMPLATE_IDS as readonly string[]).includes(value);
 }

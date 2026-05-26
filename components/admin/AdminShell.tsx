@@ -34,7 +34,7 @@ export function AdminShell({
           </p>
         ) : null}
         <main
-          className={`mx-auto w-full flex-1 px-6 py-10 ${
+          className={`mx-auto w-full flex-1 px-4 py-8 sm:px-6 sm:py-10 ${
             isWideCatalog ? "max-w-[92rem]" : "max-w-5xl"
           }`}
         >

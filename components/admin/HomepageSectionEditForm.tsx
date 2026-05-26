@@ -70,17 +70,17 @@ export function HomepageSectionEditForm({
       return;
     }
 
-    router.push("/admin/homepage-sections");
+    router.push("/admin/homepage");
     router.refresh();
   }
 
   return (
     <div className="space-y-6">
       <Link
-        href="/admin/homepage-sections"
+        href="/admin/homepage"
         className="text-sm text-[var(--muted)] hover:text-[var(--ink)]"
       >
-        ← Back to homepage sections
+        ← Back to Homepage
       </Link>
 
       {error ? (

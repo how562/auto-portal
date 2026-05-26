@@ -5,7 +5,6 @@ import {
   fetchSitePageById,
 } from "@/lib/cmsAdmin";
 import { listCollectionsAdmin } from "@/lib/collectionsAdmin";
-import { fetchStores } from "@/lib/stores";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +25,9 @@ export default async function AdminPageBuilderPage({ params }: PageProps) {
   const page = await fetchSitePageById(params.pageId);
   if (!page) notFound();
 
-  const [sections, collections, stores] = await Promise.all([
+  const [sections, collections] = await Promise.all([
     fetchAllPageSectionsForAdmin(params.pageId),
     listCollectionsAdmin().catch(() => []),
-    fetchStores().catch(() => []),
   ]);
 
   const collectionOptions = collections.map((c) => ({
@@ -39,10 +37,10 @@ export default async function AdminPageBuilderPage({ params }: PageProps) {
 
   return (
     <PageBuilder
+      pageId={params.pageId}
       page={page}
       initialSections={sections}
       collections={collectionOptions}
-      stores={stores}
     />
   );
 }
