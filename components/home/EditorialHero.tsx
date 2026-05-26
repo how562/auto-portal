@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { HomepageInventorySearchBridge } from "@/components/home/HomepageInventorySearchBridge";
 import { usePortalText } from "@/components/providers/TextSettingsProvider";
 import { useDiscovery } from "@/components/portal/DiscoveryContext";
 import { localizeCommunityHero } from "@/lib/communityHeroI18n";
@@ -168,7 +169,7 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
   const titleLines = splitTitleLines(portalTitle);
 
   return (
-    <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-20 sm:pt-32 sm:pb-24 lg:pt-36 lg:pb-28">
+    <section className="relative overflow-hidden bg-[var(--cream)] pt-28 pb-14 sm:pt-32 sm:pb-16 lg:pt-36 lg:pb-20">
       <div className="portal-container">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20 xl:gap-24">
           <div className="order-1 flex max-w-xl flex-col lg:max-w-none lg:py-2">
@@ -199,6 +200,10 @@ export function EditorialHero({ content: rawContent }: EditorialHeroProps) {
           <div className="order-2 lg:flex lg:items-center lg:justify-end">
             <HeroCollage content={content} />
           </div>
+        </div>
+
+        <div className="mt-10 sm:mt-12 lg:mt-14">
+          <HomepageInventorySearchBridge variant="hero" hideEyebrow hideHelperLine />
         </div>
       </div>
     </section>

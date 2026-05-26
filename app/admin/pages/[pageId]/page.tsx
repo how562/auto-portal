@@ -37,6 +37,7 @@ export default async function AdminPageBuilderPage({ params }: PageProps) {
 
   return (
     <PageBuilder
+      pageId={params.pageId}
       page={page}
       initialSections={sections}
       collections={collectionOptions}

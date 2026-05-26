@@ -3,7 +3,6 @@
 import { CavenderCommitmentSection } from "@/components/home/CavenderCommitmentSection";
 import { DiscoveryCategoriesSection } from "@/components/home/DiscoveryCategoriesSection";
 import { EditorialHero } from "@/components/home/EditorialHero";
-import { HomepageInventorySearchBridge } from "@/components/home/HomepageInventorySearchBridge";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
@@ -31,7 +30,6 @@ function PortalContent({
     <>
       <PortalHeader />
       <EditorialHero content={communityHero} />
-      <HomepageInventorySearchBridge />
       <DiscoveryCategoriesSection vehicles={vehicles} />
       <GuidedDiscoverySection vehicles={vehicles} />
       <CavenderCommitmentSection cms={commitmentCms} />

@@ -9,10 +9,10 @@ export const HERO_DEFAULT_IMAGES: Record<
   CommunityHeroImagePosition,
   { url: string; alt: string }
 > = {
-  top_left: { url: "/images/hero/community.png", alt: "Community" },
-  right_tall: { url: "/images/hero/dealership.png", alt: "Dealership" },
-  center_small: { url: "/images/hero/vehicle.png", alt: "Vehicle" },
-  bottom_wide: { url: "/images/hero/lifestyle.png", alt: "Lifestyle" },
+  top_left: { url: "/hero/community.jpg", alt: "Community" },
+  right_tall: { url: "/hero/dealership.jpg", alt: "Dealership" },
+  center_small: { url: "/hero/lifestyle.jpg", alt: "Lifestyle" },
+  bottom_wide: { url: "/hero/vehicle.jpg", alt: "Vehicle" },
 };
 
 export function resolveHeroImageSlots(

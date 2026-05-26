@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
   deleteSitePage,
+  fetchSitePageById,
   updateSitePage,
   type SitePageUpdateInput,
 } from "@/lib/cmsAdmin";
@@ -9,6 +10,29 @@ import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 interface RouteContext {
   params: { id: string };
+}
+
+export async function GET(request: Request, context: RouteContext) {
+  if (!isAdminRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isSupabaseAdminConfigured()) {
+    return NextResponse.json(
+      { error: "Set SUPABASE_SERVICE_ROLE_KEY in .env.local and restart the dev server." },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const page = await fetchSitePageById(context.params.id);
+    if (!page) {
+      return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    }
+    return NextResponse.json({ page });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Load failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
   createPageSection,
+  isValidPageUuid,
   type PageSectionCreateInput,
 } from "@/lib/cmsAdmin";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
@@ -19,6 +20,15 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as PageSectionCreateInput;
+    if (!body.page_id?.trim()) {
+      return NextResponse.json({ error: "page_id is required" }, { status: 400 });
+    }
+    if (!isValidPageUuid(body.page_id)) {
+      return NextResponse.json(
+        { error: "Invalid page_id. Open the page from Admin → Site pages." },
+        { status: 400 },
+      );
+    }
     const section = await createPageSection(body);
     return NextResponse.json({ section }, { status: 201 });
   } catch (error: unknown) {

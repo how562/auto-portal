@@ -15,6 +15,9 @@ export function AdminShell({
 }: AdminShellProps) {
   const pathname = usePathname();
   const isLogin = pathname.startsWith("/admin/login");
+  const isWideCatalog =
+    pathname.startsWith("/admin/section-showcase") ||
+    pathname.startsWith("/admin/section-library");
 
   if (isLogin) {
     return <>{children}</>;
@@ -29,7 +32,11 @@ export function AdminShell({
             Admin routes are open — set <code>CMS_ADMIN_SECRET</code> in production.
           </p>
         ) : null}
-        <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+        <main
+          className={`mx-auto w-full flex-1 px-4 py-8 sm:px-6 sm:py-10 ${
+            isWideCatalog ? "max-w-[92rem]" : "max-w-5xl"
+          }`}
+        >
           <AdminSetupNotice />
           {children}
         </main>
