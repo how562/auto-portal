@@ -56,6 +56,11 @@ export const cardEmptyState = `${r} border border-dashed border-[var(--line-dark
 
 export const cardFormWrap = `mx-auto max-w-2xl ${r} border border-[var(--line-dark)] bg-white px-8 py-12 text-center sm:px-10 sm:py-14`;
 
+/** Memo / notice blocks — simple copy in a polished white panel */
+export const cardMemo = `${r} border border-[var(--line-dark)] bg-white px-6 py-8 sm:px-8 sm:py-10`;
+
+export const cardMemoNarrow = `mx-auto max-w-3xl ${cardMemo}`;
+
 export const cardDarkInset = `${r} border border-white/10 bg-white/[0.04]`;
 
 export const cardDarkInsetPad = `${cardDarkInset} p-4 sm:p-5`;

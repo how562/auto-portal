@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CmsSectionEditorGuidance } from "@/components/admin/CmsSectionEditorGuidance";
+import { CmsSectionEditorPreview } from "@/components/admin/CmsSectionEditorPreview";
+import { SectionDesignControls } from "@/components/admin/SectionDesignControls";
+import { CardGridItemsEditor } from "@/components/admin/section-editors/CardGridItemsEditor";
+import { CtaButtonsEditor } from "@/components/admin/section-editors/CtaButtonsEditor";
+import { FaqItemsEditor } from "@/components/admin/section-editors/FaqItemsEditor";
+import { StatsItemsEditor } from "@/components/admin/section-editors/StatsItemsEditor";
 import { CommunityHeroImageSlots } from "@/components/admin/CommunityHeroImageSlots";
 import { CmsImageField } from "@/components/admin/CmsImageField";
 import type { CMSSection } from "@/lib/cmsSectionModel";
 import type { CMSCanonicalFieldKey } from "@/lib/cmsSectionModel";
 import { getRegistryEntry } from "@/lib/cmsSectionRegistry";
 import { parseSettings, settingString } from "@/lib/cmsSettings";
+import { getPresetKeyFromSettings } from "@/lib/presetSectionStarters";
+import { getPresetByKey } from "@/lib/savedSectionPresets";
+import type { Store } from "@/lib/types";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 export interface CollectionOption {
@@ -19,6 +29,7 @@ interface CmsSectionEditorCardProps {
   isFirst: boolean;
   isLast: boolean;
   collections: CollectionOption[];
+  stores?: Store[];
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
@@ -58,12 +69,14 @@ export function CmsSectionEditorCard({
   isFirst,
   isLast,
   collections,
+  stores = [],
   onMoveUp,
   onMoveDown,
   onDelete,
   onSaved,
 }: CmsSectionEditorCardProps) {
   const [open, setOpen] = useState(false);
+  const [panelMode, setPanelMode] = useState<"preview" | "edit">("preview");
   const [local, setLocal] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +88,8 @@ export function CmsSectionEditorCard({
 
   const entry = getRegistryEntry(local.section_type);
   const settings = local.settings ?? {};
+  const presetKey = getPresetKeyFromSettings(settings);
+  const presetEntry = presetKey ? getPresetByKey(presetKey) : undefined;
   const isCommunityHero = local.section_type === "community_hero";
 
   function setField<K extends keyof CMSSection>(k: K, v: CMSSection[K]) {
@@ -125,8 +140,11 @@ export function CmsSectionEditorCard({
         >
           <span className="text-[var(--muted)]">{open ? "▼" : "▶"}</span>
           <span className="rounded bg-[var(--cream-dark)] px-2 py-0.5 text-xs font-semibold uppercase">
-            {entry.label}
+            {presetEntry?.display_name ?? entry.label}
           </span>
+          {presetEntry ? (
+            <span className="font-mono text-[10px] text-[var(--muted)]">{presetKey}</span>
+          ) : null}
           <span className="truncate text-sm font-medium">
             {local.headline || local.eyebrow || "Untitled section"}
           </span>
@@ -160,69 +178,109 @@ export function CmsSectionEditorCard({
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] p-4 sm:p-5">
-          <p className="text-xs text-[var(--muted)]">{entry.description}</p>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={local.is_active}
-              onChange={(e) => setField("is_active", e.target.checked)}
-            />
-            Active on page
-          </label>
-
-          {isCommunityHero ? (
-            <CommunityHeroImageSlots
-              sectionId={local.id}
-              settings={settings}
-              onSettingsSaved={(nextSettings, updatedSection) => {
-                if (updatedSection) {
-                  setLocal(updatedSection);
-                  onSaved(updatedSection);
-                } else {
-                  setField("settings", nextSettings);
-                }
-              }}
-            />
-          ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setLang("en")}
-              className={`rounded-lg px-3 py-1 text-sm ${lang === "en" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setLang("es")}
-              className={`rounded-lg px-3 py-1 text-sm ${lang === "es" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
-            >
-              Spanish
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex rounded-lg border border-[var(--line)] p-0.5">
+              <button
+                type="button"
+                onClick={() => setPanelMode("preview")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                  panelMode === "preview"
+                    ? "bg-[var(--ink)] text-white"
+                    : "text-[var(--muted)]"
+                }`}
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelMode("edit")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                  panelMode === "edit"
+                    ? "bg-[var(--ink)] text-white"
+                    : "text-[var(--muted)]"
+                }`}
+              >
+                Edit
+              </button>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={local.is_active}
+                onChange={(e) => setField("is_active", e.target.checked)}
+              />
+              Active
+            </label>
           </div>
 
-          {lang === "en" ? (
-            <CanonicalFieldsForm
-              section={local}
-              fields={enFields}
-              setField={setField}
-            />
+          {panelMode === "preview" ? (
+            <CmsSectionEditorPreview section={local} stores={stores} />
           ) : (
-            <CanonicalFieldsForm
-              section={local}
-              fields={esFields}
-              setField={setField}
-              es
-            />
-          )}
+            <div className="space-y-4">
+              <CmsSectionEditorGuidance sectionType={local.section_type} />
 
-          <TypeSettingsFields
-            section={local}
-            collections={collections}
-            setSetting={setSetting}
-          />
+              <SectionDesignControls
+                section={local}
+                setSetting={setSetting}
+                setLayoutVariant={(v) => setField("layout_variant", v)}
+              />
+
+              {isCommunityHero ? (
+                <CommunityHeroImageSlots
+                  sectionId={local.id}
+                  settings={settings}
+                  onSettingsSaved={(nextSettings, updatedSection) => {
+                    if (updatedSection) {
+                      setLocal(updatedSection);
+                      onSaved(updatedSection);
+                    } else {
+                      setField("settings", nextSettings);
+                    }
+                  }}
+                />
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLang("en")}
+                  className={`rounded-lg px-3 py-1 text-sm ${lang === "en" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLang("es")}
+                  className={`rounded-lg px-3 py-1 text-sm ${lang === "es" ? "bg-[var(--ink)] text-white" : "bg-[var(--cream-dark)]"}`}
+                >
+                  Spanish
+                </button>
+              </div>
+
+              {lang === "en" ? (
+                <CanonicalFieldsForm
+                  section={local}
+                  fields={enFields}
+                  setField={setField}
+                />
+              ) : (
+                <CanonicalFieldsForm
+                  section={local}
+                  fields={esFields}
+                  setField={setField}
+                  es
+                />
+              )}
+
+              <TypeSettingsFields
+                section={local}
+                collections={collections}
+                setSetting={setSetting}
+              />
+
+              <AdvancedSettingsPanel section={local} setSetting={setSetting} />
+            </div>
+          )}
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--line)] pt-4">
             <button
@@ -417,27 +475,220 @@ function TypeSettingsFields({
   }
 
   if (t === "faq") {
-    const items = Array.isArray(s.items) ? s.items : [];
+    const items = Array.isArray(s.items) ? (s.items as { question?: string; answer?: string }[]) : [];
     return (
-      <label className="block space-y-1">
+      <FaqItemsEditor
+        items={items}
+        onChange={(next) => setSetting("items", next)}
+      />
+    );
+  }
+
+  if (t === "stats") {
+    const items = Array.isArray(s.items) ? (s.items as { value?: string; label?: string }[]) : [];
+    return (
+      <StatsItemsEditor
+        items={items}
+        onChange={(next) => setSetting("items", next)}
+      />
+    );
+  }
+
+  if (t === "card_grid") {
+    const cards = Array.isArray(s.cards)
+      ? (s.cards as {
+          title?: string;
+          body?: string;
+          image_url?: string;
+          link_label?: string;
+          link_href?: string;
+        }[])
+      : [];
+    return (
+      <CardGridItemsEditor cards={cards} onChange={(next) => setSetting("cards", next)} />
+    );
+  }
+
+  if (t === "cta_band") {
+    const buttons = Array.isArray(s.buttons)
+      ? (s.buttons as { label?: string; url?: string }[])
+      : [];
+    return (
+      <CtaButtonsEditor
+        buttons={buttons}
+        onChange={(next) => setSetting("buttons", next)}
+      />
+    );
+  }
+
+  if (t === "image_text") {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 sm:col-span-2">
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Image position
+          </span>
+          <select
+            value={settingString(s, "image_position", "right")}
+            onChange={(e) => setSetting("image_position", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          >
+            <option value="right">Image right</option>
+            <option value="left">Image left</option>
+          </select>
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Media type
+          </span>
+          <select
+            value={settingString(s, "media_type", "image")}
+            onChange={(e) => setSetting("media_type", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          >
+            <option value="image">Image</option>
+            <option value="video">Video placeholder</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
+
+  if (t === "text_block") {
+    return (
+      <label className="block space-y-1 sm:col-span-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-          FAQ items (JSON)
+          Alignment
         </span>
-        <textarea
-          rows={6}
-          value={JSON.stringify(items, null, 2)}
-          onChange={(e) => {
-            try {
-              setSetting("items", JSON.parse(e.target.value));
-            } catch {
-              /* ignore while typing */
-            }
-          }}
-          className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 font-mono text-xs"
-        />
+        <select
+          value={settingString(s, "alignment", "left")}
+          onChange={(e) => setSetting("alignment", e.target.value)}
+          className="w-full max-w-xs rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+        >
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+        </select>
       </label>
     );
   }
 
+  if (t === "hero") {
+    return (
+      <label className="block space-y-1 sm:col-span-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+          Variant
+        </span>
+        <select
+          value={settingString(s, "variant", "light")}
+          onChange={(e) => setSetting("variant", e.target.value)}
+          className="w-full max-w-xs rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+        >
+          <option value="light">Light card</option>
+          <option value="dark">Dark band</option>
+        </select>
+      </label>
+    );
+  }
+
+  if (t === "split_feature") {
+    return (
+      <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Left title
+          </span>
+          <input
+            value={settingString(s, "left_title")}
+            onChange={(e) => setSetting("left_title", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Right title
+          </span>
+          <input
+            value={settingString(s, "right_title")}
+            onChange={(e) => setSetting("right_title", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Left body
+          </span>
+          <textarea
+            rows={3}
+            value={settingString(s, "left_body")}
+            onChange={(e) => setSetting("left_body", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Right body
+          </span>
+          <textarea
+            rows={3}
+            value={settingString(s, "right_body")}
+            onChange={(e) => setSetting("right_body", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+      </div>
+    );
+  }
+
   return null;
+}
+
+function AdvancedSettingsPanel({
+  section,
+  setSetting,
+}: {
+  section: CMSSection;
+  setSetting: (key: string, value: unknown) => void;
+}) {
+  const s = section.settings ?? {};
+  const t = section.section_type;
+  const jsonKeys: string[] = [];
+  if (t === "faq") jsonKeys.push("items");
+  if (t === "stats") jsonKeys.push("items");
+  if (t === "card_grid") jsonKeys.push("cards");
+  if (t === "cta_band") jsonKeys.push("buttons");
+  if (t === "custom_html") jsonKeys.push("html");
+
+  if (jsonKeys.length === 0) return null;
+
+  return (
+    <details className="rounded-xl border border-[var(--line)] bg-[var(--cream)]/30">
+      <summary className="cursor-pointer px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Advanced (raw JSON)
+      </summary>
+      <div className="space-y-3 border-t border-[var(--line)] p-4">
+        {jsonKeys.map((key) => (
+          <label key={key} className="block space-y-1">
+            <span className="font-mono text-[10px] text-[var(--muted)]">
+              settings.{key}
+            </span>
+            <textarea
+              rows={6}
+              value={JSON.stringify(s[key] ?? (key === "html" ? "" : []), null, 2)}
+              onChange={(e) => {
+                try {
+                  setSetting(
+                    key,
+                    key === "html" ? e.target.value : JSON.parse(e.target.value),
+                  );
+                } catch {
+                  /* ignore while typing */
+                }
+              }}
+              className="w-full rounded-lg border border-[var(--line)] px-3 py-2 font-mono text-xs"
+            />
+          </label>
+        ))}
+      </div>
+    </details>
+  );
 }

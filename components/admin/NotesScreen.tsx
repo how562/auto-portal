@@ -26,7 +26,7 @@ export async function NotesScreen() {
 
       {!configured ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Add <code>SUPABASE_SERVICE_ROLE_KEY</code> to use notes.
+          Add <code>SUPABASE_SERVICE_ROLE_KEY</code> to <code>.env.local</code> to use notes.
         </p>
       ) : null}
 
