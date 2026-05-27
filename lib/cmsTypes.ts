@@ -17,6 +17,7 @@ export const CMS_SECTION_TYPES = [
   "custom_html",
   "top_picks",
   "cavender_commitment",
+  "social_feed",
 ] as const;
 
 export type CMSSectionType = (typeof CMS_SECTION_TYPES)[number];

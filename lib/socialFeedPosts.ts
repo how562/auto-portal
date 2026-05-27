@@ -9,6 +9,7 @@ import {
   type SocialFeedPlaceholderPost,
   type SocialPlatform,
 } from "@/lib/socialFeedPlaceholder";
+import type { SocialFeedBackupPost } from "@/lib/socialFeedTypes";
 
 export type { SocialPlatform };
 
@@ -48,12 +49,36 @@ export function facebookPostsToSocialFeed(
   }));
 }
 
+export function cmsPostsToSocialFeedPosts(
+  posts: SocialFeedBackupPost[],
+): SocialFeedPost[] {
+  return posts
+    .filter((post) => post.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((post) => ({
+      id: post.id,
+      platform: post.platform,
+      imageSrc: resolveSocialFeedImage(
+        post.image_url.trim() || "/images/hero/community.jpg",
+      ),
+      caption: post.caption,
+      dateLabel: post.date_label,
+      href: post.href,
+      pageName: post.page_name,
+    }));
+}
+
 export function getHomepageSocialFeedPosts(
   livePosts: FacebookPost[] | undefined,
   pageName: string,
+  backupPosts?: SocialFeedBackupPost[],
 ): SocialFeedPost[] {
   if (livePosts && livePosts.length > 0) {
     return facebookPostsToSocialFeed(livePosts, pageName);
+  }
+  if (backupPosts && backupPosts.length > 0) {
+    const active = cmsPostsToSocialFeedPosts(backupPosts);
+    if (active.length > 0) return active;
   }
   return placeholderToSocialFeedPosts(PLACEHOLDER_SOCIAL_POSTS);
 }

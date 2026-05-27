@@ -187,6 +187,15 @@ export const CMS_SECTION_REGISTRY: Record<CMSSectionType, CMSSectionRegistryEntr
     hasDedicatedRenderer: false,
     supported: true,
   },
+  social_feed: {
+    type: "social_feed",
+    label: "Social feed",
+    description: "Homepage community carousel backup posts",
+    editorFields: ["eyebrow", "headline", "subheadline"],
+    settingsKeys: ["posts"],
+    hasDedicatedRenderer: false,
+    supported: true,
+  },
 };
 
 export function getRegistryEntry(

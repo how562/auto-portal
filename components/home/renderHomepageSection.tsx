@@ -11,6 +11,7 @@ import type { FacebookFeedResult } from "@/lib/facebookFeedShared";
 import type { FacebookPageConfig } from "@/lib/facebookPageConfig";
 import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
 import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes";
+import type { SocialFeedCmsContent } from "@/lib/socialFeedTypes";
 import type { HomepageLayoutSectionId } from "@/lib/homepageLayoutRegistry";
 import type { Vehicle } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export interface HomepageSectionRenderContext {
   vehicles: Vehicle[];
   communityHero: CommunityHeroContent;
   commitmentCms: CavenderCommitmentCmsPayload;
+  socialFeedCms: SocialFeedCmsContent;
   facebookPage: FacebookPageConfig;
   facebookFeed: FacebookFeedResult | null;
 }
@@ -43,6 +45,7 @@ export function renderHomepageSection(
           key={id}
           page={ctx.facebookPage}
           graphFeed={ctx.facebookFeed}
+          cms={ctx.socialFeedCms}
         />
       );
     case "homepage_bottom_scene":

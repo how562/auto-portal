@@ -25,15 +25,15 @@ export function HeaderSpanishLanguageHint() {
       <HandDrawnArrow className="header-spanish-hint__arrow mb-1.5 hidden shrink-0 -scale-x-100 text-[var(--ink)] sm:block" />
 
       <div className="header-spanish-hint__copy hidden pb-1 text-left sm:block">
-        <p className="text-[11px] font-semibold leading-tight text-[var(--ink)]">
+        <p className="text-sm font-semibold leading-snug text-[var(--ink)] sm:text-[15px]">
           {SPANISH_HINT_COPY.line1}
         </p>
-        <p className="text-[10px] font-medium leading-tight text-[var(--gold)]">
+        <p className="text-xs font-medium leading-snug text-[var(--gold)] sm:text-sm">
           {SPANISH_HINT_COPY.line2}
         </p>
       </div>
 
-      <p className="max-w-[5.5rem] pb-1 text-left text-[9px] font-semibold leading-tight text-[var(--ink)] sm:hidden">
+      <p className="max-w-[6.5rem] pb-1 text-left text-xs font-semibold leading-snug text-[var(--ink)] sm:hidden">
         {SPANISH_HINT_COPY.mobile}
       </p>
     </div>

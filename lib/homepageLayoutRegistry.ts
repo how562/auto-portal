@@ -78,6 +78,7 @@ export const HOMEPAGE_LAYOUT_SECTION_DEFS: HomepageLayoutSectionDef[] = [
     label: "Around the Cavender Family",
     description: "Social feed carousel and follow CTA.",
     zone: "lower",
+    editHref: "/admin/homepage/social-feed",
     previewVariant: "social",
   },
   {

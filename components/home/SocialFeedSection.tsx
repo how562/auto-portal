@@ -8,10 +8,12 @@ import type { FacebookPageConfig } from "@/lib/facebookPageConfig";
 import { FOOTER_SOCIAL_LINKS } from "@/lib/footerSocial";
 import { getHomepageSocialFeedPosts } from "@/lib/socialFeedPosts";
 import { isSocialFeedPlaceholderMode } from "@/lib/socialFeedPlaceholder";
+import type { SocialFeedCmsContent } from "@/lib/socialFeedTypes";
 
 interface SocialFeedSectionProps {
   page: FacebookPageConfig;
   graphFeed?: FacebookFeedResult | null;
+  cms?: SocialFeedCmsContent;
 }
 
 function socialProfileUrl(platform: "facebook" | "instagram"): string {
@@ -23,7 +25,7 @@ function socialProfileUrl(platform: "facebook" | "instagram"): string {
  * Premium community social carousel — placeholder posts until live API is ready.
  * Set NEXT_PUBLIC_SOCIAL_FEED_MODE=live for Facebook Graph posts (falls back to placeholders).
  */
-export function SocialFeedSection({ page, graphFeed }: SocialFeedSectionProps) {
+export function SocialFeedSection({ page, graphFeed, cms }: SocialFeedSectionProps) {
   const facebookUrl = page.pageUrl;
   const instagramUrl =
     process.env.NEXT_PUBLIC_INSTAGRAM_PAGE_URL?.trim() ||
@@ -37,8 +39,15 @@ export function SocialFeedSection({ page, graphFeed }: SocialFeedSectionProps) {
     return getHomepageSocialFeedPosts(
       useLive ? graphFeed?.posts : undefined,
       pageName,
+      cms?.posts,
     );
-  }, [graphFeed?.posts, pageName]);
+  }, [graphFeed?.posts, pageName, cms?.posts]);
+
+  const eyebrow = cms?.eyebrow ?? "Community";
+  const headline = cms?.headline ?? "Around the Cavender Family";
+  const description =
+    cms?.description ??
+    "Real moments from our dealerships, our team, and our community.";
 
   return (
     <section
@@ -50,16 +59,16 @@ export function SocialFeedSection({ page, graphFeed }: SocialFeedSectionProps) {
         <header className="social-feed-header flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
           <div className="max-w-xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--gold)]">
-              Community
+              {eyebrow}
             </p>
             <h2
               id="social-feed-heading"
               className="mt-2 font-sans text-2xl font-semibold tracking-tight text-[var(--ink)] sm:text-[1.75rem]"
             >
-              Around the Cavender Family
+              {headline}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-[15px] sm:leading-[1.55]">
-              Real moments from our dealerships, our team, and our community.
+              {description}
             </p>
           </div>
 

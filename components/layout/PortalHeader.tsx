@@ -1,19 +1,12 @@
 "use client";
 
-
-
-import Link from "next/link";
-
 import { usePathname } from "next/navigation";
 
 import { useEffect, useState } from "react";
 
 import { CavenderLogo } from "@/components/brand/CavenderLogo";
 
-import { useCta } from "@/components/cta/CtaProvider";
-
 import { HeaderSpanishLanguageHint } from "@/components/i18n/HeaderSpanishLanguageHint";
-import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 
@@ -21,55 +14,16 @@ import { HeaderNavItems } from "@/components/navigation/HeaderNavItems";
 
 import { usePortalNavigation } from "@/components/navigation/NavigationProvider";
 
-import { useOptionalLeadCapture } from "@/components/portal/LeadCaptureContext";
-
-import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
-
-
-
-function scrollToId(id: string) {
-
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-}
-
-
-
 export function PortalHeader() {
-
   const pathname = usePathname();
 
   const isHome = pathname === "/";
-  const isInventory = pathname.startsWith("/inventory");
-
-  const openLead = useOptionalLeadCapture();
 
   const { t } = useLanguage();
 
   const { header } = usePortalNavigation();
 
-  const headerShortlist = useCta("header_shortlist");
-
-  const discoveryPrimary = useCta("discovery_primary");
-
-  const discoveryBrowse = useCta("discovery_browse");
-
   const [mobileOpen, setMobileOpen] = useState(false);
-
-
-
-  const browseHref = discoveryBrowse.url ?? "/inventory";
-
-  function discoveryHrefForPage(): string {
-    const url = discoveryPrimary.url;
-    if (!url) return isInventory ? "/#guided-discovery" : "#guided-discovery";
-    if (url.startsWith("#") && isInventory) {
-      return `/${url.replace(/^\//, "")}`;
-    }
-    return url;
-  }
-
-  const discoveryHref = discoveryHrefForPage();
 
 
 
@@ -131,11 +85,7 @@ export function PortalHeader() {
 
         <div className="flex shrink-0 items-center gap-2">
 
-          {isHome ? (
-            <HeaderSpanishLanguageHint />
-          ) : (
-            <LanguageToggle />
-          )}
+          <HeaderSpanishLanguageHint />
 
           <button
 
@@ -200,42 +150,6 @@ export function PortalHeader() {
             )}
 
           </button>
-
-          {!isHome ? (
-            <>
-              <button
-                type="button"
-                onClick={() =>
-                  openLead?.({
-                    action: "general-shortlist",
-                    shopperIntent: "Get my shortlist",
-                  })
-                }
-                className={`hidden sm:inline-flex ${btnSecondarySm}`}
-              >
-                {headerShortlist.label}
-              </button>
-
-              {isInventory ? (
-                <Link href={discoveryHref} className={btnPrimarySm}>
-                  {discoveryPrimary.label}
-                </Link>
-              ) : (
-                <>
-                  <Link href={browseHref} className={`hidden sm:inline-flex ${btnSecondarySm}`}>
-                    {discoveryBrowse.label}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("guided-discovery")}
-                    className={btnPrimarySm}
-                  >
-                    {discoveryPrimary.label}
-                  </button>
-                </>
-              )}
-            </>
-          ) : null}
 
         </div>
 
