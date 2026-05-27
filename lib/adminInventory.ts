@@ -1,3 +1,4 @@
+import { getActiveInventoryProviderFilterSpec } from "./inventoryActiveSource";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 import type { Vehicle } from "./types";
 
@@ -116,10 +117,17 @@ export async function fetchAdminInventoryPage({
   const from = (safePage - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  const providerSpec = await getActiveInventoryProviderFilterSpec();
   let query = supabase
     .from("vehicles")
     .select(ADMIN_VEHICLE_SELECT, { count: "exact" })
     .eq("status", "active");
+
+  if (providerSpec.kind === "provider") {
+    query = query.eq("inventory_provider", providerSpec.provider);
+  } else {
+    query = query.or(providerSpec.orFilter);
+  }
 
   for (const spec of adminOrderingFor(sort)) {
     query = query.order(spec.column, {

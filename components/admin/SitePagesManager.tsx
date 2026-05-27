@@ -8,6 +8,14 @@ import { DuplicatePageDialog } from "@/components/admin/DuplicatePageDialog";
 import { slugifyBlueprintSlug } from "@/lib/cmsPageBlueprint";
 import type { SitePage } from "@/lib/cmsTypes";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
+import { CMS_DEMO_SLUG } from "@/lib/cmsDemoConstants";
+import {
+  findCmsDemoPage,
+  getSitePageDisplayTitle,
+  getSitePageLiveHref,
+  sortDraftPagesForAdmin,
+  sortLivePagesForAdmin,
+} from "@/lib/sitePagesListUtils";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface SitePagesManagerProps {
@@ -15,10 +23,6 @@ interface SitePagesManagerProps {
 }
 
 type CreateMode = "template" | "blank" | null;
-
-function sortPages(pages: SitePage[]): SitePage[] {
-  return [...pages].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
-}
 
 export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const router = useRouter();
@@ -29,16 +33,41 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [openingCmsDemo, setOpeningCmsDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const livePages = useMemo(
-    () => sortPages(pages.filter((p) => p.status === "published")),
-    [pages],
-  );
-  const draftPages = useMemo(
-    () => sortPages(pages.filter((p) => p.status !== "published")),
-    [pages],
-  );
+  const livePages = useMemo(() => sortLivePagesForAdmin(pages), [pages]);
+  const draftPages = useMemo(() => sortDraftPagesForAdmin(pages), [pages]);
+  const cmsDemoPage = useMemo(() => findCmsDemoPage(pages), [pages]);
+
+  async function openCmsDemoPage() {
+    setOpeningCmsDemo(true);
+    setError(null);
+    try {
+      const existing = cmsDemoPage;
+      if (existing) {
+        router.push(`/admin/pages/${existing.id}`);
+        return;
+      }
+      const res = await fetch("/api/admin/site-pages/cms-demo", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = (await res.json()) as { page?: SitePage; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Could not open CMS Demo");
+      if (data.page) {
+        setPages((prev) => {
+          const without = prev.filter((p) => p.slug !== data.page!.slug);
+          return [...without, data.page!];
+        });
+        router.push(`/admin/pages/${data.page.id}`);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not open CMS Demo");
+    } finally {
+      setOpeningCmsDemo(false);
+    }
+  }
 
   async function createBlankPage(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +155,14 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
             onClick={() => setCreateMode(createMode === "blank" ? null : "blank")}
           >
             Blank page
+          </button>
+          <button
+            type="button"
+            className={btnSecondaryMd}
+            disabled={openingCmsDemo}
+            onClick={() => void openCmsDemoPage()}
+          >
+            {openingCmsDemo ? "Opening…" : "CMS Demo page"}
           </button>
         </div>
         <Link href="/admin/page-blueprints" className={btnSecondaryMd}>
@@ -234,6 +271,20 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
             onUnpublish={unpublishPage}
             onDuplicate={setDuplicatePage}
           />
+
+          {cmsDemoPage ? (
+            <SitePagesSection
+              title="CMS workbench"
+              description="Sandbox for section types at /cms-demo. Kept as a draft so it never appears in Live or navigation."
+              count={1}
+              emptyMessage=""
+              pages={[cmsDemoPage]}
+              onPublish={publishPage}
+              onUnpublish={unpublishPage}
+              onDuplicate={setDuplicatePage}
+              variant="workbench"
+            />
+          ) : null}
         </div>
       )}
 
@@ -258,6 +309,7 @@ interface SitePagesSectionProps {
   onPublish: (page: SitePage) => void;
   onUnpublish: (page: SitePage) => void;
   onDuplicate: (page: SitePage) => void;
+  variant?: "live" | "draft" | "workbench";
 }
 
 function SitePagesSection({
@@ -269,8 +321,14 @@ function SitePagesSection({
   onPublish,
   onUnpublish,
   onDuplicate,
+  variant = title === "Live" ? "live" : title === "Drafts" ? "draft" : "workbench",
 }: SitePagesSectionProps) {
-  const isLive = title === "Live";
+  const badgeClass =
+    variant === "live"
+      ? "bg-emerald-100 text-emerald-800"
+      : variant === "workbench"
+        ? "bg-violet-100 text-violet-900"
+        : "bg-[var(--cream)] text-[var(--muted)]";
 
   return (
     <section className="space-y-3">
@@ -279,11 +337,7 @@ function SitePagesSection({
           <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--ink)]">
             {title}
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-bold normal-case tracking-normal ${
-                isLive
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-[var(--cream)] text-[var(--muted)]"
-              }`}
+              className={`rounded-full px-2 py-0.5 text-xs font-bold normal-case tracking-normal ${badgeClass}`}
             >
               {count}
             </span>
@@ -328,8 +382,10 @@ function SitePageListRow({
 }: SitePageListRowProps) {
   const isPublished = page.status === "published";
   const dedicated = getDedicatedSitePage(page.slug);
-  const liveHref = dedicated?.livePath ?? `/${page.slug}`;
+  const liveHref = dedicated?.livePath ?? getSitePageLiveHref(page);
   const isSystemLive = Boolean(dedicated?.keepPublished);
+  const isCmsDemo = page.slug === CMS_DEMO_SLUG;
+  const previewHref = isCmsDemo ? `/${page.slug}` : `/admin/pages/${page.id}/preview`;
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
@@ -338,27 +394,31 @@ function SitePageListRow({
           href={`/admin/pages/${page.id}`}
           className="font-medium hover:underline"
         >
-          {page.title}
+          {getSitePageDisplayTitle(page)}
         </Link>
         <p className="text-sm text-[var(--muted)]">
-          /{page.slug}
+          {page.slug === "home" ? "/" : `/${page.slug}`}
           {dedicated ? (
             <span className="text-amber-800"> · dedicated layout</span>
+          ) : isCmsDemo ? (
+            <span className="text-violet-800"> · section workbench</span>
           ) : null}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href={`/admin/pages/${page.id}/preview`}
+          href={previewHref}
           className={btnSecondaryMd}
           target="_blank"
           rel="noreferrer"
         >
           Preview
         </Link>
-        <button type="button" className={btnSecondaryMd} onClick={() => onDuplicate(page)}>
-          Duplicate
-        </button>
+        {!isCmsDemo ? (
+          <button type="button" className={btnSecondaryMd} onClick={() => onDuplicate(page)}>
+            Duplicate
+          </button>
+        ) : null}
         {isPublished ? (
           <>
             <Link
@@ -375,7 +435,7 @@ function SitePageListRow({
               </button>
             )}
           </>
-        ) : (
+        ) : isCmsDemo ? null : (
           <button type="button" className={btnPrimaryMd} onClick={() => onPublish(page)}>
             Publish
           </button>

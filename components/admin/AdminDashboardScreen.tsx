@@ -113,6 +113,7 @@ export function AdminDashboardScreen({ snapshot }: AdminDashboardScreenProps) {
         <p className="text-sm font-medium text-[var(--ink)]">Shortcuts</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
+            { label: "Inventory sources", href: "/admin/inventory-sources" },
             { label: "Feed imports", href: "/admin/feeds" },
             { label: "Feed mapping", href: "/admin/feed-mapping" },
             { label: "Pages", href: "/admin/pages" },

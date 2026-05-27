@@ -1,10 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { FeedImportRunKind } from "@/lib/inventoryIngestion/types";
+import type { InventoryProvider } from "@/lib/inventoryProviders";
 import type {
   HomenetFileImportSummary,
   HomenetImportSummary,
 } from "@/lib/import/homenetImport";
 
 export type FeedImportRunStatus = "running" | "success" | "partial" | "failed";
+
+export interface StartFeedImportRunOptions {
+  inventoryProvider?: InventoryProvider;
+  runKind?: FeedImportRunKind;
+  storeId?: string | null;
+  inventoryFeedSourceId?: string | null;
+}
 
 function deriveRunStatus(summary: HomenetImportSummary): FeedImportRunStatus {
   if (summary.error && summary.filesProcessed === 0) return "failed";
@@ -24,10 +33,17 @@ function fileItemStatus(file: HomenetFileImportSummary): string {
 
 export async function startFeedImportRun(
   supabase: SupabaseClient,
+  options: StartFeedImportRunOptions = {},
 ): Promise<string | null> {
   const { data, error } = await supabase
     .from("feed_import_runs")
-    .insert({ status: "running" })
+    .insert({
+      status: "running",
+      inventory_provider: options.inventoryProvider ?? "homenet",
+      run_kind: options.runKind ?? "import",
+      store_id: options.storeId ?? null,
+      inventory_feed_source_id: options.inventoryFeedSourceId ?? null,
+    })
     .select("id")
     .single();
 

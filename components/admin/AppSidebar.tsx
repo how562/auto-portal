@@ -23,6 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { title: "Math Box", href: "/admin/mathbox-settings" },
   { title: "Text Settings", href: "/admin/text-settings" },
   { title: "Smart Match", href: "/admin/smart-match-rules" },
+  { title: "Inventory sources", href: "/admin/inventory-sources" },
   { title: "Feed Mapping", href: "/admin/feed-mapping" },
   { title: "Feed Imports", href: "/admin/feeds" },
 ];

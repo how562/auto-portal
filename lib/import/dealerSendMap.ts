@@ -33,6 +33,7 @@ export interface HomenetVehicleRow {
   status: string;
   source_raw: Record<string, string>;
   import_source: string;
+  inventory_provider: "homenet";
   imported_at: string;
 }
 
@@ -325,6 +326,7 @@ export function mapDealerSendRow(
     status,
     source_raw: raw,
     import_source: options.importSource ?? "homenet_dealer_send",
+    inventory_provider: "homenet",
     imported_at: new Date().toISOString(),
   };
 }

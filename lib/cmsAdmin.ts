@@ -11,6 +11,11 @@ import {
   canonicalSectionToDbPayload,
 } from "./cmsSectionToDb";
 import { parsePageSectionFromDb, PAGE_SECTION_SELECT } from "./cmsSectionFromDb";
+import { CMS_DEMO_SLUG, CMS_DEMO_TITLE } from "./cmsDemoConstants";
+import {
+  CMS_DEMO_META_DESCRIPTION,
+  CMS_DEMO_SECTION_SEEDS,
+} from "./cmsDemoPageSeeds";
 import { seedDedicatedPageContentIfEmpty } from "./dedicatedPageContent";
 import {
   DEDICATED_SITE_PAGES,
@@ -165,9 +170,47 @@ export async function ensureDedicatedSitePages(): Promise<void> {
   }
 }
 
+/** CMS section workbench — always draft, never listed under Live. */
+export async function ensureCmsDemoSitePage(): Promise<SitePage> {
+  if (!isSupabaseAdminConfigured()) {
+    throw new Error("Supabase admin is not configured");
+  }
+
+  let existing = await fetchSitePageBySlugAdmin(CMS_DEMO_SLUG);
+
+  if (existing) {
+    if (existing.status === "published") {
+      existing = await updateSitePage(existing.id, { status: "draft" });
+    }
+
+    const supabase = getSupabaseAdmin();
+    const { count } = await supabase
+      .from("page_sections")
+      .select("id", { count: "exact", head: true })
+      .eq("page_id", existing.id);
+
+    if ((count ?? 0) === 0) {
+      await createPageSectionsBulk(existing.id, CMS_DEMO_SECTION_SEEDS);
+    }
+
+    return existing;
+  }
+
+  const page = await createSitePage({
+    title: CMS_DEMO_TITLE,
+    slug: CMS_DEMO_SLUG,
+    meta_description: CMS_DEMO_META_DESCRIPTION,
+    status: "draft",
+  });
+
+  await createPageSectionsBulk(page.id, CMS_DEMO_SECTION_SEEDS);
+  return page;
+}
+
 export async function listAllSitePages(): Promise<SitePage[]> {
   if (!isSupabaseAdminConfigured()) return [];
   await ensureDedicatedSitePages();
+  await ensureCmsDemoSitePage();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("site_pages")

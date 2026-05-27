@@ -14,6 +14,10 @@ import {
   startFeedImportRun,
 } from "@/lib/feedImportRunLog";
 import {
+  syncInventoryFeedSourceCounts,
+  touchInventoryFeedSourceImport,
+} from "@/lib/inventoryActiveSource";
+import {
   buildStoreLookupTables,
   isResolvedStoreMapping,
   resolveStoreForFile,
@@ -110,9 +114,13 @@ function chunk<T>(items: T[], size: number): T[][] {
   return batches;
 }
 
-/** Matches the vehicles_store_vin_unique constraint (store_id, vin). */
-function storeVinKey(storeId: string, vin: string): string {
-  return `${storeId}\0${vin}`;
+/** Matches vehicles_store_vin_provider_uidx (store_id, vin, inventory_provider). */
+function storeVinProviderKey(
+  storeId: string,
+  vin: string,
+  provider: string,
+): string {
+  return `${storeId}\0${vin}\0${provider}`;
 }
 
 function hasStoreVinKey(
@@ -158,12 +166,15 @@ async function upsertVehicleBatch(
 
   if (keyedRows.length > 0) {
     const orFilter = keyedRows
-      .map((row) => `and(store_id.eq.${row.store_id},vin.eq.${row.vin})`)
+      .map(
+        (row) =>
+          `and(store_id.eq.${row.store_id},vin.eq.${row.vin},inventory_provider.eq.homenet)`,
+      )
       .join(",");
 
     const { data: existing, error: lookupError } = await supabase
       .from("vehicles")
-      .select("store_id, vin")
+      .select("store_id, vin, inventory_provider")
       .or(orFilter);
 
     if (lookupError) {
@@ -177,15 +188,24 @@ async function upsertVehicleBatch(
     } else {
       const existingKeys = new Set(
         (existing ?? []).map((row) =>
-          storeVinKey(row.store_id as string, row.vin as string),
+          storeVinProviderKey(
+            row.store_id as string,
+            row.vin as string,
+            (row.inventory_provider as string) ?? "homenet",
+          ),
         ),
       );
 
       const toInsert = keyedRows.filter(
-        (row) => !existingKeys.has(storeVinKey(row.store_id, row.vin)),
+        (row) =>
+          !existingKeys.has(
+            storeVinProviderKey(row.store_id, row.vin, row.inventory_provider),
+          ),
       );
       const toUpdate = keyedRows.filter((row) =>
-        existingKeys.has(storeVinKey(row.store_id, row.vin)),
+        existingKeys.has(
+          storeVinProviderKey(row.store_id, row.vin, row.inventory_provider),
+        ),
       );
 
       if (toInsert.length > 0) {
@@ -214,9 +234,10 @@ async function upsertVehicleBatch(
             toUpdate.map((row) => ({
               store_id: row.store_id,
               vin: row.vin,
+              inventory_provider: row.inventory_provider,
               ...toMergeUpdate(row),
             })),
-            { onConflict: "store_id,vin" },
+            { onConflict: "store_id,vin,inventory_provider" },
           )
           .select("id");
 
@@ -417,6 +438,27 @@ export async function runHomenetMultiFileInventoryImport(
 
     const summary = aggregateFileSummaries(fileSummaries);
     await completeFeedImportRun(supabase, runId, summary);
+
+    const storeIds = new Set(
+      fileSummaries
+        .map((f) => f.storeId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    for (const storeId of Array.from(storeIds)) {
+      const { count } = await supabase
+        .from("vehicles")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .eq("status", "active")
+        .eq("inventory_provider", "homenet");
+      await touchInventoryFeedSourceImport(
+        storeId,
+        "homenet",
+        count ?? 0,
+      );
+    }
+    await syncInventoryFeedSourceCounts();
+
     return summary;
   } catch (error: unknown) {
     const message =

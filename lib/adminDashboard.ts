@@ -1,3 +1,4 @@
+import { getActiveInventoryProviderFilterSpec } from "@/lib/inventoryActiveSource";
 import { isAdminProtectionEnabled } from "@/lib/adminAuthConfig";
 import { listAllSitePages } from "@/lib/cmsAdmin";
 import { listFeedImportRuns, type FeedImportRunRow } from "@/lib/feedImportRunsAdmin";
@@ -111,6 +112,28 @@ function evaluateFeedStatus(
   };
 }
 
+async function countPublicActiveInventory(): Promise<number> {
+  const supabase = getSupabaseAdmin();
+  const spec = await getActiveInventoryProviderFilterSpec();
+  let builder = supabase
+    .from("vehicles")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  if (spec.kind === "provider") {
+    builder = builder.eq("inventory_provider", spec.provider);
+  } else {
+    builder = builder.or(spec.orFilter);
+  }
+
+  const { count, error } = await builder;
+  if (error) {
+    console.warn(`countPublicActiveInventory: ${error.message}`);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function getAdminWorkspaceSnapshot(): Promise<AdminWorkspaceSnapshot> {
   const configured = isSupabaseAdminConfigured();
   const items: WorkspaceStatusItem[] = [];
@@ -122,21 +145,17 @@ export async function getAdminWorkspaceSnapshot(): Promise<AdminWorkspaceSnapsho
 
   if (configured) {
     try {
-      const supabase = getSupabaseAdmin();
-      const [runs, mappings, pages, vehicleResult] = await Promise.all([
+      const [runs, mappings, pages, activeVehicleCount] = await Promise.all([
         listFeedImportRuns(1).catch(() => [] as FeedImportRunRow[]),
         listFeedFileMappingsAdmin().catch(() => []),
         listAllSitePages().catch(() => []),
-        supabase
-          .from("vehicles")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "active"),
+        countPublicActiveInventory().catch(() => 0),
       ]);
 
       latestRun = runs[0] ?? null;
       activeMappings = mappings.filter((m) => m.is_active).length;
       publishedPages = pages.filter((p) => p.status === "published").length;
-      vehicleCount = vehicleResult.count ?? 0;
+      vehicleCount = activeVehicleCount;
     } catch {
       /* individual checks fall through to red states */
     }

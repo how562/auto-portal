@@ -33,11 +33,22 @@ export async function FeedsScreen() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Feed Imports</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          HomeNet SFTP import history from{" "}
+          Import run history. HomeNet:{" "}
           <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
             /api/import-homenet
           </code>
-          . Read-only — vehicle data is not edited here.
+          . vAuto intake (inspect only):{" "}
+          <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
+            /api/import-vauto
+          </code>
+          . Choose which provider is live under{" "}
+          <a
+            href="/admin/inventory-sources"
+            className="font-medium text-[var(--ink)] underline-offset-2 hover:underline"
+          >
+            Inventory sources
+          </a>
+          .
         </p>
       </div>
 

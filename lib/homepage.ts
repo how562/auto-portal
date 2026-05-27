@@ -1,3 +1,4 @@
+import { getActiveInventoryProvider } from "./inventoryActiveSource";
 import { getSupabase } from "./supabase";
 import type {
   Collection,
@@ -70,12 +71,14 @@ async function fetchCollectionRules(
 
 async function fetchVehiclesForStore(storeId: string): Promise<Vehicle[]> {
   const supabase = getSupabase();
+  const activeProvider = await getActiveInventoryProvider(storeId);
 
   const { data, error } = await supabase
     .from("vehicles")
     .select(VEHICLE_SELECT)
     .eq("store_id", storeId)
     .eq("status", "active")
+    .eq("inventory_provider", activeProvider)
     .limit(VEHICLE_LIMIT);
 
   if (error) {

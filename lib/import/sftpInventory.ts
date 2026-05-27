@@ -32,33 +32,53 @@ export interface SftpEnvDebug {
   sftpPath: string;
 }
 
-export function getSftpEnvDebug(): SftpEnvDebug {
-  const password = process.env.SFTP_PASSWORD?.trim() ?? "";
-  const port = Number(process.env.SFTP_PORT || 22);
+export type SftpEnvPrefix = "" | "VAUTO_";
+
+function envKey(prefix: SftpEnvPrefix, name: string): string {
+  return `${prefix}${name}`;
+}
+
+export function getSftpEnvDebug(prefix: SftpEnvPrefix = ""): SftpEnvDebug {
+  const password = process.env[envKey(prefix, "SFTP_PASSWORD")]?.trim() ?? "";
+  const port = Number(process.env[envKey(prefix, "SFTP_PORT")] || 22);
   return {
-    sftpHost: process.env.SFTP_HOST?.trim() ?? "",
+    sftpHost: process.env[envKey(prefix, "SFTP_HOST")]?.trim() ?? "",
     sftpPort: Number.isFinite(port) ? port : 22,
-    sftpUser: process.env.SFTP_USER?.trim() ?? "",
+    sftpUser: process.env[envKey(prefix, "SFTP_USER")]?.trim() ?? "",
     hasPassword: password.length > 0,
     passwordLength: password.length,
-    sftpPath: process.env.SFTP_PATH?.trim() || "/",
+    sftpPath: process.env[envKey(prefix, "SFTP_PATH")]?.trim() || "/",
   };
 }
 
+/** HomeNet DealerSend SFTP (`SFTP_*` env vars). */
 export function readSftpConfigFromEnv(): SftpConfig {
-  const host = process.env.SFTP_HOST?.trim();
-  const username = process.env.SFTP_USER?.trim();
-  const password = process.env.SFTP_PASSWORD?.trim();
-  const remotePath = process.env.SFTP_PATH?.trim() || "/";
-  const port = Number(process.env.SFTP_PORT || 22);
+  return readSftpConfigFromEnvWithPrefix("");
+}
+
+/** Dedicated vAuto intake server (`VAUTO_SFTP_*` env vars). */
+export function readVautoSftpConfigFromEnv(): SftpConfig {
+  return readSftpConfigFromEnvWithPrefix("VAUTO_");
+}
+
+export function readSftpConfigFromEnvWithPrefix(
+  prefix: SftpEnvPrefix,
+): SftpConfig {
+  const label = prefix === "VAUTO_" ? "VAUTO_SFTP" : "SFTP";
+  const host = process.env[envKey(prefix, "SFTP_HOST")]?.trim();
+  const username = process.env[envKey(prefix, "SFTP_USER")]?.trim();
+  const password = process.env[envKey(prefix, "SFTP_PASSWORD")]?.trim();
+  const remotePath =
+    process.env[envKey(prefix, "SFTP_PATH")]?.trim() || "/";
+  const port = Number(process.env[envKey(prefix, "SFTP_PORT")] || 22);
 
   if (!host || !username || !password) {
     throw new Error(
-      "Missing SFTP_HOST, SFTP_USER, or SFTP_PASSWORD environment variables",
+      `Missing ${label}_HOST, ${label}_USER, or ${label}_PASSWORD environment variables`,
     );
   }
   if (!Number.isFinite(port)) {
-    throw new Error("SFTP_PORT must be a valid number");
+    throw new Error(`${label}_PORT must be a valid number`);
   }
 
   return { host, port, username, password, remotePath };
@@ -101,9 +121,35 @@ function createSftpAuthHandler(
   };
 }
 
-function isInventoryFileName(name: string): boolean {
+export function isInventoryFileName(name: string): boolean {
   const lower = name.toLowerCase();
-  return lower.endsWith(".csv") || lower.endsWith(".txt");
+  return (
+    lower.endsWith(".csv") ||
+    lower.endsWith(".txt") ||
+    lower.endsWith(".xml") ||
+    lower.endsWith(".json")
+  );
+}
+
+export function detectFeedFileFormat(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".csv")) return "csv";
+  if (lower.endsWith(".txt")) return "txt";
+  if (lower.endsWith(".xml")) return "xml";
+  if (lower.endsWith(".json")) return "json";
+  return "unknown";
+}
+
+async function connectSftpClient(config: SftpConfig): Promise<SftpClient> {
+  const client = new SftpClient();
+  await client.connect({
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    password: config.password,
+    authHandler: createSftpAuthHandler(config.username, config.password),
+  });
+  return client;
 }
 
 function selectInventoryFile<T extends { name: string; modifyTime?: number }>(
@@ -167,20 +213,9 @@ async function downloadInventoryFile(
 export async function downloadAllInventoryFiles(
   config: SftpConfig,
 ): Promise<DownloadedInventoryFile[]> {
-  const client = new SftpClient();
+  const client = await connectSftpClient(config);
 
   try {
-    const password = process.env.SFTP_PASSWORD!.trim();
-    const username = process.env.SFTP_USER!.trim();
-
-    await client.connect({
-      host: process.env.SFTP_HOST!.trim(),
-      port: Number(process.env.SFTP_PORT || 22),
-      username,
-      password,
-      authHandler: createSftpAuthHandler(username, password),
-    });
-
     const listing = await client.list(config.remotePath);
     const inventoryFiles = sortInventoryFiles(
       listing.filter(
@@ -209,20 +244,9 @@ export async function downloadAllInventoryFiles(
 export async function downloadNewestTxtFile(
   config: SftpConfig,
 ): Promise<DownloadedInventoryFile> {
-  const client = new SftpClient();
+  const client = await connectSftpClient(config);
 
   try {
-    const password = process.env.SFTP_PASSWORD!.trim();
-    const username = process.env.SFTP_USER!.trim();
-
-    await client.connect({
-      host: process.env.SFTP_HOST!.trim(),
-      port: Number(process.env.SFTP_PORT || 22),
-      username,
-      password,
-      authHandler: createSftpAuthHandler(username, password),
-    });
-
     const listing = await client.list(config.remotePath);
     const inventoryFiles = listing.filter(
       (entry) => entry.type === "-" && isInventoryFileName(entry.name),
