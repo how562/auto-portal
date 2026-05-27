@@ -50,7 +50,7 @@ export function FooterSocialLinks({ compact = false }: FooterSocialLinksProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={link.label}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1877f2] text-white transition-opacity hover:opacity-90"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--ink)] transition-colors hover:text-[var(--muted)]"
           >
             {ICONS[link.id]}
           </a>

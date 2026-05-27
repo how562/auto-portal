@@ -1,6 +1,5 @@
 import {
   SECTION_PRESET_CATALOG,
-  getPickerVisiblePresets,
   type SectionPresetCatalogEntry,
 } from "./sectionPresetCatalog";
 

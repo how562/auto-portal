@@ -50,8 +50,8 @@ export function PortalFooter() {
         {hasMainNav ? (
           <section className="border-b border-[var(--line)]">
             <details className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-semibold text-[var(--ink)] transition-colors hover:text-[var(--muted)] [&::-webkit-details-marker]:hidden">
-                <span>{t("footer.navToggle")}</span>
+              <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-semibold text-[var(--ink)] transition-colors hover:text-[var(--muted)] [&::-webkit-details-marker]:hidden">
+                <span className="text-left">{t("footer.navToggle")}</span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-[var(--muted)] transition-transform duration-200 group-open:rotate-180" />
               </summary>
               <div className="grid grid-cols-2 gap-x-8 gap-y-10 pb-8 sm:grid-cols-3 lg:grid-cols-4">
@@ -82,11 +82,11 @@ export function PortalFooter() {
           ) : null}
 
           <div
-            className={`homepage-footer-bar flex flex-wrap items-end justify-between gap-x-6 gap-y-3 ${
+            className={`homepage-footer-bar flex flex-wrap items-center justify-between gap-x-6 gap-y-3 ${
               hasLegal ? "mt-6" : ""
             }`}
           >
-            <div className="homepage-footer-copyright flex min-h-9 shrink-0 items-end">
+            <div className="homepage-footer-copyright flex shrink-0 items-center">
               <p
                 className="text-xs leading-none text-[var(--muted)] sm:text-[13px]"
                 onDoubleClick={() => router.push("/admin/login")}
@@ -95,7 +95,7 @@ export function PortalFooter() {
               </p>
             </div>
 
-            <div className="homepage-footer-social ml-auto flex min-h-9 flex-wrap items-end justify-end gap-x-3 gap-y-2">
+            <div className="homepage-footer-social ml-auto flex shrink-0 items-center justify-end gap-x-3 gap-y-2">
               <p className="shrink-0 text-xs font-semibold leading-none tracking-tight text-[var(--ink)] sm:text-[13px]">
                 {t("footer.connectWithUs")}
               </p>
@@ -107,6 +107,8 @@ export function PortalFooter() {
     </footer>
   );
 }
+
+export default PortalFooter;
 
 function FooterLegalLink({
   item,

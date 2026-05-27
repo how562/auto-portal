@@ -1,0 +1,410 @@
+/**
+ * Executive Team page — leadership roster layout.
+ */
+
+.executive-team-page {
+  --et-gold: var(--gold, #b8956b);
+  --et-ink: var(--ink, #1a1a1a);
+  --et-dark: #1e1e1e;
+  --et-muted: var(--muted, #6b6560);
+  --et-gray: #f3f3f3;
+  background: #fff;
+}
+
+/* —— Hero —— */
+.executive-team-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  height: clamp(280px, 38vw, 420px);
+  overflow: hidden;
+}
+
+.executive-team-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.executive-team-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.executive-team-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+.executive-team-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.executive-team-hero__title {
+  margin: 0;
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+}
+
+.executive-team-hero__divider {
+  display: block;
+  width: 3.5rem;
+  height: 3px;
+  margin: 1.25rem auto 1.5rem;
+  background: var(--et-gold);
+}
+
+.executive-team-hero__tagline {
+  margin: 0;
+  font-size: clamp(0.9375rem, 2vw, 1.125rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* —— Intro —— */
+.executive-team-intro {
+  padding: clamp(2.25rem, 4.5vw, 3rem) 0 clamp(2rem, 4vw, 2.5rem);
+  background: #fff;
+}
+
+.executive-team-intro__inner {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.executive-team-intro__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--et-gold);
+}
+
+.executive-team-intro__eyebrow-line {
+  flex: 1;
+  max-width: 3rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--et-gold) 55%, transparent);
+}
+
+.executive-team-intro__headline {
+  margin: 0 0 1rem;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--et-ink);
+}
+
+.executive-team-intro__body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--et-muted);
+}
+
+/* —— Executive grid —— */
+.executive-team-grid-section {
+  padding: 0 0 clamp(2.5rem, 5vw, 3.5rem);
+  background: var(--et-gray);
+}
+
+.executive-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+  gap: clamp(1.25rem, 2.5vw, 1.75rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .executive-team-grid {
+    grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .executive-team-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* —— Profile card —— */
+.executive-profile-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--et-ink) 8%, transparent);
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+}
+
+.executive-profile-card__media {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #e8e6e3;
+}
+
+.executive-profile-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.executive-profile-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 1rem 1.5rem;
+  text-align: center;
+}
+
+.executive-profile-card__title {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--et-muted);
+}
+
+.executive-profile-card__name {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--et-ink);
+}
+
+.executive-profile-card__divider {
+  display: block;
+  width: 55%;
+  max-width: 7rem;
+  height: 1px;
+  margin: 1rem auto 1rem;
+  background: color-mix(in srgb, var(--et-ink) 12%, transparent);
+}
+
+.executive-profile-card__social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.executive-profile-card__social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--et-ink) 14%, transparent);
+  background: #fff;
+  color: var(--et-ink);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.executive-profile-card__social-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.executive-profile-card__social-link:hover {
+  border-color: var(--et-ink);
+  background: var(--et-ink);
+  color: #fff;
+}
+
+/* —— Values band —— */
+.executive-team-values {
+  background: var(--et-dark);
+  border-top: 1px solid color-mix(in srgb, var(--et-gold) 45%, transparent);
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+}
+
+.executive-team-values__inner {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .executive-team-values__inner {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 3rem;
+    align-items: center;
+  }
+}
+
+.executive-team-values__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--et-gold);
+}
+
+.executive-team-values__headline {
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.executive-team-values__body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.executive-team-values__grid {
+  display: grid;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .executive-team-values__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .executive-team-values__item--col-divider {
+    border-left: 1px solid color-mix(in srgb, var(--et-gold) 40%, transparent);
+    padding-left: 1.25rem;
+    margin-left: 0;
+  }
+}
+
+.executive-team-values__item {
+  text-align: center;
+  color: #fff;
+}
+
+.executive-team-values__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 1rem;
+  color: var(--et-gold);
+}
+
+.executive-team-values__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.executive-team-values__item-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--et-gold);
+}
+
+.executive-team-values__item-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* —— CTA —— */
+.executive-team-cta {
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(3rem, 6vw, 4rem);
+  background: #fff;
+}
+
+.executive-team-cta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.executive-team-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.executive-team-cta__btn--primary {
+  border: 1px solid var(--et-dark);
+  background: var(--et-dark);
+  color: var(--et-gold);
+}
+
+.executive-team-cta__btn--primary:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.executive-team-cta__btn--secondary {
+  border: 1px solid var(--et-gold);
+  background: transparent;
+  color: var(--et-ink);
+}
+
+.executive-team-cta__btn--secondary:hover {
+  background: color-mix(in srgb, var(--et-gold) 12%, transparent);
+  border-color: var(--et-gold);
+}

@@ -1,166 +1,111 @@
 "use client";
 
-
-
 import "@/app/homepage-visual.css";
-
-
-
+import dynamic from "next/dynamic";
+import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
-
-import { renderHomepageSection } from "@/components/home/renderHomepageSection";
-
 import { DiscoveryProvider } from "@/components/portal/DiscoveryContext";
-
-import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
-
 import { MobileStickyCTA } from "@/components/portal/MobileStickyCTA";
-
 import {
-
-  groupHomepageSectionsByZone,
-
-  getVisibleHomepageSectionOrder,
-
   type HomepageLayoutConfig,
-
 } from "@/lib/homepageLayout";
-
 import type { FacebookFeedResult } from "@/lib/facebookFeedShared";
-
 import type { FacebookPageConfig } from "@/lib/facebookPageConfig";
-
 import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
-
 import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes";
 import type { SocialFeedCmsContent } from "@/lib/socialFeedTypes";
-
 import type { Vehicle } from "@/lib/types";
 
-
-
 interface PortalExperienceProps {
-
   vehicles: Vehicle[];
-
   communityHero: CommunityHeroContent;
-
   commitmentCms: CavenderCommitmentCmsPayload;
-
   socialFeedCms: SocialFeedCmsContent;
-
   facebookPage: FacebookPageConfig;
-
   facebookFeed: FacebookFeedResult | null;
-
   homepageLayout: HomepageLayoutConfig;
-
 }
 
-
-
-function PortalContent({
-
-  vehicles,
-
-  communityHero,
-
-  commitmentCms,
-
-  socialFeedCms,
-
-  facebookPage,
-
-  facebookFeed,
-
-  homepageLayout,
-
-}: PortalExperienceProps) {
-
-  const visibleOrder = getVisibleHomepageSectionOrder(homepageLayout);
-
-  const blocks = groupHomepageSectionsByZone(visibleOrder);
-
-  const ctx = {
-
-    vehicles,
-
-    communityHero,
-
-    commitmentCms,
-
-    socialFeedCms,
-
-    facebookPage,
-
-    facebookFeed,
-
-  };
-
-
-
-  return (
-
-    <>
-
-      <div className="homepage-surface">
-
-        <PortalHeader />
-
-        <div className="homepage-header-spacer" aria-hidden />
-
-        {blocks.map((block, blockIndex) => {
-
-          const nodes = block.sectionIds.map((id) => renderHomepageSection(id, ctx));
-
-          if (block.zone === "lower") {
-
-            return (
-
-              <div key={`lower-${blockIndex}`} className="homepage-lower-continuum">
-
-                {nodes}
-
-              </div>
-
-            );
-
-          }
-
-          return <div key={`main-${blockIndex}`}>{nodes}</div>;
-
-        })}
-
-      </div>
-
-      <MobileStickyCTA />
-
-      <div className="h-20 md:hidden" aria-hidden />
-
-    </>
-
-  );
-
-}
-
-
+const EditorialHero = dynamic(
+  () => import("@/components/home/EditorialHero").then((m) => m.EditorialHero),
+  { ssr: false },
+);
+const DiscoveryCategoriesSection = dynamic(
+  () =>
+    import("@/components/home/DiscoveryCategoriesSection").then(
+      (m) => m.DiscoveryCategoriesSection,
+    ),
+  { ssr: false },
+);
+const DrivenOffersSection = dynamic(
+  () => import("@/components/home/DrivenOffersSection").then((m) => m.DrivenOffersSection),
+  { ssr: false },
+);
+const GuidedDiscoverySection = dynamic(
+  () => import("@/components/portal/GuidedDiscoverySection").then((m) => m.GuidedDiscoverySection),
+  { ssr: false },
+);
+const CavenderCommitmentSection = dynamic(
+  () =>
+    import("@/components/home/CavenderCommitmentSection").then(
+      (m) => m.CavenderCommitmentSection,
+    ),
+  { ssr: false },
+);
+const SocialFeedSection = dynamic(
+  () => import("@/components/home/SocialFeedSection").then((m) => m.SocialFeedSection),
+  { ssr: false },
+);
+const HomepageBottomScene = dynamic(
+  () => import("@/components/home/HomepageBottomScene").then((m) => m.HomepageBottomScene),
+  { ssr: false },
+);
+const ExploreOurBrandsSection = dynamic(
+  () =>
+    import("@/components/home/ExploreOurBrandsSection").then(
+      (m) => m.ExploreOurBrandsSection,
+    ),
+  { ssr: false },
+);
 
 export function PortalExperience(props: PortalExperienceProps) {
+  const hidden = new Set(props.homepageLayout.hiddenSections);
 
   return (
-
-    <LeadCaptureProvider>
-
-      <DiscoveryProvider>
-
-        <PortalContent {...props} />
-
-      </DiscoveryProvider>
-
-    </LeadCaptureProvider>
-
+    <DiscoveryProvider>
+      <div className="homepage-surface">
+        <PortalHeader />
+        <div className="homepage-header-spacer" aria-hidden />
+        {!hidden.has("editorial_hero") ? (
+          <EditorialHero content={props.communityHero} />
+        ) : null}
+        {!hidden.has("discovery_categories") ? (
+          <DiscoveryCategoriesSection vehicles={props.vehicles} />
+        ) : null}
+        {!hidden.has("driven_offers") ? <DrivenOffersSection /> : null}
+        <div className="homepage-lower-continuum">
+          {!hidden.has("guided_discovery") ? (
+            <GuidedDiscoverySection vehicles={props.vehicles} />
+          ) : null}
+          {!hidden.has("cavender_commitment") ? (
+            <CavenderCommitmentSection cms={props.commitmentCms} />
+          ) : null}
+          {!hidden.has("social_feed") ? (
+            <SocialFeedSection
+              page={props.facebookPage}
+              graphFeed={props.facebookFeed}
+              cms={props.socialFeedCms}
+            />
+          ) : null}
+          {!hidden.has("homepage_bottom_scene") ? <HomepageBottomScene /> : null}
+          {!hidden.has("explore_brands") ? <ExploreOurBrandsSection /> : null}
+        </div>
+        <PortalFooter />
+      </div>
+      <MobileStickyCTA />
+      <div className="h-20 md:hidden" aria-hidden />
+    </DiscoveryProvider>
   );
-
 }
 
-
+export default PortalExperience;

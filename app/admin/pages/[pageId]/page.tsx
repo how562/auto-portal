@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { DedicatedPageContentEditor } from "@/components/admin/dedicated-page/DedicatedPageContentEditor";
 import { PageBuilder } from "@/components/admin/PageBuilder";
 import {
   fetchAllPageSectionsForAdmin,
   fetchSitePageById,
 } from "@/lib/cmsAdmin";
 import { listCollectionsAdmin } from "@/lib/collectionsAdmin";
+import { isDedicatedPageSlug } from "@/lib/dedicatedPageContent";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,10 @@ export default async function AdminPageBuilderPage({ params }: PageProps) {
 
   const page = await fetchSitePageById(params.pageId);
   if (!page) notFound();
+
+  if (isDedicatedPageSlug(page.slug)) {
+    return <DedicatedPageContentEditor pageId={params.pageId} page={page} />;
+  }
 
   const [sections, collections] = await Promise.all([
     fetchAllPageSectionsForAdmin(params.pageId),

@@ -1,5 +1,8 @@
 import { LOCATIONS_PAGE_CONTENT } from "@/lib/locationsPageContent";
-import type { DealershipLocation } from "@/lib/locationsPageTypes";
+import type {
+  DealershipLocation,
+  LocationsPageContent,
+} from "@/lib/locationsPageTypes";
 import { LocationDealershipCard } from "@/components/locations/LocationDealershipCard";
 import { LocationsFeatureIcon } from "@/components/locations/LocationsFeatureIcons";
 import { LocationsMapPanel } from "@/components/locations/LocationsMapPanel";
@@ -8,10 +11,13 @@ import "@/app/locations-page.css";
 
 interface LocationsPageViewProps {
   locations: DealershipLocation[];
+  content?: LocationsPageContent;
 }
 
-export function LocationsPageView({ locations }: LocationsPageViewProps) {
-  const content = LOCATIONS_PAGE_CONTENT;
+export function LocationsPageView({
+  locations,
+  content = LOCATIONS_PAGE_CONTENT,
+}: LocationsPageViewProps) {
   const count = locations.length;
   const tagline =
     count > 0

@@ -11,6 +11,22 @@ import type { PortalNavigation } from "@/lib/navigationTypes";
 import type { PortalTextMap } from "@/lib/portalTextTypes";
 import type { SmartMatchRulesCatalog } from "@/lib/smartMatchRulesTypes";
 
+const APP_PROVIDER_IMPORTS = {
+  CtaProvider,
+  LanguageProvider,
+  NavigationProvider,
+  SmartMatchRulesProvider,
+  TextSettingsProvider,
+} as const;
+
+for (const [name, provider] of Object.entries(APP_PROVIDER_IMPORTS)) {
+  if (!provider) {
+    throw new Error(
+      `AppProviders import is undefined: ${name}. Check default/named export mismatch.`,
+    );
+  }
+}
+
 export function AppProviders({
   navigation,
   ctas,

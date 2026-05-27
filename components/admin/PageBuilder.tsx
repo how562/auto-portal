@@ -11,6 +11,7 @@ import { CmsSectionDebugPanel } from "@/components/admin/CmsSectionDebugPanel";
 import type { CMSSection } from "@/lib/cmsSectionModel";
 import { listRegistryEntriesForBuilder } from "@/lib/cmsSectionRegistry";
 import type { CMSSectionType, SitePage } from "@/lib/cmsTypes";
+import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface PageBuilderProps {
@@ -41,6 +42,7 @@ export function PageBuilder({
   const [addingSection, setAddingSection] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pageMissing, setPageMissing] = useState(false);
+  const dedicatedPage = getDedicatedSitePage(page.slug);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,7 +256,7 @@ export function PageBuilder({
             </Link>
             {page.status === "published" ? (
               <Link
-                href={`/${page.slug}`}
+                href={dedicatedPage?.livePath ?? `/${page.slug}`}
                 target="_blank"
                 rel="noreferrer"
                 className={btnSecondaryMd}
@@ -281,6 +283,36 @@ export function PageBuilder({
         </div>
       </div>
 
+      {dedicatedPage ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+          <p className="font-semibold">Dedicated layout page</p>
+          <p className="mt-1">
+            Live at{" "}
+            <a
+              href={dedicatedPage.livePath}
+              className="font-medium underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {dedicatedPage.livePath}
+            </a>
+            . Page body copy is edited in{" "}
+            <code className="rounded bg-white/80 px-1 py-0.5 text-xs">
+              {dedicatedPage.contentSource}
+            </code>
+            . You can update SEO title and meta description below, add CMS
+            sections for notes or future blocks, and use Preview — the public
+            layout always uses the dedicated template.
+          </p>
+          {dedicatedPage.keepPublished ? (
+            <p className="mt-2 text-xs text-amber-900/90">
+              This is a system page and stays published so navigation and live
+              URLs keep working.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
           Page settings
@@ -299,7 +331,8 @@ export function PageBuilder({
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+              readOnly={Boolean(dedicatedPage)}
+              className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm read-only:bg-[var(--cream)] read-only:text-[var(--muted)]"
             />
           </label>
           <label className="block space-y-1 sm:col-span-2">
@@ -332,7 +365,11 @@ export function PageBuilder({
           >
             {savingPage ? "Saving…" : "Save settings"}
           </button>
-          {page.status === "published" ? (
+          {dedicatedPage?.keepPublished ? (
+            <span className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800">
+              Live (system page)
+            </span>
+          ) : page.status === "published" ? (
             <button
               type="button"
               disabled={publishing}
@@ -351,9 +388,11 @@ export function PageBuilder({
               {publishing ? "Publishing…" : "Publish"}
             </button>
           )}
-          <button type="button" onClick={deletePage} className={`${btnSecondaryMd} text-red-700`}>
-            Delete page
-          </button>
+          {dedicatedPage ? null : (
+            <button type="button" onClick={deletePage} className={`${btnSecondaryMd} text-red-700`}>
+              Delete page
+            </button>
+          )}
         </div>
       </section>
 

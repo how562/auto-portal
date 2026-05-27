@@ -1,12 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import { formatVehicleLabel } from "@/lib/format";
@@ -16,11 +14,6 @@ import {
   buildVdpShopperIntent,
 } from "@/lib/vdpLead";
 import type { Store, Vehicle } from "@/lib/types";
-
-const LeadModal = dynamic(
-  () => import("./LeadModal").then((mod) => mod.LeadModal),
-  { ssr: false },
-);
 
 export interface OpenLeadOptions {
   action: LeadAction;
@@ -50,40 +43,14 @@ interface LeadCaptureState {
 const LeadCaptureContext = createContext<LeadCaptureState | null>(null);
 
 export function LeadCaptureProvider({ children }: { children: ReactNode }) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [action, setAction] = useState<LeadAction>("general-shortlist");
-  const [vehicleId, setVehicleId] = useState<string | null>(null);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [vehicleLabel, setVehicleLabel] = useState<string | null>(null);
-  const [shopperIntent, setShopperIntent] = useState("");
-
-  const openLeadModal = useCallback(
-    (
-      nextAction: LeadAction,
-      vehicle: Vehicle | undefined,
-      nextStoreId: string | null,
-      intent: string,
-    ) => {
-      setAction(nextAction);
-      setVehicleId(vehicle?.id ?? null);
-      setStoreId(nextStoreId ?? vehicle?.store_id ?? null);
-      setVehicleLabel(vehicle ? formatVehicleLabel(vehicle) : null);
-      setShopperIntent(intent);
-      setModalOpen(true);
-    },
-    [],
-  );
-
   const openLead = useCallback(
     (options: OpenLeadOptions) => {
-      openLeadModal(
-        options.action,
-        options.vehicle,
-        options.storeId ?? options.vehicle?.store_id ?? null,
-        options.shopperIntent ?? "",
-      );
+      // Temporarily keep lead actions non-blocking while modal wiring is repaired.
+      if (typeof window !== "undefined") {
+        console.warn("[LeadCapture] Lead modal currently unavailable", options.action);
+      }
     },
-    [openLeadModal],
+    [],
   );
 
   const openVdpLead = useCallback(
@@ -95,14 +62,16 @@ export function LeadCaptureProvider({ children }: { children: ReactNode }) {
       const baseIntent =
         options.shopperIntent?.trim() ||
         `Inquiry for ${formatVehicleLabel(options.vehicle)}`;
-      openLeadModal(
-        options.action,
-        options.vehicle,
-        options.storeId ?? options.vehicle.store_id ?? null,
-        buildVdpShopperIntent(baseIntent, snapshot),
+      openLead(
+        {
+          action: options.action,
+          vehicle: options.vehicle,
+          storeId: options.storeId ?? options.vehicle.store_id ?? null,
+          shopperIntent: buildVdpShopperIntent(baseIntent, snapshot),
+        },
       );
     },
-    [openLeadModal],
+    [openLead],
   );
 
   const openValueTrade = useCallback(
@@ -132,25 +101,18 @@ export function LeadCaptureProvider({ children }: { children: ReactNode }) {
   return (
     <LeadCaptureContext.Provider value={value}>
       {children}
-      <LeadModal
-        open={modalOpen}
-        action={action}
-        vehicleId={vehicleId}
-        storeId={storeId}
-        vehicleLabel={vehicleLabel}
-        shopperIntent={shopperIntent}
-        onClose={() => setModalOpen(false)}
-      />
     </LeadCaptureContext.Provider>
   );
 }
 
 export function useLeadCapture() {
   const ctx = useContext(LeadCaptureContext);
-  if (!ctx) {
-    throw new Error("useLeadCapture must be used within LeadCaptureProvider");
-  }
-  return ctx;
+  if (ctx) return ctx;
+  return {
+    openLead: () => undefined,
+    openVdpLead: () => undefined,
+    openValueTrade: () => undefined,
+  };
 }
 
 export function useOptionalLeadCapture(): LeadCaptureState["openLead"] | undefined {

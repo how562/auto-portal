@@ -1,5 +1,5 @@
 import "@/app/homepage-visual.css";
-import { PortalExperience } from "@/components/portal/PortalExperience";
+import PortalExperience from "@/components/portal/PortalExperience";
 
 import { getCommunityHeroContent } from "@/lib/communityHero";
 

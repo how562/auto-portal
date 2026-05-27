@@ -13,8 +13,9 @@ export default async function AdminPagesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Site pages</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Create pages from templates or blueprints, duplicate existing pages, preview
-          drafts, and publish when ready.
+          Live pages are published and ready for navigation links. Drafts stay hidden
+          until you publish. Create from templates or blueprints, preview, and publish
+          when ready.
         </p>
       </div>
 

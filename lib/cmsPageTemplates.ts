@@ -9,6 +9,9 @@ export const PAGE_TEMPLATE_IDS = [
   "campaign",
   "schedule_service",
   "cavender_commitment",
+  "executive_team",
+  "locations_page",
+  "value_your_trade",
 ] as const;
 
 export type PageTemplateId = (typeof PAGE_TEMPLATE_IDS)[number];
@@ -309,6 +312,54 @@ export const PAGE_TEMPLATES: PageTemplateDefinition[] = [
         sort_order: 40,
         headline: "Choose a location",
         subheadline: "Select the store that is most convenient for you.",
+      },
+    ],
+  },
+  {
+    id: "locations_page",
+    label: "Locations Page",
+    description:
+      "Dealership finder with map and location cards — provisioned at /locations.",
+    suggestedSlug: "locations",
+    sections: [
+      {
+        section_type: "text_block",
+        sort_order: 10,
+        headline: "Locations",
+        body: "The /locations route uses the dedicated Locations layout. Edit lib/locationsPageContent.ts for copy; dealership data comes from stores.",
+        settings: { alignment: "left" },
+      },
+    ],
+  },
+  {
+    id: "value_your_trade",
+    label: "Value Your Trade Page",
+    description:
+      "Hero plus partner trade-in iframe — provisioned at /value-your-trade.",
+    suggestedSlug: "value-your-trade",
+    sections: [
+      {
+        section_type: "text_block",
+        sort_order: 10,
+        headline: "Value Your Trade",
+        body: "The /value-your-trade route uses the dedicated layout with a partner iframe. Edit hero and embed settings in the dedicated content editor.",
+        settings: { alignment: "left" },
+      },
+    ],
+  },
+  {
+    id: "executive_team",
+    label: "Executive Team Page",
+    description:
+      "Leadership roster with dedicated layout — provisioned automatically at /executive-team.",
+    suggestedSlug: "executive-team",
+    sections: [
+      {
+        section_type: "text_block",
+        sort_order: 10,
+        headline: "Executive Team",
+        body: "The /executive-team route uses the dedicated Executive Team layout. Edit lib/executiveTeamPageContent.ts for hero copy, executives, values, and CTAs.",
+        settings: { alignment: "left" },
       },
     ],
   },

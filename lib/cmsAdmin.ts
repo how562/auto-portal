@@ -11,6 +11,11 @@ import {
   canonicalSectionToDbPayload,
 } from "./cmsSectionToDb";
 import { parsePageSectionFromDb, PAGE_SECTION_SELECT } from "./cmsSectionFromDb";
+import { seedDedicatedPageContentIfEmpty } from "./dedicatedPageContent";
+import {
+  DEDICATED_SITE_PAGES,
+  isDedicatedSitePageSlug,
+} from "./dedicatedSitePages";
 import { RESERVED_CMS_SLUGS, type SitePage } from "./cmsTypes";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
@@ -68,8 +73,101 @@ function normalizePageRow(row: Record<string, unknown>): SitePage | null {
   };
 }
 
+async function ensureDedicatedPageSections(
+  pageId: string,
+  definition: (typeof DEDICATED_SITE_PAGES)[number],
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { count, error } = await supabase
+    .from("page_sections")
+    .select("id", { count: "exact", head: true })
+    .eq("page_id", pageId);
+
+  if (error) {
+    console.error(
+      `[cmsAdmin] Failed to count sections for "${definition.slug}":`,
+      error.message,
+    );
+    return;
+  }
+
+  if ((count ?? 0) > 0) return;
+
+  await createPageSectionsBulk(pageId, [
+    {
+      section_type: "text_block",
+      sort_order: 10,
+      headline: `${definition.title} (dedicated layout)`,
+      body: definition.adminNote,
+      settings: { alignment: "left" },
+    },
+  ]);
+}
+
+export async function ensureDedicatedSitePages(): Promise<void> {
+  if (!isSupabaseAdminConfigured()) return;
+
+  const supabase = getSupabaseAdmin();
+
+  for (const definition of DEDICATED_SITE_PAGES) {
+    const existing = await fetchSitePageBySlugAdmin(definition.slug);
+    const status = definition.keepPublished ? "published" : existing?.status ?? "draft";
+
+    if (existing) {
+      const { error: updateError } = await supabase
+        .from("site_pages")
+        .update({
+          title: definition.title,
+          meta_description: definition.metaDescription,
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (updateError) {
+        console.error(
+          `[cmsAdmin] Failed to update dedicated page "${definition.slug}":`,
+          updateError.message,
+        );
+        continue;
+      }
+
+      await ensureDedicatedPageSections(existing.id, definition);
+      await seedDedicatedPageContentIfEmpty(existing.id, definition.slug);
+      continue;
+    }
+
+    const { data, error } = await supabase
+      .from("site_pages")
+      .insert({
+        title: definition.title,
+        slug: definition.slug,
+        status,
+        meta_description: definition.metaDescription,
+        updated_at: new Date().toISOString(),
+      })
+      .select(PAGE_SELECT)
+      .single();
+
+    if (error || !data) {
+      console.error(
+        `[cmsAdmin] Failed to provision dedicated page "${definition.slug}":`,
+        error?.message ?? "unknown",
+      );
+      continue;
+    }
+
+    const page = normalizePageRow(data as Record<string, unknown>);
+    if (!page?.id) continue;
+
+    await ensureDedicatedPageSections(page.id, definition);
+    await seedDedicatedPageContentIfEmpty(page.id, definition.slug);
+  }
+}
+
 export async function listAllSitePages(): Promise<SitePage[]> {
   if (!isSupabaseAdminConfigured()) return [];
+  await ensureDedicatedSitePages();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("site_pages")
@@ -170,6 +268,11 @@ export async function resolveUniquePageSlug(
 ): Promise<string> {
   const base = slugifyPageSlug(desired);
   if (!base) throw new Error("slug is required");
+  if (isDedicatedSitePageSlug(base)) {
+    throw new Error(
+      `Slug "${base}" is reserved for a dedicated system page. Edit it under Site pages → Live.`,
+    );
+  }
   if (RESERVED_CMS_SLUGS.has(base)) {
     throw new Error(`Slug "${base}" is reserved for app routes`);
   }
@@ -261,7 +364,7 @@ export async function updateSitePage(
   if (input.slug !== undefined) {
     const slug = slugifyPageSlug(input.slug);
     if (!slug) throw new Error("slug cannot be empty");
-    if (RESERVED_CMS_SLUGS.has(slug)) {
+    if (RESERVED_CMS_SLUGS.has(slug) && !isDedicatedSitePageSlug(slug)) {
       throw new Error(`Slug "${slug}" is reserved for app routes`);
     }
     if (await isPageSlugTaken(slug, id)) {

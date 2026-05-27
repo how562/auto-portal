@@ -9,7 +9,7 @@ import {
   type PageBuilderPresetPickerEntry,
 } from "@/lib/pageBuilderLibrary";
 import type { CMSSectionType } from "@/lib/cmsTypes";
-import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
+import { btnPrimaryMd } from "@/lib/buttonClasses";
 
 interface SectionLibraryPickerProps {
   onAdd?: (target: PageBuilderAddTarget) => void;

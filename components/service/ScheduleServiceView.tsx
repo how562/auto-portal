@@ -2,7 +2,10 @@ import {
   SCHEDULE_SERVICE_PAGE_CONTENT,
   serviceLocationImageUrl,
 } from "@/lib/serviceSchedulingContent";
-import type { ServiceLocation } from "@/lib/serviceSchedulingTypes";
+import type {
+  ScheduleServicePageContent,
+  ServiceLocation,
+} from "@/lib/serviceSchedulingTypes";
 import { ScheduleServiceFeatureIcon } from "@/components/service/ScheduleServiceFeatureIcons";
 import { ServiceLocationCard } from "@/components/service/ServiceLocationCard";
 
@@ -10,10 +13,13 @@ import "@/app/schedule-service-page.css";
 
 interface ScheduleServiceViewProps {
   locations: ServiceLocation[];
+  content?: ScheduleServicePageContent;
 }
 
-export function ScheduleServiceView({ locations }: ScheduleServiceViewProps) {
-  const content = SCHEDULE_SERVICE_PAGE_CONTENT;
+export function ScheduleServiceView({
+  locations,
+  content = SCHEDULE_SERVICE_PAGE_CONTENT,
+}: ScheduleServiceViewProps) {
   const locationCount = locations.length;
   const eyebrowLabel =
     locationCount > 0

@@ -1,33 +1,29 @@
 import type { Metadata } from "next";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
+import { ExecutiveTeamPageView } from "@/components/executive/ExecutiveTeamPageView";
 import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
-import { ScheduleServiceView } from "@/components/service/ScheduleServiceView";
 import { BRAND_NAME } from "@/lib/brand";
 import { fetchPublishedDedicatedPageContent } from "@/lib/dedicatedPageContent";
 import { dedicatedPageMetadata } from "@/lib/dedicatedPageMetadata";
-import { fetchServiceLocations } from "@/lib/serviceScheduling";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return dedicatedPageMetadata("schedule-service", {
-    title: "Schedule Service",
-    description: `Schedule service online or call the service department at any ${BRAND_NAME} dealership.`,
+  return dedicatedPageMetadata("executive-team", {
+    title: "Executive Team",
+    description: `Meet the executive leadership team at ${BRAND_NAME} — experienced leaders committed to customers, team members, and community.`,
   });
 }
 
-export default async function ScheduleServicePage() {
-  const [locations, content] = await Promise.all([
-    fetchServiceLocations(),
-    fetchPublishedDedicatedPageContent("schedule-service"),
-  ]);
+export default async function ExecutiveTeamPage() {
+  const content = await fetchPublishedDedicatedPageContent("executive-team");
 
   return (
     <LeadCaptureProvider>
       <PortalHeader />
       <main className="min-h-screen bg-white pt-[4.125rem] sm:pt-[4.625rem]">
-        <ScheduleServiceView locations={locations} content={content} />
+        <ExecutiveTeamPageView content={content} />
       </main>
       <PortalFooter />
     </LeadCaptureProvider>

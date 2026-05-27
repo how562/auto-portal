@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { CreatePageFromTemplate } from "@/components/admin/CreatePageFromTemplate";
 import { DuplicatePageDialog } from "@/components/admin/DuplicatePageDialog";
 import { slugifyBlueprintSlug } from "@/lib/cmsPageBlueprint";
 import type { SitePage } from "@/lib/cmsTypes";
+import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface SitePagesManagerProps {
@@ -14,6 +15,10 @@ interface SitePagesManagerProps {
 }
 
 type CreateMode = "template" | "blank" | null;
+
+function sortPages(pages: SitePage[]): SitePage[] {
+  return [...pages].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+}
 
 export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const router = useRouter();
@@ -25,6 +30,15 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const livePages = useMemo(
+    () => sortPages(pages.filter((p) => p.status === "published")),
+    [pages],
+  );
+  const draftPages = useMemo(
+    () => sortPages(pages.filter((p) => p.status !== "published")),
+    [pages],
+  );
 
   async function createBlankPage(e: React.FormEvent) {
     e.preventDefault();
@@ -190,82 +204,37 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
           No pages yet. Create one from a template above.
         </p>
       ) : (
-        <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
-          {pages.map((page) => (
-            <li
-              key={page.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/admin/pages/${page.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {page.title}
+        <div className="space-y-8">
+          <SitePagesSection
+            title="Live"
+            description={
+              <>
+                Published pages are public and safe to link from{" "}
+                <Link href="/admin/navigation" className="font-medium text-[var(--ink)] underline">
+                  Navigation
                 </Link>
-                <p className="text-sm text-[var(--muted)]">
-                  /{page.slug} ·{" "}
-                  <span
-                    className={
-                      page.status === "published"
-                        ? "text-emerald-700"
-                        : undefined
-                    }
-                  >
-                    {page.status}
-                  </span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/admin/pages/${page.id}/preview`}
-                  className={btnSecondaryMd}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Preview
-                </Link>
-                <button
-                  type="button"
-                  className={btnSecondaryMd}
-                  onClick={() => setDuplicatePage(page)}
-                >
-                  Duplicate
-                </button>
-                {page.status === "published" ? (
-                  <>
-                    <Link
-                      href={`/${page.slug}`}
-                      className={btnSecondaryMd}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Live
-                    </Link>
-                    <button
-                      type="button"
-                      className={btnSecondaryMd}
-                      onClick={() => unpublishPage(page)}
-                    >
-                      Unpublish
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    className={btnPrimaryMd}
-                    onClick={() => publishPage(page)}
-                  >
-                    Publish
-                  </button>
-                )}
-                <Link href={`/admin/pages/${page.id}`} className={btnSecondaryMd}>
-                  Edit
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+                .
+              </>
+            }
+            count={livePages.length}
+            emptyMessage="No live pages yet. Publish a draft to make it available on the site and in nav."
+            pages={livePages}
+            onPublish={publishPage}
+            onUnpublish={unpublishPage}
+            onDuplicate={setDuplicatePage}
+          />
+
+          <SitePagesSection
+            title="Drafts"
+            description="Unpublished work in progress — not visible on the public site until you publish."
+            count={draftPages.length}
+            emptyMessage="No drafts. New pages start here until you publish them."
+            pages={draftPages}
+            onPublish={publishPage}
+            onUnpublish={unpublishPage}
+            onDuplicate={setDuplicatePage}
+          />
+        </div>
       )}
 
       {duplicatePage ? (
@@ -277,5 +246,144 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
+  );
+}
+
+interface SitePagesSectionProps {
+  title: string;
+  description: ReactNode;
+  count: number;
+  emptyMessage: string;
+  pages: SitePage[];
+  onPublish: (page: SitePage) => void;
+  onUnpublish: (page: SitePage) => void;
+  onDuplicate: (page: SitePage) => void;
+}
+
+function SitePagesSection({
+  title,
+  description,
+  count,
+  emptyMessage,
+  pages,
+  onPublish,
+  onUnpublish,
+  onDuplicate,
+}: SitePagesSectionProps) {
+  const isLive = title === "Live";
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--ink)]">
+            {title}
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold normal-case tracking-normal ${
+                isLive
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-[var(--cream)] text-[var(--muted)]"
+              }`}
+            >
+              {count}
+            </span>
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">{description}</p>
+        </div>
+      </div>
+
+      {pages.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/40 px-5 py-8 text-center text-sm text-[var(--muted)]">
+          {emptyMessage}
+        </p>
+      ) : (
+        <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+          {pages.map((page) => (
+            <SitePageListRow
+              key={page.id}
+              page={page}
+              onPublish={onPublish}
+              onUnpublish={onUnpublish}
+              onDuplicate={onDuplicate}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+interface SitePageListRowProps {
+  page: SitePage;
+  onPublish: (page: SitePage) => void;
+  onUnpublish: (page: SitePage) => void;
+  onDuplicate: (page: SitePage) => void;
+}
+
+function SitePageListRow({
+  page,
+  onPublish,
+  onUnpublish,
+  onDuplicate,
+}: SitePageListRowProps) {
+  const isPublished = page.status === "published";
+  const dedicated = getDedicatedSitePage(page.slug);
+  const liveHref = dedicated?.livePath ?? `/${page.slug}`;
+  const isSystemLive = Boolean(dedicated?.keepPublished);
+
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+      <div className="min-w-0">
+        <Link
+          href={`/admin/pages/${page.id}`}
+          className="font-medium hover:underline"
+        >
+          {page.title}
+        </Link>
+        <p className="text-sm text-[var(--muted)]">
+          /{page.slug}
+          {dedicated ? (
+            <span className="text-amber-800"> · dedicated layout</span>
+          ) : null}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          href={`/admin/pages/${page.id}/preview`}
+          className={btnSecondaryMd}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Preview
+        </Link>
+        <button type="button" className={btnSecondaryMd} onClick={() => onDuplicate(page)}>
+          Duplicate
+        </button>
+        {isPublished ? (
+          <>
+            <Link
+              href={liveHref}
+              className={btnSecondaryMd}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Live
+            </Link>
+            {isSystemLive ? null : (
+              <button type="button" className={btnSecondaryMd} onClick={() => onUnpublish(page)}>
+                Unpublish
+              </button>
+            )}
+          </>
+        ) : (
+          <button type="button" className={btnPrimaryMd} onClick={() => onPublish(page)}>
+            Publish
+          </button>
+        )}
+        <Link href={`/admin/pages/${page.id}`} className={btnSecondaryMd}>
+          Edit
+        </Link>
+      </div>
+    </li>
   );
 }

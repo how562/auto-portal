@@ -9,6 +9,7 @@ import { LeadCaptureProvider } from "@/components/portal/LeadCaptureContext";
 import { brandPageTitle } from "@/lib/brand";
 import { pageUsesHeaderHero } from "@/lib/cmsPageHeaderLayout";
 import { RESERVED_CMS_SLUGS } from "@/lib/cmsTypes";
+import { fetchPublishedDedicatedPageContent } from "@/lib/dedicatedPageContent";
 import { fetchEnrichedCMSPage, fetchPublishedPageBySlug } from "@/lib/cmsPages";
 
 import "@/app/cms-page.css";
@@ -74,7 +75,7 @@ export default async function CMSPage({ params }: CMSPageProps) {
           }
         >
           {isAboutUs ? (
-            <AboutUsPage />
+            <AboutUsPage content={await fetchPublishedDedicatedPageContent("about-us")} />
           ) : (
             <CMSSectionRenderer
               sections={data.sections}

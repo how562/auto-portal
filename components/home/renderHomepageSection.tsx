@@ -1,12 +1,7 @@
-import { CavenderCommitmentSection } from "@/components/home/CavenderCommitmentSection";
-import { DiscoveryCategoriesSection } from "@/components/home/DiscoveryCategoriesSection";
-import { DrivenOffersSection } from "@/components/home/DrivenOffersSection";
-import { EditorialHero } from "@/components/home/EditorialHero";
-import { ExploreOurBrandsSection } from "@/components/home/ExploreOurBrandsSection";
-import { HomepageBottomScene } from "@/components/home/HomepageBottomScene";
-import { PortalFooter } from "@/components/home/PortalFooter";
-import { SocialFeedSection } from "@/components/home/SocialFeedSection";
-import { GuidedDiscoverySection } from "@/components/portal/GuidedDiscoverySection";
+/* eslint-disable @next/next/no-async-client-component */
+"use client";
+
+import dynamic from "next/dynamic";
 import type { FacebookFeedResult } from "@/lib/facebookFeedShared";
 import type { FacebookPageConfig } from "@/lib/facebookPageConfig";
 import type { CommunityHeroContent } from "@/lib/communityHeroTypes";
@@ -14,6 +9,81 @@ import type { CavenderCommitmentCmsPayload } from "@/lib/cavenderCommitmentTypes
 import type { SocialFeedCmsContent } from "@/lib/socialFeedTypes";
 import type { HomepageLayoutSectionId } from "@/lib/homepageLayoutRegistry";
 import type { Vehicle } from "@/lib/types";
+
+async function loadNamedComponent<T extends Record<string, unknown>>(
+  loader: () => Promise<T>,
+  key: keyof T,
+): Promise<T[keyof T]> {
+  const mod = await loader();
+  const resolved = mod[key];
+  if (!resolved) {
+    throw new Error(`Homepage section export is undefined: ${String(key)}`);
+  }
+  return resolved;
+}
+
+const EditorialHero = dynamic(
+  () =>
+    loadNamedComponent(
+      () => import("@/components/home/EditorialHero"),
+      "EditorialHero",
+    ),
+  { ssr: false },
+);
+const DiscoveryCategoriesSection = dynamic(
+  () => loadNamedComponent(
+      () => import("@/components/home/DiscoveryCategoriesSection"),
+      "DiscoveryCategoriesSection",
+    ),
+  { ssr: false },
+);
+const DrivenOffersSection = dynamic(
+  () =>
+    loadNamedComponent(
+      () => import("@/components/home/DrivenOffersSection"),
+      "DrivenOffersSection",
+    ),
+  { ssr: false },
+);
+const GuidedDiscoverySection = dynamic(
+  () =>
+    loadNamedComponent(
+      () => import("@/components/portal/GuidedDiscoverySection"),
+      "GuidedDiscoverySection",
+    ),
+  { ssr: false },
+);
+const CavenderCommitmentSection = dynamic(
+  () => loadNamedComponent(
+      () => import("@/components/home/CavenderCommitmentSection"),
+      "CavenderCommitmentSection",
+    ),
+  { ssr: false },
+);
+const SocialFeedSection = dynamic(
+  () =>
+    loadNamedComponent(
+      () => import("@/components/home/SocialFeedSection"),
+      "SocialFeedSection",
+    ),
+  { ssr: false },
+);
+const HomepageBottomScene = dynamic(
+  () =>
+    loadNamedComponent(
+      () => import("@/components/home/HomepageBottomScene"),
+      "HomepageBottomScene",
+    ),
+  { ssr: false },
+);
+const ExploreOurBrandsSection = dynamic(
+  () => loadNamedComponent(
+      () => import("@/components/home/ExploreOurBrandsSection"),
+      "ExploreOurBrandsSection",
+    ),
+  { ssr: false },
+);
+
 
 export interface HomepageSectionRenderContext {
   vehicles: Vehicle[];
@@ -53,7 +123,7 @@ export function renderHomepageSection(
     case "explore_brands":
       return <ExploreOurBrandsSection key={id} />;
     case "portal_footer":
-      return <PortalFooter key={id} />;
+      return null;
     default:
       return null;
   }
