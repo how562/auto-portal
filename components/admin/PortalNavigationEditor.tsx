@@ -162,7 +162,10 @@ export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorPr
         Changes save to{" "}
         <code className="rounded bg-[var(--cream)] px-1 py-0.5">portal_managed_links</code>. The
         public header, footer, and CTA labels refresh after save (reload the storefront if needed).
-        URL formats: {URL_HINT}
+        Use the <strong className="font-semibold text-[var(--ink)]">Parent</strong> column to move
+        existing links into header dropdowns or footer groups without recreating them. Reorder
+        still applies within the same parent (top level vs each dropdown/group). URL formats:{" "}
+        {URL_HINT}
       </p>
 
       {tab === "header" ? (
@@ -238,16 +241,14 @@ function HeaderNavPanel({
 }) {
   const q = search.trim().toLowerCase();
   const roots = rows.filter((r) => !r.is_group && !r.parent_key);
-  const childrenByParent = useMemo(() => {
-    const map = new Map<string, PortalManagedLinkRow[]>();
-    for (const item of rows) {
-      if (!item.parent_key || item.is_group) continue;
-      const list = map.get(item.parent_key) ?? [];
-      list.push(item);
-      map.set(item.parent_key, list);
-    }
-    return map;
-  }, [rows]);
+  const headerLinks = useMemo(
+    () =>
+      rows
+        .filter((r) => !r.is_group)
+        .filter((r) => matchesSearch(r, q))
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [rows, q],
+  );
 
   const [newLabel, setNewLabel] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -293,36 +294,44 @@ function HeaderNavPanel({
     }
   }
 
+  const childCountByKey = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of rows) {
+      if (!item.parent_key || item.is_group) continue;
+      map.set(item.parent_key, (map.get(item.parent_key) ?? 0) + 1);
+    }
+    return map;
+  }, [rows]);
+
+  const headerParentOptions = roots.map((p) => ({
+    value: p.link_key,
+    label: p.label,
+  }));
+
+  function parentConfigFor(row: PortalManagedLinkRow) {
+    const hasChildren = (childCountByKey.get(row.link_key) ?? 0) > 0;
+    const options = headerParentOptions.filter((o) => o.value !== row.link_key);
+    return {
+      options,
+      disabled: hasChildren,
+      disabledReason:
+        "Has dropdown children — reassign or remove children before nesting under another link.",
+    };
+  }
+
   const parentOptions = roots;
 
   return (
     <div className="space-y-6">
       <NavItemTable
-        title="Top-level header links"
-        items={roots.filter((r) => matchesSearch(r, q))}
+        title="Header links"
+        items={headerLinks}
         busyKey={busyKey}
         onPatch={onPatch}
         onReorder={onReorder}
         onDelete={onDelete}
+        parentConfig={parentConfigFor}
       />
-
-      {parentOptions.map((parent) => {
-        const kids = (childrenByParent.get(parent.link_key) ?? []).filter((r) =>
-          matchesSearch(r, q),
-        );
-        if (kids.length === 0 && q && !matchesSearch(parent, q)) return null;
-        return (
-          <NavItemTable
-            key={parent.link_key}
-            title={`Dropdown under “${parent.label}”`}
-            items={kids}
-            busyKey={busyKey}
-            onPatch={onPatch}
-            onReorder={onReorder}
-            onDelete={onDelete}
-          />
-        );
-      })}
 
       <section className="rounded-xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/50 p-4">
         <h3 className="text-sm font-semibold text-[var(--ink)]">Add header link</h3>
@@ -396,16 +405,26 @@ function FooterNavPanel({
 }) {
   const q = search.trim().toLowerCase();
   const groups = rows.filter((r) => r.is_group);
-  const childrenByParent = useMemo(() => {
-    const map = new Map<string, PortalManagedLinkRow[]>();
-    for (const item of rows) {
-      if (item.is_group || !item.parent_key) continue;
-      const list = map.get(item.parent_key) ?? [];
-      list.push(item);
-      map.set(item.parent_key, list);
-    }
-    return map;
-  }, [rows]);
+  const footerLinks = useMemo(
+    () =>
+      rows
+        .filter((r) => !r.is_group && r.parent_key)
+        .filter((r) => matchesSearch(r, q))
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [rows, q],
+  );
+
+  const footerParentOptions = groups.map((g) => ({
+    value: g.link_key,
+    label: g.label,
+  }));
+
+  function footerParentConfigFor(row: PortalManagedLinkRow) {
+    return {
+      options: footerParentOptions.filter((o) => o.value !== row.link_key),
+      disabled: false,
+    };
+  }
 
   const [newGroupTitle, setNewGroupTitle] = useState("");
   const [newLabel, setNewLabel] = useState("");
@@ -497,23 +516,18 @@ function FooterNavPanel({
         hideUrl
       />
 
-      {groups.map((group) => {
-        const kids = (childrenByParent.get(group.link_key) ?? []).filter((r) =>
-          matchesSearch(r, q),
-        );
-        if (kids.length === 0 && q && !matchesSearch(group, q)) return null;
-        return (
-          <NavItemTable
-            key={group.link_key}
-            title={`Links in “${group.label}”`}
-            items={kids}
-            busyKey={busyKey}
-            onPatch={onPatch}
-            onReorder={onReorder}
-            onDelete={onDelete}
-          />
-        );
-      })}
+      {footerLinks.length > 0 ? (
+        <NavItemTable
+          title="Footer links"
+          items={footerLinks}
+          busyKey={busyKey}
+          onPatch={onPatch}
+          onReorder={onReorder}
+          onDelete={onDelete}
+          parentConfig={footerParentConfigFor}
+          parentRequired
+        />
+      ) : null}
 
       <section className="rounded-xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/50 p-4 space-y-4">
         <div>
@@ -699,6 +713,12 @@ function CtaPanel({
   );
 }
 
+type NavParentConfig = {
+  options: Array<{ value: string; label: string }>;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
 function NavItemTable({
   title,
   items,
@@ -707,6 +727,8 @@ function NavItemTable({
   onReorder,
   onDelete,
   hideUrl,
+  parentConfig,
+  parentRequired,
 }: {
   title: string;
   items: PortalManagedLinkRow[];
@@ -715,6 +737,8 @@ function NavItemTable({
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
   hideUrl?: boolean;
+  parentConfig?: (row: PortalManagedLinkRow) => NavParentConfig;
+  parentRequired?: boolean;
 }) {
   if (items.length === 0) return null;
 
@@ -728,6 +752,7 @@ function NavItemTable({
           <tr>
             <th className="px-3 py-2 w-28">Order</th>
             <th className="px-3 py-2">Label</th>
+            {parentConfig ? <th className="px-3 py-2 min-w-[140px]">Parent</th> : null}
             {!hideUrl ? <th className="px-3 py-2">URL / action</th> : null}
             <th className="px-3 py-2">Spanish</th>
             <th className="px-3 py-2 w-20">New tab</th>
@@ -745,6 +770,8 @@ function NavItemTable({
               onReorder={onReorder}
               onDelete={onDelete}
               hideUrl={hideUrl}
+              parentConfig={parentConfig?.(row)}
+              parentRequired={parentRequired}
             />
           ))}
         </tbody>
@@ -761,6 +788,8 @@ function EditableNavRow({
   onDelete,
   hideUrl,
   hideDelete,
+  parentConfig,
+  parentRequired,
 }: {
   row: PortalManagedLinkRow;
   busyKey: string | null;
@@ -769,18 +798,23 @@ function EditableNavRow({
   onDelete: (key: string) => Promise<void>;
   hideUrl?: boolean;
   hideDelete?: boolean;
+  parentConfig?: NavParentConfig;
+  parentRequired?: boolean;
 }) {
   const [label, setLabel] = useState(row.label);
   const [labelEs, setLabelEs] = useState(row.label_es ?? "");
   const [url, setUrl] = useState(row.url ?? "");
+  const [parentKey, setParentKey] = useState(row.parent_key ?? "");
   const [active, setActive] = useState(row.is_active !== false);
   const [newTab, setNewTab] = useState(row.opens_new_tab === true);
   const isBusy = busyKey === row.link_key;
 
+  const savedParent = row.parent_key ?? "";
   const dirty =
     label !== row.label ||
     labelEs !== (row.label_es ?? "") ||
     url !== (row.url ?? "") ||
+    parentKey !== savedParent ||
     active !== (row.is_active !== false) ||
     newTab !== (row.opens_new_tab === true);
 
@@ -789,6 +823,7 @@ function EditableNavRow({
       label,
       label_es: labelEs || null,
       url: hideUrl ? row.url : url || null,
+      parent_key: parentConfig ? parentKey || null : undefined,
       is_active: active,
       opens_new_tab: newTab,
     });
@@ -825,7 +860,33 @@ function EditableNavRow({
           onChange={(e) => setLabel(e.target.value)}
           className={`${INPUT_CLASS} min-w-[120px]`}
         />
+        {row.parent_key ? (
+          <p className="mt-1 text-[10px] text-[var(--muted)]">Dropdown item</p>
+        ) : parentConfig && (parentConfig.options.length > 0 || !parentRequired) ? (
+          <p className="mt-1 text-[10px] text-[var(--muted)]">Top-level (dropdown parent)</p>
+        ) : null}
       </td>
+      {parentConfig ? (
+        <td className="px-3 py-2">
+          <select
+            value={parentKey}
+            onChange={(e) => setParentKey(e.target.value)}
+            disabled={parentConfig.disabled}
+            className={`${INPUT_CLASS} min-w-[130px]`}
+            title={parentConfig.disabled ? parentConfig.disabledReason : undefined}
+          >
+            {!parentRequired ? <option value="">Top level</option> : null}
+            {parentConfig.options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          {parentConfig.disabled && parentConfig.disabledReason ? (
+            <p className="mt-1 text-[10px] text-amber-800">{parentConfig.disabledReason}</p>
+          ) : null}
+        </td>
+      ) : null}
       {!hideUrl ? (
         <td className="px-3 py-2">
           <input

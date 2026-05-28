@@ -94,6 +94,83 @@ function validateNavRow(input: {
   }
 }
 
+function validateNavParentAssignment(
+  linkKey: string,
+  row: Pick<ManagedLinkRow, "link_type" | "menu_location" | "is_group" | "parent_key">,
+  parentKey: string | null,
+  allRows: PortalManagedLinkRow[],
+): void {
+  if (row.link_type !== "nav") return;
+
+  const normalizedParent = parentKey?.trim() || null;
+  if (!normalizedParent) return;
+
+  if (normalizedParent === linkKey) {
+    throw new Error("A link cannot be its own parent");
+  }
+
+  const hasChildren = allRows.some(
+    (r) => r.parent_key === linkKey && !r.is_group,
+  );
+  if (hasChildren) {
+    throw new Error(
+      "This link has dropdown children. Move or remove them before nesting this item under another parent.",
+    );
+  }
+
+  if (row.is_group) {
+    throw new Error("Footer column groups cannot be placed under another parent");
+  }
+
+  const parent = allRows.find((r) => r.link_key === normalizedParent);
+  if (!parent) {
+    throw new Error("Selected parent link was not found. Refresh and try again.");
+  }
+  if (parent.link_type !== "nav" || parent.menu_location !== row.menu_location) {
+    throw new Error("Parent must be in the same menu (header or footer)");
+  }
+
+  if (row.menu_location === "header") {
+    if (parent.is_group || parent.parent_key) {
+      throw new Error("Header dropdown parent must be a top-level header link");
+    }
+  }
+
+  if (row.menu_location === "footer") {
+    if (!parent.is_group) {
+      throw new Error("Footer links must be placed under a footer column group");
+    }
+  }
+
+  let walk: string | null = normalizedParent;
+  const seen = new Set<string>();
+  while (walk) {
+    if (walk === linkKey) {
+      throw new Error("Invalid parent: would create a circular reference");
+    }
+    if (seen.has(walk)) break;
+    seen.add(walk);
+    walk = allRows.find((r) => r.link_key === walk)?.parent_key ?? null;
+  }
+}
+
+function nextSortOrderAmongSiblings(
+  allRows: PortalManagedLinkRow[],
+  row: Pick<ManagedLinkRow, "link_type" | "menu_location" | "parent_key" | "is_group">,
+): number {
+  const siblings = allRows.filter((r) => {
+    if (r.link_type !== row.link_type) return false;
+    if (row.link_type === "cta") return true;
+    return (
+      r.menu_location === row.menu_location &&
+      (r.parent_key ?? null) === (row.parent_key ?? null) &&
+      r.is_group === row.is_group
+    );
+  });
+  if (siblings.length === 0) return 1;
+  return Math.max(...siblings.map((s) => s.sort_order)) + 1;
+}
+
 function validateCtaRow() {
   // CTAs use link_type=cta with null menu_location — enforced by DB check constraint.
 }
@@ -188,6 +265,18 @@ export async function createPortalManagedLink(
       parent_key: input.parent_key,
       url: input.url,
     });
+    const existing = await listPortalManagedLinks();
+    validateNavParentAssignment(
+      linkKey,
+      {
+        link_type: "nav",
+        menu_location: input.menu_location ?? null,
+        is_group: input.is_group === true,
+        parent_key: input.parent_key ?? null,
+      },
+      input.parent_key ?? null,
+      existing,
+    );
   } else {
     validateCtaRow();
   }
@@ -277,6 +366,35 @@ export async function updatePortalManagedLink(
 
   const supabase = getSupabaseAdmin();
   await assertUniqueLinkKey(supabase, key);
+
+  const allRows = await listPortalManagedLinks();
+  const current = allRows.find((r) => r.link_key === key);
+  if (!current) {
+    throw new Error(`No link found with key "${key}". Refresh the page.`);
+  }
+
+  if (input.parent_key !== undefined && current.link_type === "nav") {
+    const nextParent = input.parent_key?.trim() || null;
+    validateNavParentAssignment(
+      key,
+      {
+        link_type: current.link_type,
+        menu_location: current.menu_location ?? null,
+        is_group: current.is_group === true,
+        parent_key: nextParent,
+      },
+      nextParent,
+      allRows,
+    );
+    if ((current.parent_key ?? null) !== nextParent) {
+      payload.sort_order = nextSortOrderAmongSiblings(allRows, {
+        link_type: current.link_type,
+        menu_location: current.menu_location ?? null,
+        parent_key: nextParent,
+        is_group: current.is_group === true,
+      });
+    }
+  }
 
   const { data, error } = await supabase
     .from("portal_managed_links")
