@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AboutUsContentForm } from "@/components/admin/dedicated-page/AboutUsContentForm";
+import { ContactTheCavendersContentForm } from "@/components/admin/dedicated-page/ContactTheCavendersContentForm";
+import { CavenderCaresContentForm } from "@/components/admin/dedicated-page/CavenderCaresContentForm";
 import { CavenderCommitmentContentForm } from "@/components/admin/dedicated-page/CavenderCommitmentContentForm";
 import { ExecutiveTeamContentForm } from "@/components/admin/dedicated-page/ExecutiveTeamContentForm";
 import { FinanceContentForm } from "@/components/admin/dedicated-page/FinanceContentForm";
+import { OurStoryContentForm } from "@/components/admin/dedicated-page/OurStoryContentForm";
 import { LocationsContentForm } from "@/components/admin/dedicated-page/LocationsContentForm";
 import { ScheduleServiceContentForm } from "@/components/admin/dedicated-page/ScheduleServiceContentForm";
 import { ValueYourTradeContentForm } from "@/components/admin/dedicated-page/ValueYourTradeContentForm";
@@ -232,6 +235,13 @@ export function DedicatedPageContentEditor({
               }
               onChange={setContent}
             />
+          ) : slug === "cavender-cares" ? (
+            <CavenderCaresContentForm
+              content={
+                content as import("@/lib/cavenderCaresPageContent").CavenderCaresPageContent
+              }
+              onChange={setContent}
+            />
           ) : slug === "value-your-trade" ? (
             <ValueYourTradeContentForm
               content={
@@ -242,6 +252,18 @@ export function DedicatedPageContentEditor({
           ) : slug === "finance-center" ? (
             <FinanceContentForm
               content={content as import("@/lib/financePageContent").FinancePageContent}
+              onChange={setContent}
+            />
+          ) : slug === "our-story" ? (
+            <OurStoryContentForm
+              content={content as import("@/lib/ourStoryPageContent").OurStoryPageContent}
+              onChange={setContent}
+            />
+          ) : slug === "contact-the-cavenders" ? (
+            <ContactTheCavendersContentForm
+              content={
+                content as import("@/lib/contactTheCavendersPageContent").ContactTheCavendersPageContent
+              }
               onChange={setContent}
             />
           ) : null}

@@ -77,6 +77,39 @@ export const DEDICATED_SITE_PAGES: DedicatedSitePageDefinition[] = [
     keepPublished: true,
   },
   {
+    slug: "cavender-cares",
+    title: "Cavender Cares",
+    metaDescription:
+      "Cavender Cares — philanthropic community giving across San Antonio and Boerne. Partnerships, volunteer hours, and nonprofit support.",
+    livePath: "/cavender-cares",
+    contentSource: "CMS page content",
+    adminNote:
+      "Edit hero, intro, impact stats, partner logos, gallery, closing copy, and contact line in the dedicated content editor.",
+    keepPublished: true,
+  },
+  {
+    slug: "our-story",
+    title: "Our Story",
+    metaDescription:
+      "Over 85 years of Cavender Auto Group history — family, trust, community, and progress across Texas.",
+    livePath: "/our-story",
+    contentSource: "CMS page content",
+    adminNote:
+      "Edit hero, history video, timeline milestones, values, and CTA links. Desktop uses a horizontal scroll timeline.",
+    keepPublished: true,
+  },
+  {
+    slug: "contact-the-cavenders",
+    title: "Contact The Cavenders",
+    metaDescription:
+      "Send feedback or a message directly to Rob and Lee Cavender — Cavender Auto Group leadership is listening.",
+    livePath: "/contact-the-cavenders",
+    contentSource: "CMS page content",
+    adminNote:
+      "Edit hero, intro, leadership portrait, form copy, and quote. Submissions save to contact_the_cavenders_submissions.",
+    keepPublished: true,
+  },
+  {
     slug: "finance-center",
     title: "Finance Center",
     metaDescription: `Apply for financing online at any ${BRAND_NAME} dealership. Choose your location to start a secure application.`,

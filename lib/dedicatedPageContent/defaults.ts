@@ -1,9 +1,12 @@
+import { CONTACT_THE_CAVENDERS_PAGE_CONTENT } from "@/lib/contactTheCavendersPageContent";
+import { CAVENDER_CARES_PAGE_CONTENT } from "@/lib/cavenderCaresPageContent";
 import { CAVENDER_COMMITMENT_PAGE_CONTENT } from "@/lib/cavenderCommitmentPageContent";
 import { ABOUT_US_PAGE_CONTENT } from "@/lib/aboutUsPageContent";
 import { EXECUTIVE_TEAM_PAGE_CONTENT } from "@/lib/executiveTeamPageContent";
 import { LOCATIONS_PAGE_CONTENT } from "@/lib/locationsPageContent";
 import { SCHEDULE_SERVICE_PAGE_CONTENT } from "@/lib/serviceSchedulingContent";
 import { FINANCE_PAGE_CONTENT } from "@/lib/financePageContent";
+import { OUR_STORY_PAGE_CONTENT } from "@/lib/ourStoryPageContent";
 import { VALUE_YOUR_TRADE_PAGE_CONTENT } from "@/lib/valueYourTradePageContent";
 import type {
   DedicatedPageContent,
@@ -35,8 +38,18 @@ export function getDefaultDedicatedPageContent<S extends DedicatedPageSlug>(
       return structuredClone(
         CAVENDER_COMMITMENT_PAGE_CONTENT,
       ) as DedicatedPageContentBySlug[S];
+    case "cavender-cares":
+      return structuredClone(
+        CAVENDER_CARES_PAGE_CONTENT,
+      ) as DedicatedPageContentBySlug[S];
     case "finance-center":
       return structuredClone(FINANCE_PAGE_CONTENT) as DedicatedPageContentBySlug[S];
+    case "our-story":
+      return structuredClone(OUR_STORY_PAGE_CONTENT) as DedicatedPageContentBySlug[S];
+    case "contact-the-cavenders":
+      return structuredClone(
+        CONTACT_THE_CAVENDERS_PAGE_CONTENT,
+      ) as DedicatedPageContentBySlug[S];
     default: {
       const _exhaustive: never = slug;
       return _exhaustive;

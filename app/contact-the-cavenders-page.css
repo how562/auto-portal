@@ -1,0 +1,333 @@
+/**
+ * Contact The Cavenders — leadership contact page.
+ */
+
+.contact-cavenders-page {
+  --cc-gold: var(--gold, #b8956b);
+  --cc-ink: #1a1a1a;
+  --cc-dark: #1e1e1e;
+  --cc-muted: #6b6560;
+  --cc-cream: #faf8f5;
+  --cc-line: rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+
+/* —— Hero —— */
+.contact-cavenders-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(280px, 40vw, 420px);
+  overflow: hidden;
+}
+
+.contact-cavenders-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.contact-cavenders-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  filter: saturate(0.9);
+}
+
+.contact-cavenders-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(250, 248, 245, 0.15) 0%,
+    rgba(30, 30, 30, 0.55) 55%,
+    rgba(20, 20, 20, 0.82) 100%
+  );
+}
+
+.contact-cavenders-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.contact-cavenders-hero__title {
+  margin: 0;
+  font-size: clamp(2rem, 5.5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.contact-cavenders-hero__subtitle {
+  margin: 1rem 0 0;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--cc-gold);
+}
+
+.contact-cavenders-hero__supporting {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.contact-cavenders-hero__rule {
+  display: block;
+  width: 3rem;
+  height: 2px;
+  margin: 1.25rem auto 0;
+  background: var(--cc-gold);
+}
+
+/* —— Main —— */
+.contact-cavenders-main {
+  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(3rem, 6vw, 5rem);
+}
+
+.contact-cavenders-main__grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .contact-cavenders-main__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem 3.5rem;
+  }
+}
+
+.contact-cavenders-intro__heading {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--cc-ink);
+}
+
+.contact-cavenders-intro__body p {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--cc-muted);
+}
+
+.contact-cavenders-intro__body p:last-child {
+  margin-bottom: 0;
+}
+
+.contact-cavenders-intro__figure {
+  margin: 2rem 0 0;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+}
+
+.contact-cavenders-intro__figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 6 / 7;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* —— Form card —— */
+.contact-cavenders-form-card {
+  padding: clamp(1.5rem, 3vw, 2rem);
+  background: var(--cc-cream);
+  border: 1px solid var(--cc-line);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.contact-cavenders-form-card__heading {
+  margin: 0 0 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cc-ink);
+}
+
+.contact-cavenders-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contact-cavenders-form__hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.contact-cavenders-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.contact-cavenders-field__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cc-muted);
+}
+
+.contact-cavenders-field__input,
+.contact-cavenders-field__select,
+.contact-cavenders-field__textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--cc-ink);
+  background: #fff;
+  border: 1px solid var(--cc-line);
+  border-radius: 2px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.contact-cavenders-field__input:focus,
+.contact-cavenders-field__select:focus,
+.contact-cavenders-field__textarea:focus {
+  outline: none;
+  border-color: var(--cc-gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cc-gold) 25%, transparent);
+}
+
+.contact-cavenders-field__input[aria-invalid="true"],
+.contact-cavenders-field__select[aria-invalid="true"],
+.contact-cavenders-field__textarea[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
+.contact-cavenders-field__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+.contact-cavenders-field__textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.contact-cavenders-form__row {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .contact-cavenders-form__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.contact-cavenders-form__submit {
+  margin-top: 0.5rem;
+  min-height: 2.875rem;
+  padding: 0 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cc-dark);
+  background: var(--cc-gold);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.contact-cavenders-form__submit:hover:not(:disabled) {
+  background: #d4b896;
+}
+
+.contact-cavenders-form__submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.contact-cavenders-form__trust {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--cc-muted);
+}
+
+.contact-cavenders-form__alert {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 2px;
+}
+
+.contact-cavenders-form__alert--error {
+  color: #7f1d1d;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.contact-cavenders-form__alert--success {
+  color: #14532d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.contact-cavenders-form__success-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--cc-ink);
+}
+
+/* —— Quote —— */
+.contact-cavenders-quote {
+  padding: clamp(2.5rem, 5vw, 4rem) 0;
+  background: var(--cc-dark);
+  text-align: center;
+}
+
+.contact-cavenders-quote__inner {
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.contact-cavenders-quote__text {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.45;
+  color: #fff;
+}
+
+.contact-cavenders-quote__attr {
+  display: block;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cc-gold);
+}

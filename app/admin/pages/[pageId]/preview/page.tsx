@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CMSSectionRenderer } from "@/components/cms/CMSSectionRenderer";
+import { CavenderCaresPageView } from "@/components/cares/CavenderCaresPageView";
 import { CavenderCommitmentPageView } from "@/components/commitment/CavenderCommitmentPageView";
 import { ExecutiveTeamPageView } from "@/components/executive/ExecutiveTeamPageView";
 import { FinancePageView } from "@/components/finance/FinancePageView";
+import { ContactTheCavendersPageView } from "@/components/contact/ContactTheCavendersPageView";
+import { OurStoryPageView } from "@/components/our-story/OurStoryPageView";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
 import { LocationsPageView } from "@/components/locations/LocationsPageView";
@@ -145,10 +148,30 @@ async function DedicatedPreview({
           }
         />
       );
+    case "cavender-cares":
+      return (
+        <CavenderCaresPageView
+          content={content as import("@/lib/cavenderCaresPageContent").CavenderCaresPageContent}
+        />
+      );
     case "finance-center":
       return (
         <FinancePageView
           content={content as import("@/lib/financePageContent").FinancePageContent}
+        />
+      );
+    case "our-story":
+      return (
+        <OurStoryPageView
+          content={content as import("@/lib/ourStoryPageContent").OurStoryPageContent}
+        />
+      );
+    case "contact-the-cavenders":
+      return (
+        <ContactTheCavendersPageView
+          content={
+            content as import("@/lib/contactTheCavendersPageContent").ContactTheCavendersPageContent
+          }
         />
       );
     default:
