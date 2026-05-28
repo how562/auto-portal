@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import type { AdminSitePageListItem } from "@/lib/cmsTypes";
 import type {
   PortalManagedLinkRow,
   PortalManagedLinkUpdateInput,
 } from "@/lib/managedLinksAdmin";
 import type { ManagedLinkMenuLocation } from "@/lib/managedLinksTypes";
+import {
+  buildNavLinkPageOptions,
+  findNavLinkPageOption,
+  type NavLinkPageOption,
+} from "@/lib/navLinkPageOptions";
 import { PORTAL_CTA_FALLBACKS, PORTAL_CTA_KEYS } from "@/lib/portalCtaFallbacks";
 import type { PortalCtaKey } from "@/lib/portalCtaTypes";
 import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
@@ -59,6 +65,20 @@ export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorPr
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [pageOptions, setPageOptions] = useState<NavLinkPageOption[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/admin/site-pages", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data: { pages?: AdminSitePageListItem[] }) => {
+        if (data.pages) {
+          setPageOptions(buildNavLinkPageOptions(data.pages));
+        }
+      })
+      .catch(() => {
+        setPageOptions(buildNavLinkPageOptions([]));
+      });
+  }, []);
 
   const headerNav = useMemo(() => navRowsFor(rows, "header"), [rows]);
   const footerNav = useMemo(() => navRowsFor(rows, "footer"), [rows]);
@@ -170,8 +190,8 @@ export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorPr
         public header, footer, and CTA labels refresh after save (reload the storefront if needed).
         Use the <strong className="font-semibold text-[var(--ink)]">Parent</strong> column to move
         existing links into header dropdowns or footer groups without recreating them. Reorder
-        still applies within the same parent (top level vs each dropdown/group). URL formats:{" "}
-        {URL_HINT}
+        still applies within the same parent (top level vs each dropdown/group). Pick a published
+        page for the URL or enter a custom path. URL formats: {URL_HINT}
       </p>
 
       {tab === "header" ? (
@@ -179,6 +199,7 @@ export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorPr
           rows={headerNav}
           search={search}
           busyKey={busyKey}
+          pageOptions={pageOptions}
           onPatch={patchRow}
           onReorder={reorder}
           onDelete={removeRow}
@@ -193,6 +214,7 @@ export function PortalNavigationEditor({ initialRows }: PortalNavigationEditorPr
           rows={footerNav}
           search={search}
           busyKey={busyKey}
+          pageOptions={pageOptions}
           onPatch={patchRow}
           onReorder={reorder}
           onDelete={removeRow}
@@ -228,6 +250,7 @@ function HeaderNavPanel({
   rows,
   search,
   busyKey,
+  pageOptions,
   onPatch,
   onReorder,
   onDelete,
@@ -238,6 +261,7 @@ function HeaderNavPanel({
   rows: PortalManagedLinkRow[];
   search: string;
   busyKey: string | null;
+  pageOptions: NavLinkPageOption[];
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
@@ -315,8 +339,7 @@ function HeaderNavPanel({
     return {
       options,
       disabled: hasChildren,
-      disabledReason:
-        "Has dropdown children — reassign or remove children before nesting under another link.",
+      disabledTitle: "Dropdown parent",
     };
   }
 
@@ -329,6 +352,7 @@ function HeaderNavPanel({
         title="Header navigation"
         displayItems={headerDisplayItems}
         busyKey={busyKey}
+        pageOptions={pageOptions}
         onPatch={onPatch}
         onReorder={onReorder}
         onDelete={onDelete}
@@ -347,11 +371,10 @@ function HeaderNavPanel({
             />
           </Field>
           <Field label="URL">
-            <input
+            <NavUrlField
               value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-              className={INPUT_CLASS}
-              placeholder="/inventory"
+              onChange={setNewUrl}
+              pageOptions={pageOptions}
             />
           </Field>
           <Field label="Parent (dropdown)">
@@ -388,6 +411,7 @@ function FooterNavPanel({
   rows,
   search,
   busyKey,
+  pageOptions,
   onPatch,
   onReorder,
   onDelete,
@@ -398,6 +422,7 @@ function FooterNavPanel({
   rows: PortalManagedLinkRow[];
   search: string;
   busyKey: string | null;
+  pageOptions: NavLinkPageOption[];
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
@@ -508,6 +533,7 @@ function FooterNavPanel({
         title="Footer navigation"
         displayItems={footerDisplayItems}
         busyKey={busyKey}
+        pageOptions={pageOptions}
         onPatch={onPatch}
         onReorder={onReorder}
         onDelete={onDelete}
@@ -560,10 +586,10 @@ function FooterNavPanel({
               />
             </Field>
             <Field label="URL">
-              <input
+              <NavUrlField
                 value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                className={INPUT_CLASS}
+                onChange={setNewUrl}
+                pageOptions={pageOptions}
               />
             </Field>
             <div className="flex items-end">
@@ -703,50 +729,56 @@ function CtaPanel({
 type NavParentConfig = {
   options: Array<{ value: string; label: string }>;
   disabled?: boolean;
-  disabledReason?: string;
+  disabledTitle?: string;
 };
 
 const NAV_LEVEL_STYLES: Record<
   NavDisplayLevel,
-  { row: string; badge: string; label: string }
+  { row: string; badge: string; abbr: string; title: string; dot: string }
 > = {
   top: {
     row: "bg-white",
     badge: "bg-slate-100 text-slate-800 ring-1 ring-slate-200",
-    label: "Top level",
+    abbr: "TL",
+    title: "Top level",
+    dot: "bg-slate-500",
   },
   child: {
-    row: "bg-amber-50/80 border-l-4 border-l-[var(--gold)]",
+    row: "bg-amber-50/80 border-l-[6px] border-l-[var(--gold)]",
     badge: "bg-amber-100 text-amber-950 ring-1 ring-amber-200/80",
-    label: "Child link",
+    abbr: "CL",
+    title: "Child link",
+    dot: "bg-[var(--gold)]",
   },
   group: {
     row: "bg-[var(--cream)] border-t-2 border-t-[var(--gold)]/50",
     badge: "bg-violet-100 text-violet-950 ring-1 ring-violet-200",
-    label: "Column group",
+    abbr: "G",
+    title: "Footer column group",
+    dot: "bg-violet-500",
   },
 };
 
 function NavHierarchyLegend({ variant }: { variant: "header" | "footer" }) {
+  const levels: NavDisplayLevel[] =
+    variant === "header" ? ["top", "child"] : ["group", "child"];
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs">
-      <span className="font-semibold text-[var(--muted)]">Legend:</span>
-      {variant === "header" ? (
-        <>
-          <NavLevelBadge level="top" />
-          <span className="text-[var(--muted)]">Main nav / dropdown parent</span>
-          <NavLevelBadge level="child" />
-          <span className="text-[var(--muted)]">Nested under the row above</span>
-        </>
-      ) : (
-        <>
-          <NavLevelBadge level="group" />
-          <span className="text-[var(--muted)]">Footer column heading</span>
-          <NavLevelBadge level="child" />
-          <span className="text-[var(--muted)]">Link in that column</span>
-        </>
-      )}
+    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs">
+      <span className="font-semibold text-[var(--muted)]">Legend</span>
+      {levels.map((level) => (
+        <NavLegendItem key={level} level={level} />
+      ))}
     </div>
+  );
+}
+
+function NavLegendItem({ level }: { level: NavDisplayLevel }) {
+  const style = NAV_LEVEL_STYLES[level];
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${style.dot}`} aria-hidden />
+      <span className="font-mono text-[10px] font-bold text-[var(--ink)]">{style.abbr}</span>
+    </span>
   );
 }
 
@@ -754,10 +786,57 @@ function NavLevelBadge({ level }: { level: NavDisplayLevel }) {
   const style = NAV_LEVEL_STYLES[level];
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.badge}`}
+      className={`inline-flex h-5 min-w-[1.75rem] items-center justify-center rounded px-1 font-mono text-[9px] font-bold uppercase ${style.badge}`}
+      title={style.title}
+      aria-label={style.title}
     >
-      {style.label}
+      {style.abbr}
     </span>
+  );
+}
+
+function NavUrlField({
+  value,
+  onChange,
+  pageOptions,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  pageOptions: NavLinkPageOption[];
+}) {
+  const listId = useId();
+  const matched = findNavLinkPageOption(pageOptions, value);
+
+  return (
+    <div className="space-y-1.5">
+      <select
+        className={INPUT_CLASS}
+        value={matched?.href ?? ""}
+        onChange={(e) => {
+          const href = e.target.value;
+          if (href) onChange(href);
+        }}
+      >
+        <option value="">Live page…</option>
+        {pageOptions.map((o) => (
+          <option key={o.href} value={o.href}>
+            {o.label} — {o.href}
+          </option>
+        ))}
+      </select>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={INPUT_CLASS}
+        placeholder={URL_HINT}
+        list={listId}
+      />
+      <datalist id={listId}>
+        {pageOptions.map((o) => (
+          <option key={o.href} value={o.href} label={o.label} />
+        ))}
+      </datalist>
+    </div>
   );
 }
 
@@ -765,6 +844,7 @@ function NavItemTable({
   title,
   displayItems,
   busyKey,
+  pageOptions,
   onPatch,
   onReorder,
   onDelete,
@@ -776,6 +856,7 @@ function NavItemTable({
   title: string;
   displayItems: NavDisplayItem[];
   busyKey: string | null;
+  pageOptions: NavLinkPageOption[];
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
@@ -796,7 +877,7 @@ function NavItemTable({
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="border-b border-[var(--line)] bg-[var(--cream)]/60 text-xs uppercase tracking-wide text-[var(--muted)]">
           <tr>
-            <th className="px-3 py-2 w-24">Level</th>
+            <th className="px-3 py-2 w-12" aria-label="Level" />
             <th className="px-3 py-2 w-28">Order</th>
             <th className="px-3 py-2">Label</th>
             {showParentColumn ? <th className="px-3 py-2 min-w-[140px]">Parent</th> : null}
@@ -817,9 +898,9 @@ function NavItemTable({
                 key={item.row.link_key}
                 row={item.row}
                 displayLevel={item.level}
-                parentLabel={item.parentLabel}
                 showGroupGap={showGroupGap}
                 busyKey={busyKey}
+                pageOptions={pageOptions}
                 onPatch={onPatch}
                 onReorder={onReorder}
                 onDelete={onDelete}
@@ -840,9 +921,9 @@ function NavItemTable({
 function EditableNavRow({
   row,
   displayLevel = "top",
-  parentLabel,
   showGroupGap,
   busyKey,
+  pageOptions,
   onPatch,
   onReorder,
   onDelete,
@@ -853,9 +934,9 @@ function EditableNavRow({
 }: {
   row: PortalManagedLinkRow;
   displayLevel?: NavDisplayLevel;
-  parentLabel?: string;
   showGroupGap?: boolean;
   busyKey: string | null;
+  pageOptions: NavLinkPageOption[];
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
@@ -894,6 +975,7 @@ function EditableNavRow({
 
   const levelStyle = NAV_LEVEL_STYLES[displayLevel];
   const isChild = displayLevel === "child";
+  const childCellPad = isChild ? "pl-10 md:pl-14" : "";
 
   return (
     <tr
@@ -903,13 +985,8 @@ function EditableNavRow({
     >
       <td className="px-3 py-2 align-middle">
         <NavLevelBadge level={displayLevel} />
-        {isChild && parentLabel ? (
-          <p className="mt-1 max-w-[5.5rem] text-[10px] leading-snug text-[var(--muted)]">
-            under {parentLabel}
-          </p>
-        ) : null}
       </td>
-      <td className="px-3 py-2">
+      <td className={`px-3 py-2 ${childCellPad}`}>
         <div className="flex gap-1">
           <button
             type="button"
@@ -932,10 +1009,10 @@ function EditableNavRow({
         </div>
         <p className="mt-1 font-mono text-[10px] text-[var(--muted)]">{row.link_key}</p>
       </td>
-      <td className={`px-3 py-2 ${isChild ? "pl-4" : ""}`}>
-        <div className={`flex items-start gap-1 ${isChild ? "pl-2" : ""}`}>
+      <td className={`px-3 py-2 ${childCellPad}`}>
+        <div className={`flex items-start gap-2 ${isChild ? "border-l-2 border-[var(--gold)]/70 pl-4" : ""}`}>
           {isChild ? (
-            <span className="mt-2.5 shrink-0 text-sm text-[var(--gold)]" aria-hidden>
+            <span className="mt-2.5 shrink-0 text-base leading-none text-[var(--gold)]" aria-hidden>
               └
             </span>
           ) : null}
@@ -947,34 +1024,26 @@ function EditableNavRow({
         </div>
       </td>
       {parentConfig ? (
-        <td className="px-3 py-2">
+        <td className={`px-3 py-2 ${childCellPad}`}>
           <select
             value={parentKey}
             onChange={(e) => setParentKey(e.target.value)}
             disabled={parentConfig.disabled}
-            className={`${INPUT_CLASS} min-w-[130px]`}
-            title={parentConfig.disabled ? parentConfig.disabledReason : undefined}
+            className={`${INPUT_CLASS} min-w-[130px] disabled:cursor-not-allowed disabled:opacity-60`}
+            title={parentConfig.disabled ? parentConfig.disabledTitle : undefined}
           >
-            {!parentRequired ? <option value="">Top level</option> : null}
+            {!parentRequired ? <option value="">— none —</option> : null}
             {parentConfig.options.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </select>
-          {parentConfig.disabled && parentConfig.disabledReason ? (
-            <p className="mt-1 text-[10px] text-amber-800">{parentConfig.disabledReason}</p>
-          ) : null}
         </td>
       ) : null}
       {!hideUrl ? (
-        <td className="px-3 py-2">
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className={`${INPUT_CLASS} min-w-[160px]`}
-            placeholder={URL_HINT}
-          />
+        <td className={`px-3 py-2 ${childCellPad}`}>
+          <NavUrlField value={url} onChange={setUrl} pageOptions={pageOptions} />
         </td>
       ) : null}
       <td className="px-3 py-2">
