@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
   createSitePage,
-  listAllSitePages,
+  listAllSitePagesForAdmin,
   type SitePageCreateInput,
 } from "@/lib/cmsAdmin";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const pages = await listAllSitePages();
+    const pages = await listAllSitePagesForAdmin();
     return NextResponse.json({ pages });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Load failed";

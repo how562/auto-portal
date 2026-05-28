@@ -105,6 +105,7 @@ function isDedicatedPageSlugGuard(slug: string): slug is DedicatedPageSlug {
     slug === "locations" ||
     slug === "schedule-service" ||
     slug === "executive-team" ||
-    slug === "value-your-trade"
+    slug === "value-your-trade" ||
+    slug === "cavender-commitment"
   );
 }

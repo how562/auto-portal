@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CMSSectionRenderer } from "@/components/cms/CMSSectionRenderer";
+import { CavenderCommitmentPageView } from "@/components/commitment/CavenderCommitmentPageView";
 import { ExecutiveTeamPageView } from "@/components/executive/ExecutiveTeamPageView";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/dedicatedPageContent";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { fetchEnrichedCMSPageForPreview } from "@/lib/cmsPages";
+import { buildCommitmentLocationCards } from "@/lib/cavenderCommitmentPageLocations";
 import { fetchDealershipLocations } from "@/lib/locationsPage";
 import { fetchServiceLocations } from "@/lib/serviceScheduling";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
@@ -133,6 +135,14 @@ async function DedicatedPreview({
       return (
         <ValueYourTradePageView
           content={content as import("@/lib/valueYourTradePageContent").ValueYourTradePageContent}
+        />
+      );
+    case "cavender-commitment":
+      return (
+        <CavenderCommitmentPageView
+          content={
+            content as import("@/lib/cavenderCommitmentPageContent").CavenderCommitmentPageContent
+          }
         />
       );
     default:

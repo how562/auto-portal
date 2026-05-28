@@ -65,6 +65,17 @@ export const DEDICATED_SITE_PAGES: DedicatedSitePageDefinition[] = [
       "Edit hero copy and partner iframe URL/height in the dedicated content editor.",
     keepPublished: true,
   },
+  {
+    slug: "cavender-commitment",
+    title: "Cavender Commitment",
+    metaDescription:
+      "Free oil changes for life for veterans and active-duty military members at Cavender Auto Group.",
+    livePath: "/cavender-commitment",
+    contentSource: "CMS page content",
+    adminNote:
+      "Edit hero copy, benefits, FAQ, and CTAs in the dedicated Cavender Commitment content editor.",
+    keepPublished: true,
+  },
 ];
 
 export function getDedicatedSitePage(

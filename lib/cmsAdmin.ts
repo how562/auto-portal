@@ -21,7 +21,7 @@ import {
   DEDICATED_SITE_PAGES,
   isDedicatedSitePageSlug,
 } from "./dedicatedSitePages";
-import { RESERVED_CMS_SLUGS, type SitePage } from "./cmsTypes";
+import { RESERVED_CMS_SLUGS, type AdminSitePageListItem, type SitePage } from "./cmsTypes";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
 const PAGE_SELECT = "id, slug, title, meta_description, status, created_at, updated_at";
@@ -75,6 +75,10 @@ function normalizePageRow(row: Record<string, unknown>): SitePage | null {
       row.status === "published" || row.status === "draft"
         ? row.status
         : "draft",
+    created_at:
+      typeof row.created_at === "string" ? row.created_at : row.created_at != null ? String(row.created_at) : null,
+    updated_at:
+      typeof row.updated_at === "string" ? row.updated_at : row.updated_at != null ? String(row.updated_at) : null,
   };
 }
 
@@ -207,19 +211,79 @@ export async function ensureCmsDemoSitePage(): Promise<SitePage> {
   return page;
 }
 
-export async function listAllSitePages(): Promise<SitePage[]> {
-  if (!isSupabaseAdminConfigured()) return [];
-  await ensureDedicatedSitePages();
-  await ensureCmsDemoSitePage();
+async function countSectionsByPageId(): Promise<Map<string, number>> {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("site_pages")
-    .select(PAGE_SELECT)
-    .order("slug", { ascending: true });
-  if (error) throw new Error(`Failed to list pages: ${error.message}`);
-  return (data ?? [])
-    .map((row) => normalizePageRow(row as Record<string, unknown>))
-    .filter((row): row is SitePage => row != null);
+  const { data, error } = await supabase.from("page_sections").select("page_id");
+
+  if (error) {
+    console.error("[cmsAdmin] Failed to load section counts:", error.message);
+    return new Map();
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const pageId =
+      typeof row.page_id === "string"
+        ? row.page_id
+        : row.page_id != null
+          ? String(row.page_id)
+          : "";
+    if (!pageId) continue;
+    counts.set(pageId, (counts.get(pageId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+async function provisionAdminSitePages(): Promise<void> {
+  try {
+    await ensureDedicatedSitePages();
+  } catch (error: unknown) {
+    console.error(
+      "[cmsAdmin] ensureDedicatedSitePages failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    await ensureCmsDemoSitePage();
+  } catch (error: unknown) {
+    console.error(
+      "[cmsAdmin] ensureCmsDemoSitePage failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+export async function listAllSitePagesForAdmin(): Promise<AdminSitePageListItem[]> {
+  if (!isSupabaseAdminConfigured()) return [];
+
+  await provisionAdminSitePages();
+
+  const supabase = getSupabaseAdmin();
+  const [pagesResult, sectionCounts] = await Promise.all([
+    supabase.from("site_pages").select(PAGE_SELECT).order("updated_at", { ascending: false }),
+    countSectionsByPageId(),
+  ]);
+
+  if (pagesResult.error) {
+    throw new Error(`Failed to list pages: ${pagesResult.error.message}`);
+  }
+
+  return (pagesResult.data ?? [])
+    .map((row) => {
+      const page = normalizePageRow(row as Record<string, unknown>);
+      if (!page) return null;
+      return {
+        ...page,
+        section_count: sectionCounts.get(page.id) ?? 0,
+      } satisfies AdminSitePageListItem;
+    })
+    .filter((row): row is AdminSitePageListItem => row != null);
+}
+
+export async function listAllSitePages(): Promise<SitePage[]> {
+  const rows = await listAllSitePagesForAdmin();
+  return rows.map(({ section_count: _sectionCount, ...page }) => page);
 }
 
 export async function fetchSitePageById(pageId: string): Promise<SitePage | null> {

@@ -6,39 +6,69 @@ import { useMemo, useState, type ReactNode } from "react";
 import { CreatePageFromTemplate } from "@/components/admin/CreatePageFromTemplate";
 import { DuplicatePageDialog } from "@/components/admin/DuplicatePageDialog";
 import { slugifyBlueprintSlug } from "@/lib/cmsPageBlueprint";
-import type { SitePage } from "@/lib/cmsTypes";
+import type { AdminSitePageListItem, SitePage } from "@/lib/cmsTypes";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { CMS_DEMO_SLUG } from "@/lib/cmsDemoConstants";
 import {
+  filterAdminSitePages,
   findCmsDemoPage,
+  formatSitePageUpdatedAt,
   getSitePageDisplayTitle,
   getSitePageLiveHref,
-  sortDraftPagesForAdmin,
-  sortLivePagesForAdmin,
+  partitionAdminSitePages,
 } from "@/lib/sitePagesListUtils";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
 interface SitePagesManagerProps {
-  initialPages: SitePage[];
+  initialPages: AdminSitePageListItem[];
 }
 
 type CreateMode = "template" | "blank" | null;
+
+function mergePagePatch(
+  existing: AdminSitePageListItem,
+  patch: SitePage,
+): AdminSitePageListItem {
+  return {
+    ...existing,
+    ...patch,
+    section_count: existing.section_count,
+  };
+}
 
 export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const router = useRouter();
   const [pages, setPages] = useState(initialPages);
   const [createMode, setCreateMode] = useState<CreateMode>(null);
-  const [duplicatePage, setDuplicatePage] = useState<SitePage | null>(null);
+  const [duplicatePage, setDuplicatePage] = useState<AdminSitePageListItem | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
   const [openingCmsDemo, setOpeningCmsDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const livePages = useMemo(() => sortLivePagesForAdmin(pages), [pages]);
-  const draftPages = useMemo(() => sortDraftPagesForAdmin(pages), [pages]);
+  const filteredPages = useMemo(
+    () => filterAdminSitePages(pages, { query: searchQuery }),
+    [pages, searchQuery],
+  );
+
+  const { live: livePages, drafts: draftPages, cmsDemo: cmsDemoInList } = useMemo(
+    () => partitionAdminSitePages(filteredPages),
+    [filteredPages],
+  );
+
   const cmsDemoPage = useMemo(() => findCmsDemoPage(pages), [pages]);
+  const hasActiveSearch = searchQuery.trim().length > 0;
+  const totalVisible = livePages.length + draftPages.length + (cmsDemoInList ? 1 : 0);
+
+  async function refreshPagesList() {
+    const res = await fetch("/api/admin/site-pages", { credentials: "include" });
+    const data = (await res.json()) as { pages?: AdminSitePageListItem[]; error?: string };
+    if (!res.ok) throw new Error(data.error ?? "Could not refresh pages");
+    if (data.pages) setPages(data.pages);
+  }
 
   async function openCmsDemoPage() {
     setOpeningCmsDemo(true);
@@ -58,7 +88,10 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
       if (data.page) {
         setPages((prev) => {
           const without = prev.filter((p) => p.slug !== data.page!.slug);
-          return [...without, data.page!];
+          return [
+            ...without,
+            { ...data.page!, section_count: 0 } satisfies AdminSitePageListItem,
+          ];
         });
         router.push(`/admin/pages/${data.page.id}`);
       }
@@ -96,7 +129,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
     }
   }
 
-  async function publishPage(page: SitePage) {
+  async function publishPage(page: AdminSitePageListItem) {
     const res = await fetch(`/api/admin/site-pages/${page.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -110,12 +143,12 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
     }
     if (data.page) {
       setPages((prev) =>
-        prev.map((p) => (p.id === data.page!.id ? data.page! : p)),
+        prev.map((p) => (p.id === data.page!.id ? mergePagePatch(p, data.page!) : p)),
       );
     }
   }
 
-  async function unpublishPage(page: SitePage) {
+  async function unpublishPage(page: AdminSitePageListItem) {
     const res = await fetch(`/api/admin/site-pages/${page.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -129,7 +162,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
     }
     if (data.page) {
       setPages((prev) =>
-        prev.map((p) => (p.id === data.page!.id ? data.page! : p)),
+        prev.map((p) => (p.id === data.page!.id ? mergePagePatch(p, data.page!) : p)),
       );
     }
   }
@@ -140,12 +173,8 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className={
-              createMode === "template" ? btnPrimaryMd : btnSecondaryMd
-            }
-            onClick={() =>
-              setCreateMode(createMode === "template" ? null : "template")
-            }
+            className={createMode === "template" ? btnPrimaryMd : btnSecondaryMd}
+            onClick={() => setCreateMode(createMode === "template" ? null : "template")}
           >
             Create from template
           </button>
@@ -212,7 +241,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
                   setSlug(e.target.value);
                 }}
                 onBlur={() => setSlug(slugifyBlueprintSlug(slug))}
-                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-mono"
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 font-mono text-sm"
                 placeholder="about-us"
               />
             </label>
@@ -225,74 +254,129 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
             >
               {creating ? "Creating…" : "Create draft"}
             </button>
-            <button
-              type="button"
-              className={btnSecondaryMd}
-              onClick={() => setCreateMode(null)}
-            >
+            <button type="button" className={btnSecondaryMd} onClick={() => setCreateMode(null)}>
               Cancel
             </button>
           </div>
         </form>
       ) : null}
 
-      {pages.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-[var(--line-dark)] px-6 py-12 text-center text-sm text-[var(--muted)]">
-          No pages yet. Create one from a template above.
-        </p>
-      ) : (
-        <div className="space-y-8">
-          <SitePagesSection
-            title="Live"
-            description={
+      <section className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <p className="text-sm text-[var(--muted)]">
+            {hasActiveSearch ? (
               <>
-                Published pages are public and safe to link from{" "}
-                <Link href="/admin/navigation" className="font-medium text-[var(--ink)] underline">
-                  Navigation
-                </Link>
-                .
+                <strong className="font-semibold text-[var(--ink)]">{totalVisible}</strong> matching
+                page{totalVisible === 1 ? "" : "s"} across Live, Drafts, and CMS workbench
               </>
-            }
-            count={livePages.length}
-            emptyMessage="No live pages yet. Publish a draft to make it available on the site and in nav."
-            pages={livePages}
-            onPublish={publishPage}
-            onUnpublish={unpublishPage}
-            onDuplicate={setDuplicatePage}
-          />
+            ) : (
+              <>
+                <strong className="font-semibold text-[var(--ink)]">{pages.length}</strong> pages in
+                CMS
+              </>
+            )}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor="pages-search">
+              Search pages
+            </label>
+            <input
+              id="pages-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search title or slug…"
+              className="w-full min-w-[12rem] rounded-lg border border-[var(--line)] px-3 py-2 text-sm sm:w-56"
+            />
+            {hasActiveSearch ? (
+              <button
+                type="button"
+                className={btnSecondaryMd}
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={btnSecondaryMd}
+              onClick={() => void refreshPagesList().catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : "Refresh failed");
+              })}
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
 
-          <SitePagesSection
-            title="Drafts"
-            description="Unpublished work in progress — not visible on the public site until you publish."
-            count={draftPages.length}
-            emptyMessage="No drafts. New pages start here until you publish them."
-            pages={draftPages}
-            onPublish={publishPage}
-            onUnpublish={unpublishPage}
-            onDuplicate={setDuplicatePage}
-          />
-
-          {cmsDemoPage ? (
+        {pages.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-[var(--line-dark)] px-6 py-12 text-center text-sm text-[var(--muted)]">
+            No pages in site_pages yet. Create one from a template above.
+          </p>
+        ) : totalVisible === 0 && hasActiveSearch ? (
+          <p className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/40 px-6 py-12 text-center text-sm text-[var(--muted)]">
+            No pages match your search.{" "}
+            <button
+              type="button"
+              className="font-medium text-[var(--ink)] underline"
+              onClick={() => setSearchQuery("")}
+            >
+              Clear search
+            </button>
+          </p>
+        ) : (
+          <div className="space-y-8">
             <SitePagesSection
-              title="CMS workbench"
-              description="Sandbox for section types at /cms-demo. Kept as a draft so it never appears in Live or navigation."
-              count={1}
-              emptyMessage=""
-              pages={[cmsDemoPage]}
+              title="Live"
+              description={
+                <>
+                  Published pages are public and safe to link from{" "}
+                  <Link href="/admin/navigation" className="font-medium text-[var(--ink)] underline">
+                    Navigation
+                  </Link>
+                  . Includes dedicated routes such as Executive Team.
+                </>
+              }
+              count={livePages.length}
+              emptyMessage="No live pages yet. Publish a draft to make it available on the site and in nav."
+              pages={livePages}
               onPublish={publishPage}
               onUnpublish={unpublishPage}
               onDuplicate={setDuplicatePage}
-              variant="workbench"
+              variant="live"
             />
-          ) : null}
-        </div>
-      )}
+
+            <SitePagesSection
+              title="Drafts"
+              description="Unpublished work in progress — not visible on the public site until you publish."
+              count={draftPages.length}
+              emptyMessage="No drafts. New pages start here until you publish them."
+              pages={draftPages}
+              onPublish={publishPage}
+              onUnpublish={unpublishPage}
+              onDuplicate={setDuplicatePage}
+              variant="draft"
+            />
+
+            {cmsDemoInList ? (
+              <SitePagesSection
+                title="CMS workbench"
+                description="Sandbox for section types at /cms-demo. Kept as a draft so it never appears in Live or navigation — use it to preview how sections look."
+                count={1}
+                emptyMessage=""
+                pages={[cmsDemoInList]}
+                onPublish={publishPage}
+                onUnpublish={unpublishPage}
+                onDuplicate={setDuplicatePage}
+                variant="workbench"
+              />
+            ) : null}
+          </div>
+        )}
+      </section>
 
       {duplicatePage ? (
-        <DuplicatePageDialog
-          page={duplicatePage}
-          onClose={() => setDuplicatePage(null)}
-        />
+        <DuplicatePageDialog page={duplicatePage} onClose={() => setDuplicatePage(null)} />
       ) : null}
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -305,11 +389,11 @@ interface SitePagesSectionProps {
   description: ReactNode;
   count: number;
   emptyMessage: string;
-  pages: SitePage[];
-  onPublish: (page: SitePage) => void;
-  onUnpublish: (page: SitePage) => void;
-  onDuplicate: (page: SitePage) => void;
-  variant?: "live" | "draft" | "workbench";
+  pages: AdminSitePageListItem[];
+  onPublish: (page: AdminSitePageListItem) => void;
+  onUnpublish: (page: AdminSitePageListItem) => void;
+  onDuplicate: (page: AdminSitePageListItem) => void;
+  variant: "live" | "draft" | "workbench";
 }
 
 function SitePagesSection({
@@ -321,7 +405,7 @@ function SitePagesSection({
   onPublish,
   onUnpublish,
   onDuplicate,
-  variant = title === "Live" ? "live" : title === "Drafts" ? "draft" : "workbench",
+  variant,
 }: SitePagesSectionProps) {
   const badgeClass =
     variant === "live"
@@ -332,28 +416,64 @@ function SitePagesSection({
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--ink)]">
-            {title}
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-bold normal-case tracking-normal ${badgeClass}`}
-            >
-              {count}
-            </span>
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">{description}</p>
-        </div>
+      <div>
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--ink)]">
+          {title}
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-bold normal-case tracking-normal ${badgeClass}`}
+          >
+            {count}
+          </span>
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm text-[var(--muted)]">{description}</p>
       </div>
 
       {pages.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/40 px-5 py-8 text-center text-sm text-[var(--muted)]">
-          {emptyMessage}
-        </p>
+        emptyMessage ? (
+          <p className="rounded-2xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/40 px-5 py-8 text-center text-sm text-[var(--muted)]">
+            {emptyMessage}
+          </p>
+        ) : null
       ) : (
-        <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
+        <SitePagesTable
+          pages={pages}
+          onPublish={onPublish}
+          onUnpublish={onUnpublish}
+          onDuplicate={onDuplicate}
+        />
+      )}
+    </section>
+  );
+}
+
+interface SitePagesTableProps {
+  pages: AdminSitePageListItem[];
+  onPublish: (page: AdminSitePageListItem) => void;
+  onUnpublish: (page: AdminSitePageListItem) => void;
+  onDuplicate: (page: AdminSitePageListItem) => void;
+}
+
+function SitePagesTable({
+  pages,
+  onPublish,
+  onUnpublish,
+  onDuplicate,
+}: SitePagesTableProps) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white">
+      <table className="min-w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-[var(--line)] bg-[var(--cream)]/50 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            <th className="px-4 py-3 font-semibold">Title</th>
+            <th className="px-4 py-3 font-semibold">Slug</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="hidden px-4 py-3 font-semibold md:table-cell">Updated</th>
+            <th className="px-4 py-3 text-right font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[var(--line)]">
           {pages.map((page) => (
-            <SitePageListRow
+            <SitePageTableRow
               key={page.id}
               page={page}
               onPublish={onPublish}
@@ -361,89 +481,115 @@ function SitePagesSection({
               onDuplicate={onDuplicate}
             />
           ))}
-        </ul>
-      )}
-    </section>
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-interface SitePageListRowProps {
-  page: SitePage;
-  onPublish: (page: SitePage) => void;
-  onUnpublish: (page: SitePage) => void;
-  onDuplicate: (page: SitePage) => void;
+interface SitePageTableRowProps {
+  page: AdminSitePageListItem;
+  onPublish: (page: AdminSitePageListItem) => void;
+  onUnpublish: (page: AdminSitePageListItem) => void;
+  onDuplicate: (page: AdminSitePageListItem) => void;
 }
 
-function SitePageListRow({
+function SitePageTableRow({
   page,
   onPublish,
   onUnpublish,
   onDuplicate,
-}: SitePageListRowProps) {
+}: SitePageTableRowProps) {
   const isPublished = page.status === "published";
   const dedicated = getDedicatedSitePage(page.slug);
   const liveHref = dedicated?.livePath ?? getSitePageLiveHref(page);
   const isSystemLive = Boolean(dedicated?.keepPublished);
   const isCmsDemo = page.slug === CMS_DEMO_SLUG;
   const previewHref = isCmsDemo ? `/${page.slug}` : `/admin/pages/${page.id}/preview`;
+  const hasNoSections = page.section_count === 0;
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-      <div className="min-w-0">
-        <Link
-          href={`/admin/pages/${page.id}`}
-          className="font-medium hover:underline"
-        >
-          {getSitePageDisplayTitle(page)}
-        </Link>
-        <p className="text-sm text-[var(--muted)]">
-          {page.slug === "home" ? "/" : `/${page.slug}`}
-          {dedicated ? (
-            <span className="text-amber-800"> · dedicated layout</span>
-          ) : isCmsDemo ? (
-            <span className="text-violet-800"> · section workbench</span>
+    <tr className="align-middle hover:bg-[var(--cream)]/30">
+      <td className="px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/admin/pages/${page.id}`} className="font-medium hover:underline">
+            {getSitePageDisplayTitle(page)}
+          </Link>
+          {hasNoSections ? (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+              No sections
+            </span>
           ) : null}
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={previewHref}
-          className={btnSecondaryMd}
-          target="_blank"
-          rel="noreferrer"
+          {dedicated ? (
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+              Dedicated
+            </span>
+          ) : null}
+          {isCmsDemo ? (
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-900">
+              Workbench
+            </span>
+          ) : null}
+        </div>
+      </td>
+      <td className="px-4 py-3 font-mono text-xs text-[var(--muted)]">
+        {page.slug === "home" ? "/" : `/${page.slug}`}
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
+            isPublished
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-[var(--cream-dark)] text-[var(--muted)]"
+          }`}
         >
-          Preview
-        </Link>
-        {!isCmsDemo ? (
-          <button type="button" className={btnSecondaryMd} onClick={() => onDuplicate(page)}>
-            Duplicate
-          </button>
-        ) : null}
-        {isPublished ? (
-          <>
-            <Link
-              href={liveHref}
-              className={btnSecondaryMd}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Live
-            </Link>
-            {isSystemLive ? null : (
-              <button type="button" className={btnSecondaryMd} onClick={() => onUnpublish(page)}>
-                Unpublish
-              </button>
-            )}
-          </>
-        ) : isCmsDemo ? null : (
-          <button type="button" className={btnPrimaryMd} onClick={() => onPublish(page)}>
-            Publish
-          </button>
-        )}
-        <Link href={`/admin/pages/${page.id}`} className={btnSecondaryMd}>
-          Edit
-        </Link>
-      </div>
-    </li>
+          {page.status}
+        </span>
+      </td>
+      <td className="hidden px-4 py-3 text-[var(--muted)] md:table-cell">
+        {formatSitePageUpdatedAt(page.updated_at)}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href={previewHref}
+            className={btnSecondaryMd}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Preview
+          </Link>
+          {!isCmsDemo ? (
+            <button type="button" className={btnSecondaryMd} onClick={() => onDuplicate(page)}>
+              Duplicate
+            </button>
+          ) : null}
+          {isPublished ? (
+            <>
+              <Link
+                href={liveHref}
+                className={btnSecondaryMd}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Live
+              </Link>
+              {isSystemLive ? null : (
+                <button type="button" className={btnSecondaryMd} onClick={() => onUnpublish(page)}>
+                  Unpublish
+                </button>
+              )}
+            </>
+          ) : isCmsDemo ? null : (
+            <button type="button" className={btnPrimaryMd} onClick={() => onPublish(page)}>
+              Publish
+            </button>
+          )}
+          <Link href={`/admin/pages/${page.id}`} className={btnSecondaryMd}>
+            Edit
+          </Link>
+        </div>
+      </td>
+    </tr>
   );
 }

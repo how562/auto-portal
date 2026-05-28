@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AboutUsContentForm } from "@/components/admin/dedicated-page/AboutUsContentForm";
+import { CavenderCommitmentContentForm } from "@/components/admin/dedicated-page/CavenderCommitmentContentForm";
 import { ExecutiveTeamContentForm } from "@/components/admin/dedicated-page/ExecutiveTeamContentForm";
 import { LocationsContentForm } from "@/components/admin/dedicated-page/LocationsContentForm";
 import { ScheduleServiceContentForm } from "@/components/admin/dedicated-page/ScheduleServiceContentForm";
@@ -220,6 +221,13 @@ export function DedicatedPageContentEditor({
             <ExecutiveTeamContentForm
               content={
                 content as import("@/lib/executiveTeamPageContent").ExecutiveTeamPageContent
+              }
+              onChange={setContent}
+            />
+          ) : slug === "cavender-commitment" ? (
+            <CavenderCommitmentContentForm
+              content={
+                content as import("@/lib/cavenderCommitmentPageContent").CavenderCommitmentPageContent
               }
               onChange={setContent}
             />

@@ -1,3 +1,4 @@
+import type { CavenderCommitmentPageContent } from "@/lib/cavenderCommitmentPageContent";
 import type { AboutUsPageContent } from "@/lib/aboutUsPageContent";
 import type { ExecutiveTeamPageContent } from "@/lib/executiveTeamPageContent";
 import type { LocationsPageContent } from "@/lib/locationsPageTypes";
@@ -10,6 +11,7 @@ export const DEDICATED_PAGE_SLUGS = [
   "schedule-service",
   "executive-team",
   "value-your-trade",
+  "cavender-commitment",
 ] as const;
 
 export type DedicatedPageSlug = (typeof DEDICATED_PAGE_SLUGS)[number];
@@ -20,6 +22,7 @@ export type DedicatedPageContentBySlug = {
   "schedule-service": ScheduleServicePageContent;
   "executive-team": ExecutiveTeamPageContent;
   "value-your-trade": ValueYourTradePageContent;
+  "cavender-commitment": CavenderCommitmentPageContent;
 };
 
 export type DedicatedPageContent = DedicatedPageContentBySlug[DedicatedPageSlug];

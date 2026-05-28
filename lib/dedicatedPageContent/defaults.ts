@@ -1,3 +1,4 @@
+import { CAVENDER_COMMITMENT_PAGE_CONTENT } from "@/lib/cavenderCommitmentPageContent";
 import { ABOUT_US_PAGE_CONTENT } from "@/lib/aboutUsPageContent";
 import { EXECUTIVE_TEAM_PAGE_CONTENT } from "@/lib/executiveTeamPageContent";
 import { LOCATIONS_PAGE_CONTENT } from "@/lib/locationsPageContent";
@@ -28,6 +29,10 @@ export function getDefaultDedicatedPageContent<S extends DedicatedPageSlug>(
     case "value-your-trade":
       return structuredClone(
         VALUE_YOUR_TRADE_PAGE_CONTENT,
+      ) as DedicatedPageContentBySlug[S];
+    case "cavender-commitment":
+      return structuredClone(
+        CAVENDER_COMMITMENT_PAGE_CONTENT,
       ) as DedicatedPageContentBySlug[S];
     default: {
       const _exhaustive: never = slug;

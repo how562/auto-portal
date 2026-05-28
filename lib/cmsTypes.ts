@@ -1,5 +1,5 @@
 import type { CMSSection, EnrichedCMSSection } from "./cmsSectionModel";
-import type { SitePage } from "./cmsPageTypes";
+import type { SitePage, AdminSitePageListItem } from "./cmsPageTypes";
 
 export const CMS_SECTION_TYPES = [
   "community_hero",
@@ -22,7 +22,8 @@ export const CMS_SECTION_TYPES = [
 
 export type CMSSectionType = (typeof CMS_SECTION_TYPES)[number];
 
-export type { CMSSection, EnrichedCMSSection, SitePage };
+export type { CMSSection, EnrichedCMSSection } from "./cmsSectionModel";
+export type { SitePage, AdminSitePageListItem } from "./cmsPageTypes";
 
 /** @deprecated Use CMSSection */
 export type PageSection = CMSSection;
@@ -49,6 +50,7 @@ export const RESERVED_CMS_SLUGS = new Set([
   "schedule-service",
   "locations",
   "executive-team",
+  "cavender-commitment",
   "value-your-trade",
   "staff",
   "section-showcase",
