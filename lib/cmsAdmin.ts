@@ -22,6 +22,7 @@ import {
   isDedicatedSitePageSlug,
 } from "./dedicatedSitePages";
 import { RESERVED_CMS_SLUGS, type AdminSitePageListItem, type SitePage } from "./cmsTypes";
+import { getSitePageDeletePolicy } from "./sitePageDeletePolicy";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
 const PAGE_SELECT = "id, slug, title, meta_description, status, created_at, updated_at";
@@ -283,7 +284,11 @@ export async function listAllSitePagesForAdmin(): Promise<AdminSitePageListItem[
 
 export async function listAllSitePages(): Promise<SitePage[]> {
   const rows = await listAllSitePagesForAdmin();
-  return rows.map(({ section_count: _sectionCount, ...page }) => page);
+  return rows.map((row) => {
+    const { section_count, ...page } = row;
+    void section_count;
+    return page;
+  });
 }
 
 export async function fetchSitePageById(pageId: string): Promise<SitePage | null> {
@@ -498,11 +503,17 @@ export async function updateSitePage(
 }
 
 export async function deleteSitePage(pageId: string): Promise<void> {
+  const id = pageId.trim();
+  const page = await fetchSitePageById(id);
+  if (!page) throw new Error("Page not found");
+
+  const policy = getSitePageDeletePolicy(page);
+  if (!policy.canDelete) {
+    throw new Error(policy.reason);
+  }
+
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase
-    .from("site_pages")
-    .delete()
-    .eq("id", pageId.trim());
+  const { error } = await supabase.from("site_pages").delete().eq("id", id);
   if (error) throw new Error(`Failed to delete page: ${error.message}`);
 }
 

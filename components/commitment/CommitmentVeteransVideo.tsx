@@ -43,7 +43,6 @@ function toEmbedSrc(url: string): string | null {
 }
 
 export function CommitmentVeteransVideo({
-  sectionId: _sectionId,
   eyebrow,
   headline,
   body,

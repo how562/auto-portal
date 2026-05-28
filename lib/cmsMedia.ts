@@ -1,4 +1,15 @@
+import {
+  CMS_MEDIA_MIME_TYPES,
+  resolveCmsMediaContentType,
+  validateCmsMediaUpload,
+} from "./cmsMediaValidation";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
+
+export {
+  CMS_MEDIA_ACCEPT,
+  CMS_MEDIA_FORMATS_LABEL,
+  validateCmsMediaUpload,
+} from "./cmsMediaValidation";
 
 export const CMS_MEDIA_BUCKET = "cms-media";
 const UPLOAD_PREFIX = "uploads";
@@ -40,13 +51,7 @@ export async function ensureCmsMediaBucket(): Promise<void> {
   const { error } = await supabase.storage.createBucket(CMS_MEDIA_BUCKET, {
     public: true,
     fileSizeLimit: 10 * 1024 * 1024,
-    allowedMimeTypes: [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "image/svg+xml",
-    ],
+    allowedMimeTypes: [...CMS_MEDIA_MIME_TYPES, "image/gif", "image/svg+xml"],
   });
 
   if (error && !error.message.toLowerCase().includes("already exists")) {
@@ -63,11 +68,21 @@ export async function uploadCmsMediaFile(
     throw new Error("Supabase admin is not configured");
   }
 
+  const validation = validateCmsMediaUpload({
+    name: originalName,
+    type: contentType,
+  });
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
+  const resolvedType =
+    resolveCmsMediaContentType(originalName, contentType) ??
+    validation.contentType;
+
   await ensureCmsMediaBucket();
   const supabase = getSupabaseAdmin();
-  const ext = originalName.includes(".")
-    ? originalName.slice(originalName.lastIndexOf(".")).toLowerCase()
-    : ".jpg";
+  const ext = validation.extension;
   const base = sanitizeFilename(
     originalName.replace(/\.[^.]+$/, "") || "image",
   );
@@ -79,7 +94,7 @@ export async function uploadCmsMediaFile(
       : Buffer.from(await (file as File).arrayBuffer());
 
   const { error } = await supabase.storage.from(CMS_MEDIA_BUCKET).upload(path, buffer, {
-    contentType: contentType || "application/octet-stream",
+    contentType: resolvedType,
     upsert: false,
     cacheControl: "3600",
   });

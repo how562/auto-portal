@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuthConfig";
-import { deleteCmsMediaFile, listCmsMediaFiles, uploadCmsMediaFile } from "@/lib/cmsMedia";
+import {
+  deleteCmsMediaFile,
+  listCmsMediaFiles,
+  uploadCmsMediaFile,
+  validateCmsMediaUpload,
+} from "@/lib/cmsMedia";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
@@ -47,11 +52,16 @@ export async function POST(request: Request) {
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Only image uploads are allowed" }, { status: 400 });
+    const validation = validateCmsMediaUpload(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const uploaded = await uploadCmsMediaFile(file, file.name, file.type);
+    const uploaded = await uploadCmsMediaFile(
+      file,
+      file.name,
+      validation.contentType,
+    );
     return NextResponse.json({ file: uploaded });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Upload failed";

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { HomepageSectionEditDrawer } from "@/components/admin/HomepageSectionEditDrawer";
 import { HomepageSectionPreviewThumb } from "@/components/admin/HomepageSectionPreviewThumb";
 import {
   getHomepageLayoutSectionDef,
@@ -9,6 +10,7 @@ import {
   type HomepageLayoutSectionId,
 } from "@/lib/homepageLayoutRegistry";
 import type { HomepageLayoutAdminPayload } from "@/lib/homepageLayoutAdmin";
+import { getHomepageSectionEditorMeta } from "@/lib/homepageSectionEditorMeta";
 
 interface HomepageLayoutEditorProps {
   initialLayout: HomepageLayoutAdminPayload;
@@ -26,6 +28,8 @@ export function HomepageLayoutEditor({ initialLayout }: HomepageLayoutEditorProp
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingSectionId, setEditingSectionId] =
+    useState<HomepageLayoutSectionId | null>(null);
 
   const hiddenSet = useMemo(() => new Set(hiddenSections), [hiddenSections]);
 
@@ -278,6 +282,15 @@ export function HomepageLayoutEditor({ initialLayout }: HomepageLayoutEditorProp
                     {def.description}
                   </p>
                   <p className="mt-1 font-mono text-[10px] text-[var(--muted)]">{def.id}</p>
+                  {(() => {
+                    const editorMeta = getHomepageSectionEditorMeta(def.id);
+                    return (
+                      <p className="mt-0.5 font-mono text-[10px] text-[var(--muted)]">
+                        {editorMeta.layoutSectionId} · {editorMeta.dataSource} · Editable:{" "}
+                        {editorMeta.editable ? "yes" : "no"}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -323,20 +336,25 @@ export function HomepageLayoutEditor({ initialLayout }: HomepageLayoutEditorProp
                       </button>
                     </>
                   ) : null}
-                  {def.editHref ? (
-                    <Link
-                      href={def.editHref}
-                      className="rounded-md border border-[var(--line-dark)] px-3 py-1.5 text-xs font-semibold hover:bg-[var(--cream)]"
-                    >
-                      Edit content
-                    </Link>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setEditingSectionId(def.id)}
+                    className="rounded-md border border-[var(--line-dark)] px-3 py-1.5 text-xs font-semibold hover:bg-[var(--cream)] disabled:opacity-50"
+                  >
+                    Edit content
+                  </button>
                 </div>
               </div>
             </li>
           );
         })}
       </ul>
+
+      <HomepageSectionEditDrawer
+        layoutSectionId={editingSectionId}
+        onClose={() => setEditingSectionId(null)}
+      />
     </div>
   );
 }

@@ -1,0 +1,375 @@
+/**
+ * Finance Center — hero, intro, dealer grid, feature band, CTA.
+ */
+
+.finance-page {
+  --fin-gold: var(--gold, #b8956b);
+  --fin-ink: #1a1a1a;
+  --fin-dark: #1e1e1e;
+  --fin-muted: #6b6560;
+  --fin-gray: #f0f0f0;
+  background: #fff;
+}
+
+/* —— Hero —— */
+.finance-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  height: clamp(300px, 42vw, 480px);
+  overflow: hidden;
+}
+
+.finance-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.finance-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.finance-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.6) 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.finance-hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.finance-hero__title {
+  margin: 0;
+  font-size: clamp(2.5rem, 6.5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.4);
+}
+
+.finance-hero__divider {
+  display: block;
+  width: 3.5rem;
+  height: 3px;
+  margin: 1.25rem auto 1.25rem;
+  background: var(--fin-gold);
+}
+
+.finance-hero__subtitle {
+  margin: 0 0 0.75rem;
+  font-size: clamp(0.9375rem, 2vw, 1.125rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.finance-hero__supporting {
+  margin: 0;
+  font-size: clamp(0.875rem, 1.8vw, 1rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* —— Intro —— */
+.finance-intro {
+  padding: clamp(2.75rem, 5vw, 4rem) 0;
+  background: var(--fin-gray);
+}
+
+.finance-intro__inner {
+  max-width: 42rem;
+  text-align: center;
+}
+
+.finance-intro__eyebrow {
+  margin: 0 0 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fin-gold);
+}
+
+.finance-intro__eyebrow::after {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  height: 2px;
+  margin: 0.5rem auto 0;
+  background: var(--fin-gold);
+}
+
+.finance-intro__heading {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--fin-ink);
+}
+
+.finance-intro__body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--fin-muted);
+}
+
+/* —— Dealer grid —— */
+.finance-dealers-section {
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+  background: var(--fin-dark);
+}
+
+.finance-dealers-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .finance-dealers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .finance-dealers-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.finance-dealers-section__empty {
+  margin: 0;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.finance-dealer-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #252525;
+}
+
+.finance-dealer-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.finance-dealer-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.finance-dealer-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.15rem 1rem 1.35rem;
+  text-align: center;
+}
+
+.finance-dealer-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.finance-dealer-card__region {
+  margin: 0.5rem 0 1.15rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.finance-dealer-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  margin-top: auto;
+  padding: 0 1.25rem;
+  border: 1.5px solid var(--fin-gold);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--fin-gold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.finance-dealer-card__cta:hover {
+  background: var(--fin-gold);
+  color: var(--fin-dark);
+}
+
+/* —— Feature band —— */
+.finance-feature-band {
+  background: var(--fin-dark);
+  border-top: 1px solid color-mix(in srgb, var(--fin-gold) 45%, transparent);
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0;
+}
+
+.finance-feature-band__list {
+  display: grid;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .finance-feature-band__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .finance-feature-band__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .finance-feature-band__item:not(:first-child) {
+    border-left: 1px solid color-mix(in srgb, var(--fin-gold) 40%, transparent);
+    padding-left: 1.25rem;
+    margin-left: 1.25rem;
+  }
+}
+
+.finance-feature-band__item {
+  text-align: center;
+  color: #fff;
+}
+
+.finance-feature-band__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 1rem;
+  color: var(--fin-gold);
+}
+
+.finance-feature-band__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.finance-feature-band__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fin-gold);
+}
+
+.finance-feature-band__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* —— CTA —— */
+.finance-cta {
+  padding: clamp(2.75rem, 5vw, 4rem) 0 clamp(3.25rem, 6vw, 4.5rem);
+  background: #fff;
+}
+
+.finance-cta__inner {
+  text-align: center;
+}
+
+.finance-cta__heading {
+  margin: 0 0 1.75rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--fin-ink);
+}
+
+.finance-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.finance-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.finance-cta__btn--primary {
+  background: var(--fin-dark);
+  color: var(--fin-gold);
+}
+
+.finance-cta__btn--primary:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.finance-cta__btn--secondary {
+  border: 1.5px solid var(--fin-dark);
+  background: transparent;
+  color: var(--fin-dark);
+}
+
+.finance-cta__btn--secondary:hover {
+  background: var(--fin-dark);
+  color: #fff;
+}

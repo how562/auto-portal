@@ -76,6 +76,16 @@ export const DEDICATED_SITE_PAGES: DedicatedSitePageDefinition[] = [
       "Edit hero copy, benefits, FAQ, and CTAs in the dedicated Cavender Commitment content editor.",
     keepPublished: true,
   },
+  {
+    slug: "finance-center",
+    title: "Finance Center",
+    metaDescription: `Apply for financing online at any ${BRAND_NAME} dealership. Choose your location to start a secure application.`,
+    livePath: "/finance-center",
+    contentSource: "CMS page content",
+    adminNote:
+      "Edit Finance Center hero, intro, dealership application links, and CTAs in the dedicated content editor.",
+    keepPublished: true,
+  },
 ];
 
 export function getDedicatedSitePage(

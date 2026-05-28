@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AboutUsContentForm } from "@/components/admin/dedicated-page/AboutUsContentForm";
 import { CavenderCommitmentContentForm } from "@/components/admin/dedicated-page/CavenderCommitmentContentForm";
 import { ExecutiveTeamContentForm } from "@/components/admin/dedicated-page/ExecutiveTeamContentForm";
+import { FinanceContentForm } from "@/components/admin/dedicated-page/FinanceContentForm";
 import { LocationsContentForm } from "@/components/admin/dedicated-page/LocationsContentForm";
 import { ScheduleServiceContentForm } from "@/components/admin/dedicated-page/ScheduleServiceContentForm";
 import { ValueYourTradeContentForm } from "@/components/admin/dedicated-page/ValueYourTradeContentForm";
@@ -236,6 +237,11 @@ export function DedicatedPageContentEditor({
               content={
                 content as import("@/lib/valueYourTradePageContent").ValueYourTradePageContent
               }
+              onChange={setContent}
+            />
+          ) : slug === "finance-center" ? (
+            <FinanceContentForm
+              content={content as import("@/lib/financePageContent").FinancePageContent}
               onChange={setContent}
             />
           ) : null}

@@ -22,7 +22,6 @@ export interface HomepageLayoutSectionDef {
   zone: HomepageLayoutZone;
   /** Cannot be hidden or moved (footer stays last when locked). */
   locked?: boolean;
-  editHref?: string;
   previewVariant:
     | "hero"
     | "life-grid"
@@ -41,7 +40,6 @@ export const HOMEPAGE_LAYOUT_SECTION_DEFS: HomepageLayoutSectionDef[] = [
     label: "Hero",
     description: "Editorial headline, collage imagery, and inventory search bridge.",
     zone: "main",
-    editHref: "/admin/text-settings",
     previewVariant: "hero",
   },
   {
@@ -70,7 +68,6 @@ export const HOMEPAGE_LAYOUT_SECTION_DEFS: HomepageLayoutSectionDef[] = [
     label: "Cavender Commitment",
     description: "Honoring those who serve — imagery and commitment CTAs.",
     zone: "lower",
-    editHref: "/admin/branding",
     previewVariant: "commitment",
   },
   {
@@ -78,7 +75,6 @@ export const HOMEPAGE_LAYOUT_SECTION_DEFS: HomepageLayoutSectionDef[] = [
     label: "Around the Cavender Family",
     description: "Social feed carousel and follow CTA.",
     zone: "lower",
-    editHref: "/admin/homepage/social-feed",
     previewVariant: "social",
   },
   {

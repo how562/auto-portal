@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { CreatePageFromTemplate } from "@/components/admin/CreatePageFromTemplate";
+import { DeletePageDialog } from "@/components/admin/DeletePageDialog";
 import { DuplicatePageDialog } from "@/components/admin/DuplicatePageDialog";
 import { slugifyBlueprintSlug } from "@/lib/cmsPageBlueprint";
 import type { AdminSitePageListItem, SitePage } from "@/lib/cmsTypes";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { CMS_DEMO_SLUG } from "@/lib/cmsDemoConstants";
+import { getSitePageDeletePolicy } from "@/lib/sitePageDeletePolicy";
 import {
   filterAdminSitePages,
   findCmsDemoPage,
@@ -41,6 +43,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const [pages, setPages] = useState(initialPages);
   const [createMode, setCreateMode] = useState<CreateMode>(null);
   const [duplicatePage, setDuplicatePage] = useState<AdminSitePageListItem | null>(null);
+  const [deletePage, setDeletePage] = useState<AdminSitePageListItem | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -146,6 +149,11 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
         prev.map((p) => (p.id === data.page!.id ? mergePagePatch(p, data.page!) : p)),
       );
     }
+  }
+
+  function handlePageDeleted(pageId: string) {
+    setPages((prev) => prev.filter((p) => p.id !== pageId));
+    setDeletePage(null);
   }
 
   async function unpublishPage(page: AdminSitePageListItem) {
@@ -343,18 +351,20 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
               onPublish={publishPage}
               onUnpublish={unpublishPage}
               onDuplicate={setDuplicatePage}
+              onDelete={setDeletePage}
               variant="live"
             />
 
             <SitePagesSection
               title="Drafts"
-              description="Unpublished work in progress — not visible on the public site until you publish."
+              description="Unpublished work in progress — not visible on the public site until you publish. Drafts can be deleted when you no longer need them."
               count={draftPages.length}
               emptyMessage="No drafts. New pages start here until you publish them."
               pages={draftPages}
               onPublish={publishPage}
               onUnpublish={unpublishPage}
               onDuplicate={setDuplicatePage}
+              onDelete={setDeletePage}
               variant="draft"
             />
 
@@ -368,6 +378,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
                 onPublish={publishPage}
                 onUnpublish={unpublishPage}
                 onDuplicate={setDuplicatePage}
+                onDelete={setDeletePage}
                 variant="workbench"
               />
             ) : null}
@@ -377,6 +388,14 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
 
       {duplicatePage ? (
         <DuplicatePageDialog page={duplicatePage} onClose={() => setDuplicatePage(null)} />
+      ) : null}
+
+      {deletePage ? (
+        <DeletePageDialog
+          page={deletePage}
+          onClose={() => setDeletePage(null)}
+          onDeleted={handlePageDeleted}
+        />
       ) : null}
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -393,6 +412,7 @@ interface SitePagesSectionProps {
   onPublish: (page: AdminSitePageListItem) => void;
   onUnpublish: (page: AdminSitePageListItem) => void;
   onDuplicate: (page: AdminSitePageListItem) => void;
+  onDelete: (page: AdminSitePageListItem) => void;
   variant: "live" | "draft" | "workbench";
 }
 
@@ -405,6 +425,7 @@ function SitePagesSection({
   onPublish,
   onUnpublish,
   onDuplicate,
+  onDelete,
   variant,
 }: SitePagesSectionProps) {
   const badgeClass =
@@ -440,6 +461,7 @@ function SitePagesSection({
           onPublish={onPublish}
           onUnpublish={onUnpublish}
           onDuplicate={onDuplicate}
+          onDelete={onDelete}
         />
       )}
     </section>
@@ -451,6 +473,7 @@ interface SitePagesTableProps {
   onPublish: (page: AdminSitePageListItem) => void;
   onUnpublish: (page: AdminSitePageListItem) => void;
   onDuplicate: (page: AdminSitePageListItem) => void;
+  onDelete: (page: AdminSitePageListItem) => void;
 }
 
 function SitePagesTable({
@@ -458,6 +481,7 @@ function SitePagesTable({
   onPublish,
   onUnpublish,
   onDuplicate,
+  onDelete,
 }: SitePagesTableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white">
@@ -479,6 +503,7 @@ function SitePagesTable({
               onPublish={onPublish}
               onUnpublish={onUnpublish}
               onDuplicate={onDuplicate}
+              onDelete={onDelete}
             />
           ))}
         </tbody>
@@ -492,6 +517,7 @@ interface SitePageTableRowProps {
   onPublish: (page: AdminSitePageListItem) => void;
   onUnpublish: (page: AdminSitePageListItem) => void;
   onDuplicate: (page: AdminSitePageListItem) => void;
+  onDelete: (page: AdminSitePageListItem) => void;
 }
 
 function SitePageTableRow({
@@ -499,6 +525,7 @@ function SitePageTableRow({
   onPublish,
   onUnpublish,
   onDuplicate,
+  onDelete,
 }: SitePageTableRowProps) {
   const isPublished = page.status === "published";
   const dedicated = getDedicatedSitePage(page.slug);
@@ -507,6 +534,7 @@ function SitePageTableRow({
   const isCmsDemo = page.slug === CMS_DEMO_SLUG;
   const previewHref = isCmsDemo ? `/${page.slug}` : `/admin/pages/${page.id}/preview`;
   const hasNoSections = page.section_count === 0;
+  const deletePolicy = getSitePageDeletePolicy(page);
 
   return (
     <tr className="align-middle hover:bg-[var(--cream)]/30">
@@ -588,6 +616,15 @@ function SitePageTableRow({
           <Link href={`/admin/pages/${page.id}`} className={btnSecondaryMd}>
             Edit
           </Link>
+          {deletePolicy.canDelete ? (
+            <button
+              type="button"
+              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
+              onClick={() => onDelete(page)}
+            >
+              Delete
+            </button>
+          ) : null}
         </div>
       </td>
     </tr>

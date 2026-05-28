@@ -1,3 +1,4 @@
+import { validateCmsMediaUpload } from "@/lib/cmsMediaValidation";
 import {
   HERO_IMAGE_POSITIONS,
   type CommunityHeroImagePosition,
@@ -70,6 +71,11 @@ export function buildHeroImagesSettings(
 }
 
 export async function uploadCmsImage(file: File): Promise<string> {
+  const validation = validateCmsMediaUpload(file);
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch("/api/admin/cms-media", {

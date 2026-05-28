@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CMSSectionRenderer } from "@/components/cms/CMSSectionRenderer";
 import { CavenderCommitmentPageView } from "@/components/commitment/CavenderCommitmentPageView";
 import { ExecutiveTeamPageView } from "@/components/executive/ExecutiveTeamPageView";
+import { FinancePageView } from "@/components/finance/FinancePageView";
 import { PortalFooter } from "@/components/home/PortalFooter";
 import { PortalHeader } from "@/components/layout/PortalHeader";
 import { LocationsPageView } from "@/components/locations/LocationsPageView";
@@ -18,7 +19,6 @@ import {
 } from "@/lib/dedicatedPageContent";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { fetchEnrichedCMSPageForPreview } from "@/lib/cmsPages";
-import { buildCommitmentLocationCards } from "@/lib/cavenderCommitmentPageLocations";
 import { fetchDealershipLocations } from "@/lib/locationsPage";
 import { fetchServiceLocations } from "@/lib/serviceScheduling";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
@@ -143,6 +143,12 @@ async function DedicatedPreview({
           content={
             content as import("@/lib/cavenderCommitmentPageContent").CavenderCommitmentPageContent
           }
+        />
+      );
+    case "finance-center":
+      return (
+        <FinancePageView
+          content={content as import("@/lib/financePageContent").FinancePageContent}
         />
       );
     default:

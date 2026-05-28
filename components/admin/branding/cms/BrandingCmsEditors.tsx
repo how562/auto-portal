@@ -20,6 +20,7 @@ import {
   type BrandingMessagingRow,
   type BrandingTypographyRow,
 } from "@/lib/brandingCmsTypes";
+import { CMS_MEDIA_ACCEPT, validateCmsMediaUpload } from "@/lib/cmsMediaValidation";
 import {
   createBrandingRow,
   deleteBrandingRow,
@@ -238,11 +239,16 @@ export function BrandingLogosEditor({
               />
               <input
                 type="file"
-                accept="image/*"
+                accept={CMS_MEDIA_ACCEPT}
                 className="mt-2 block w-full text-xs"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  const validation = validateCmsMediaUpload(file);
+                  if (!validation.ok) {
+                    alert(validation.error);
+                    return;
+                  }
                   setUploading(true);
                   try {
                     const url = await uploadBrandingLogoFile(file);

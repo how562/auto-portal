@@ -2,6 +2,11 @@
 
 import { useId, useState } from "react";
 import { btnPrimarySm } from "@/lib/buttonClasses";
+import {
+  CMS_MEDIA_ACCEPT,
+  CMS_MEDIA_FORMATS_LABEL,
+  validateCmsMediaUpload,
+} from "@/lib/cmsMediaValidation";
 
 interface CmsImageFieldProps {
  label: string;
@@ -16,6 +21,11 @@ export function CmsImageField({ label, value, onChange, hint }: CmsImageFieldPro
  const [error, setError] = useState<string | null>(null);
 
  async function handleUpload(file: File) {
+ const validation = validateCmsMediaUpload(file);
+ if (!validation.ok) {
+ setError(validation.error);
+ return;
+ }
  setUploading(true);
  setError(null);
  try {
@@ -45,12 +55,15 @@ export function CmsImageField({ label, value, onChange, hint }: CmsImageFieldPro
  <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
  {label}
  </label>
- {hint ? <p className="text-xs text-[var(--muted)]">{hint}</p> : null}
+ <p className="text-xs text-[var(--muted)]">
+ {hint ? `${hint} ` : null}
+ {CMS_MEDIA_FORMATS_LABEL}
+ </p>
  <div className="flex flex-wrap items-center gap-2">
  <input
  id={inputId}
  type="file"
- accept="image/*"
+ accept={CMS_MEDIA_ACCEPT}
  className="hidden"
  onChange={(e) => {
  const file = e.target.files?.[0];

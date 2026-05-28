@@ -14,6 +14,11 @@ import {
  type CommunityHeroImagePosition,
 } from "@/lib/communityHeroTypes";
 import { btnPrimarySm } from "@/lib/buttonClasses";
+import {
+  CMS_MEDIA_ACCEPT,
+  CMS_MEDIA_FORMATS_LABEL,
+  validateCmsMediaUpload,
+} from "@/lib/cmsMediaValidation";
 
 interface CommunityHeroImageSlotsProps {
  sectionId: string;
@@ -98,7 +103,7 @@ function HeroImageSlot({
  <input
  id={inputId}
  type="file"
- accept="image/*"
+ accept={CMS_MEDIA_ACCEPT}
  className="hidden"
  disabled={busy}
  onChange={(e) => {
@@ -175,6 +180,11 @@ export function CommunityHeroImageSlots({
  }
 
  async function handleUpload(position: CommunityHeroImagePosition, file: File) {
+ const validation = validateCmsMediaUpload(file);
+ if (!validation.ok) {
+ setSlotErrors((prev) => ({ ...prev, [position]: validation.error }));
+ return;
+ }
  setBusySlot(position);
  setSlotErrors((prev) => ({ ...prev, [position]: undefined }));
  setSavedSlot(null);
@@ -221,7 +231,8 @@ export function CommunityHeroImageSlots({
  </p>
  <p className="mt-1 text-sm text-[var(--muted)]">
  Upload or replace any tile — saves automatically to{" "}
- <code className="text-[var(--ink)]">settings.images</code>. No URL copying needed.
+ <code className="text-[var(--ink)]">settings.images</code>. No URL copying needed.{" "}
+ {CMS_MEDIA_FORMATS_LABEL}.
  </p>
  </div>
 

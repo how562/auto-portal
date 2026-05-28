@@ -1,5 +1,5 @@
 import type { CMSSection, EnrichedCMSSection } from "./cmsSectionModel";
-import type { SitePage, AdminSitePageListItem } from "./cmsPageTypes";
+import type { SitePage } from "./cmsPageTypes";
 
 export const CMS_SECTION_TYPES = [
   "community_hero",
@@ -52,6 +52,8 @@ export const RESERVED_CMS_SLUGS = new Set([
   "executive-team",
   "cavender-commitment",
   "value-your-trade",
+  "finance",
+  "finance-center",
   "staff",
   "section-showcase",
   "_next",

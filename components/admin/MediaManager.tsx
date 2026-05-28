@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import type { CmsMediaFile } from "@/lib/cmsMedia";
+import {
+  CMS_MEDIA_ACCEPT,
+  CMS_MEDIA_FORMATS_LABEL,
+  validateCmsMediaUpload,
+} from "@/lib/cmsMediaValidation";
 import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
 
 export function MediaManager() {
@@ -32,6 +37,11 @@ export function MediaManager() {
  }, [loadFiles]);
 
  async function handleUpload(file: File) {
+ const validation = validateCmsMediaUpload(file);
+ if (!validation.ok) {
+ setError(validation.error);
+ return;
+ }
  setUploading(true);
  setError(null);
  try {
@@ -83,14 +93,14 @@ export function MediaManager() {
  </h1>
  <p className="mt-1 text-sm text-[var(--muted)]">
  Uploads go to the <code className="text-[var(--ink)]">cms-media</code> bucket.
- Only public URLs are stored in CMS fields.
+ Only public URLs are stored in CMS fields. {CMS_MEDIA_FORMATS_LABEL}.
  </p>
  </div>
  <div>
  <input
  id={inputId}
  type="file"
- accept="image/*"
+ accept={CMS_MEDIA_ACCEPT}
  className="hidden"
  onChange={(e) => {
  const file = e.target.files?.[0];
