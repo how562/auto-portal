@@ -10,6 +10,12 @@ import type { ManagedLinkMenuLocation } from "@/lib/managedLinksTypes";
 import { PORTAL_CTA_FALLBACKS, PORTAL_CTA_KEYS } from "@/lib/portalCtaFallbacks";
 import type { PortalCtaKey } from "@/lib/portalCtaTypes";
 import { btnPrimarySm, btnSecondarySm } from "@/lib/buttonClasses";
+import {
+  buildFooterNavDisplayItems,
+  buildHeaderNavDisplayItems,
+  type NavDisplayItem,
+  type NavDisplayLevel,
+} from "@/lib/navHierarchyDisplay";
 
 type Tab = "header" | "footer" | "cta";
 
@@ -239,15 +245,10 @@ function HeaderNavPanel({
   setError: (msg: string | null) => void;
   setBusyKey: (key: string | null) => void;
 }) {
-  const q = search.trim().toLowerCase();
   const roots = rows.filter((r) => !r.is_group && !r.parent_key);
-  const headerLinks = useMemo(
-    () =>
-      rows
-        .filter((r) => !r.is_group)
-        .filter((r) => matchesSearch(r, q))
-        .sort((a, b) => a.sort_order - b.sort_order),
-    [rows, q],
+  const headerDisplayItems = useMemo(
+    () => buildHeaderNavDisplayItems(rows, search, matchesSearch),
+    [rows, search],
   );
 
   const [newLabel, setNewLabel] = useState("");
@@ -323,9 +324,10 @@ function HeaderNavPanel({
 
   return (
     <div className="space-y-6">
+      <NavHierarchyLegend variant="header" />
       <NavItemTable
-        title="Header links"
-        items={headerLinks}
+        title="Header navigation"
+        displayItems={headerDisplayItems}
         busyKey={busyKey}
         onPatch={onPatch}
         onReorder={onReorder}
@@ -403,15 +405,10 @@ function FooterNavPanel({
   setError: (msg: string | null) => void;
   setBusyKey: (key: string | null) => void;
 }) {
-  const q = search.trim().toLowerCase();
   const groups = rows.filter((r) => r.is_group);
-  const footerLinks = useMemo(
-    () =>
-      rows
-        .filter((r) => !r.is_group && r.parent_key)
-        .filter((r) => matchesSearch(r, q))
-        .sort((a, b) => a.sort_order - b.sort_order),
-    [rows, q],
+  const footerDisplayItems = useMemo(
+    () => buildFooterNavDisplayItems(rows, search, matchesSearch),
+    [rows, search],
   );
 
   const footerParentOptions = groups.map((g) => ({
@@ -506,28 +503,18 @@ function FooterNavPanel({
 
   return (
     <div className="space-y-6">
+      <NavHierarchyLegend variant="footer" />
       <NavItemTable
-        title="Footer column groups"
-        items={groups.filter((r) => matchesSearch(r, q))}
+        title="Footer navigation"
+        displayItems={footerDisplayItems}
         busyKey={busyKey}
         onPatch={onPatch}
         onReorder={onReorder}
         onDelete={onDelete}
-        hideUrl
+        parentConfig={footerParentConfigFor}
+        parentRequired
+        hideUrlForGroup
       />
-
-      {footerLinks.length > 0 ? (
-        <NavItemTable
-          title="Footer links"
-          items={footerLinks}
-          busyKey={busyKey}
-          onPatch={onPatch}
-          onReorder={onReorder}
-          onDelete={onDelete}
-          parentConfig={footerParentConfigFor}
-          parentRequired
-        />
-      ) : null}
 
       <section className="rounded-xl border border-dashed border-[var(--line-dark)] bg-[var(--cream)]/50 p-4 space-y-4">
         <div>
@@ -719,28 +706,87 @@ type NavParentConfig = {
   disabledReason?: string;
 };
 
+const NAV_LEVEL_STYLES: Record<
+  NavDisplayLevel,
+  { row: string; badge: string; label: string }
+> = {
+  top: {
+    row: "bg-white",
+    badge: "bg-slate-100 text-slate-800 ring-1 ring-slate-200",
+    label: "Top level",
+  },
+  child: {
+    row: "bg-amber-50/80 border-l-4 border-l-[var(--gold)]",
+    badge: "bg-amber-100 text-amber-950 ring-1 ring-amber-200/80",
+    label: "Child link",
+  },
+  group: {
+    row: "bg-[var(--cream)] border-t-2 border-t-[var(--gold)]/50",
+    badge: "bg-violet-100 text-violet-950 ring-1 ring-violet-200",
+    label: "Column group",
+  },
+};
+
+function NavHierarchyLegend({ variant }: { variant: "header" | "footer" }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-xs">
+      <span className="font-semibold text-[var(--muted)]">Legend:</span>
+      {variant === "header" ? (
+        <>
+          <NavLevelBadge level="top" />
+          <span className="text-[var(--muted)]">Main nav / dropdown parent</span>
+          <NavLevelBadge level="child" />
+          <span className="text-[var(--muted)]">Nested under the row above</span>
+        </>
+      ) : (
+        <>
+          <NavLevelBadge level="group" />
+          <span className="text-[var(--muted)]">Footer column heading</span>
+          <NavLevelBadge level="child" />
+          <span className="text-[var(--muted)]">Link in that column</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+function NavLevelBadge({ level }: { level: NavDisplayLevel }) {
+  const style = NAV_LEVEL_STYLES[level];
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${style.badge}`}
+    >
+      {style.label}
+    </span>
+  );
+}
+
 function NavItemTable({
   title,
-  items,
+  displayItems,
   busyKey,
   onPatch,
   onReorder,
   onDelete,
   hideUrl,
+  hideUrlForGroup,
   parentConfig,
   parentRequired,
 }: {
   title: string;
-  items: PortalManagedLinkRow[];
+  displayItems: NavDisplayItem[];
   busyKey: string | null;
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
   onDelete: (key: string) => Promise<void>;
   hideUrl?: boolean;
+  hideUrlForGroup?: boolean;
   parentConfig?: (row: PortalManagedLinkRow) => NavParentConfig;
   parentRequired?: boolean;
 }) {
-  if (items.length === 0) return null;
+  if (displayItems.length === 0) return null;
+
+  const showParentColumn = Boolean(parentConfig);
 
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--line)]">
@@ -748,11 +794,12 @@ function NavItemTable({
         {title}
       </h3>
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="border-b border-[var(--line)] text-xs uppercase tracking-wide text-[var(--muted)]">
+        <thead className="border-b border-[var(--line)] bg-[var(--cream)]/60 text-xs uppercase tracking-wide text-[var(--muted)]">
           <tr>
+            <th className="px-3 py-2 w-24">Level</th>
             <th className="px-3 py-2 w-28">Order</th>
             <th className="px-3 py-2">Label</th>
-            {parentConfig ? <th className="px-3 py-2 min-w-[140px]">Parent</th> : null}
+            {showParentColumn ? <th className="px-3 py-2 min-w-[140px]">Parent</th> : null}
             {!hideUrl ? <th className="px-3 py-2">URL / action</th> : null}
             <th className="px-3 py-2">Spanish</th>
             <th className="px-3 py-2 w-20">New tab</th>
@@ -761,19 +808,29 @@ function NavItemTable({
           </tr>
         </thead>
         <tbody>
-          {items.map((row) => (
-            <EditableNavRow
-              key={row.link_key}
-              row={row}
-              busyKey={busyKey}
-              onPatch={onPatch}
-              onReorder={onReorder}
-              onDelete={onDelete}
-              hideUrl={hideUrl}
-              parentConfig={parentConfig?.(row)}
-              parentRequired={parentRequired}
-            />
-          ))}
+          {displayItems.map((item, index) => {
+            const prev = displayItems[index - 1];
+            const showGroupGap =
+              item.level === "group" && prev && prev.level !== "group";
+            return (
+              <EditableNavRow
+                key={item.row.link_key}
+                row={item.row}
+                displayLevel={item.level}
+                parentLabel={item.parentLabel}
+                showGroupGap={showGroupGap}
+                busyKey={busyKey}
+                onPatch={onPatch}
+                onReorder={onReorder}
+                onDelete={onDelete}
+                hideUrl={hideUrl || (hideUrlForGroup && item.level === "group")}
+                parentConfig={
+                  item.level === "group" ? undefined : parentConfig?.(item.row)
+                }
+                parentRequired={parentRequired && item.level === "child"}
+              />
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -782,6 +839,9 @@ function NavItemTable({
 
 function EditableNavRow({
   row,
+  displayLevel = "top",
+  parentLabel,
+  showGroupGap,
   busyKey,
   onPatch,
   onReorder,
@@ -792,6 +852,9 @@ function EditableNavRow({
   parentRequired,
 }: {
   row: PortalManagedLinkRow;
+  displayLevel?: NavDisplayLevel;
+  parentLabel?: string;
+  showGroupGap?: boolean;
   busyKey: string | null;
   onPatch: (key: string, updates: PortalManagedLinkUpdateInput) => Promise<boolean>;
   onReorder: (key: string, dir: "up" | "down") => Promise<void>;
@@ -829,8 +892,23 @@ function EditableNavRow({
     });
   }
 
+  const levelStyle = NAV_LEVEL_STYLES[displayLevel];
+  const isChild = displayLevel === "child";
+
   return (
-    <tr className="border-b border-[var(--line)] align-top">
+    <tr
+      className={`border-b border-[var(--line)] align-top ${levelStyle.row} ${
+        showGroupGap ? "border-t-4 border-t-[var(--line-dark)]" : ""
+      }`}
+    >
+      <td className="px-3 py-2 align-middle">
+        <NavLevelBadge level={displayLevel} />
+        {isChild && parentLabel ? (
+          <p className="mt-1 max-w-[5.5rem] text-[10px] leading-snug text-[var(--muted)]">
+            under {parentLabel}
+          </p>
+        ) : null}
+      </td>
       <td className="px-3 py-2">
         <div className="flex gap-1">
           <button
@@ -854,17 +932,19 @@ function EditableNavRow({
         </div>
         <p className="mt-1 font-mono text-[10px] text-[var(--muted)]">{row.link_key}</p>
       </td>
-      <td className="px-3 py-2">
-        <input
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          className={`${INPUT_CLASS} min-w-[120px]`}
-        />
-        {row.parent_key ? (
-          <p className="mt-1 text-[10px] text-[var(--muted)]">Dropdown item</p>
-        ) : parentConfig && (parentConfig.options.length > 0 || !parentRequired) ? (
-          <p className="mt-1 text-[10px] text-[var(--muted)]">Top-level (dropdown parent)</p>
-        ) : null}
+      <td className={`px-3 py-2 ${isChild ? "pl-4" : ""}`}>
+        <div className={`flex items-start gap-1 ${isChild ? "pl-2" : ""}`}>
+          {isChild ? (
+            <span className="mt-2.5 shrink-0 text-sm text-[var(--gold)]" aria-hidden>
+              └
+            </span>
+          ) : null}
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className={`${INPUT_CLASS} min-w-[120px] flex-1`}
+          />
+        </div>
       </td>
       {parentConfig ? (
         <td className="px-3 py-2">
