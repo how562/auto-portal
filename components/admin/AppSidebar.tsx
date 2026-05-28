@@ -11,6 +11,7 @@ export interface AdminNavItem {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { title: "Dashboard", href: "/admin/dashboard" },
   { title: "Pages", href: "/admin/pages" },
+  { title: "Stories", href: "/admin/stories" },
   { title: "Page blueprints", href: "/admin/page-blueprints" },
   { title: "Navigation", href: "/admin/navigation" },
   { title: "Section showcase", href: "/admin/section-showcase" },
