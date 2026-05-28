@@ -14,7 +14,7 @@ export async function FeedsScreen() {
 
   if (configured) {
     try {
-      runs = await listFeedImportRuns(25);
+      runs = await listFeedImportRuns({ limit: 25 });
       const latestId = runs[0]?.id;
       if (latestId) {
         const detail = await getFeedImportRunWithItems(latestId);

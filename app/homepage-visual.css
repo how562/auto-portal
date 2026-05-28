@@ -38,9 +38,15 @@
   background-size: 200px 200px, 100% 1px;
 }
 
-.homepage-surface > * {
+/* Page sections only — never the fixed header (dropdowns must stack above hero imagery). */
+.homepage-surface > *:not(header) {
   position: relative;
   z-index: 1;
+}
+
+.homepage-surface > header {
+  position: fixed;
+  z-index: 100;
 }
 
 /* Tighter vertical rhythm — one source of truth for homepage block spacing */

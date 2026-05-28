@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseDealerSendFile } from "./dealerSendParse";
-import { mapDealerSendRow, type HomenetVehicleRow } from "./dealerSendMap";
+import type { CanonicalVehicleRow } from "@/lib/import/canonicalVehicle";
+import { mapDealerSendRowToCanonical } from "@/lib/import/providers/homenet/mapToCanonical";
+import {
+  upsertCanonicalVehicles,
+  type VehicleUpsertError,
+} from "@/lib/import/vehicleUpsert";
+import { snapshotActiveCountsFromDb } from "@/lib/inventorySnapshots";
 import {
   downloadAllInventoryFiles,
   getSftpEnvDebug,
@@ -24,8 +30,6 @@ import {
   type StoreLookupTables,
   type StoreMappingSource,
 } from "./storeMapping";
-
-const UPSERT_BATCH_SIZE = 50;
 
 export interface HomenetImportError {
   row: number;
@@ -106,157 +110,12 @@ function emptyFileSummary(): HomenetFileImportSummary {
   };
 }
 
-function chunk<T>(items: T[], size: number): T[][] {
-  const batches: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    batches.push(items.slice(i, i + size));
-  }
-  return batches;
-}
-
-/** Matches vehicles_store_vin_provider_uidx (store_id, vin, inventory_provider). */
-function storeVinProviderKey(
-  storeId: string,
-  vin: string,
-  provider: string,
-): string {
-  return `${storeId}\0${vin}\0${provider}`;
-}
-
-function hasStoreVinKey(
-  row: HomenetVehicleRow,
-): row is HomenetVehicleRow & { store_id: string; vin: string } {
-  return Boolean(row.store_id?.trim() && row.vin?.trim());
-}
-
-/** Fields refreshed when a vehicle already exists for the same store + VIN. */
-function toMergeUpdate(row: HomenetVehicleRow) {
-  return {
-    internet_price: row.internet_price,
-    msrp: row.msrp,
-    sale_price: row.sale_price,
-    image_urls: row.image_urls,
-    image_count: row.image_count,
-    has_images: row.has_images,
-    data_quality_score: row.data_quality_score,
-    dealer_name: row.dealer_name,
-    updated_at: new Date().toISOString(),
-  };
-}
-
-async function upsertVehicleBatch(
-  supabase: SupabaseClient,
-  batch: HomenetVehicleRow[],
-): Promise<{ upserted: number; errors: HomenetImportError[] }> {
-  const errors: HomenetImportError[] = [];
-  let upserted = 0;
-
-  const keyedRows = batch.filter(hasStoreVinKey);
-  const unkeyedRows = batch.filter((row) => !hasStoreVinKey(row));
-
-  for (const row of unkeyedRows) {
-    errors.push({
-      row: 0,
-      import_key: row.import_key,
-      message: !row.store_id?.trim()
-        ? "Missing store_id — row skipped"
-        : "Missing VIN — row skipped (upsert requires store_id + vin)",
-    });
-  }
-
-  if (keyedRows.length > 0) {
-    const orFilter = keyedRows
-      .map(
-        (row) =>
-          `and(store_id.eq.${row.store_id},vin.eq.${row.vin},inventory_provider.eq.homenet)`,
-      )
-      .join(",");
-
-    const { data: existing, error: lookupError } = await supabase
-      .from("vehicles")
-      .select("store_id, vin, inventory_provider")
-      .or(orFilter);
-
-    if (lookupError) {
-      for (const row of keyedRows) {
-        errors.push({
-          row: 0,
-          import_key: row.import_key,
-          message: `Upsert lookup failed: ${lookupError.message}`,
-        });
-      }
-    } else {
-      const existingKeys = new Set(
-        (existing ?? []).map((row) =>
-          storeVinProviderKey(
-            row.store_id as string,
-            row.vin as string,
-            (row.inventory_provider as string) ?? "homenet",
-          ),
-        ),
-      );
-
-      const toInsert = keyedRows.filter(
-        (row) =>
-          !existingKeys.has(
-            storeVinProviderKey(row.store_id, row.vin, row.inventory_provider),
-          ),
-      );
-      const toUpdate = keyedRows.filter((row) =>
-        existingKeys.has(
-          storeVinProviderKey(row.store_id, row.vin, row.inventory_provider),
-        ),
-      );
-
-      if (toInsert.length > 0) {
-        const { data, error } = await supabase
-          .from("vehicles")
-          .insert(toInsert)
-          .select("id");
-
-        if (error) {
-          for (const row of toInsert) {
-            errors.push({
-              row: 0,
-              import_key: row.import_key,
-              message: `Insert failed: ${error.message}`,
-            });
-          }
-        } else {
-          upserted += data?.length ?? toInsert.length;
-        }
-      }
-
-      if (toUpdate.length > 0) {
-        const { data, error } = await supabase
-          .from("vehicles")
-          .upsert(
-            toUpdate.map((row) => ({
-              store_id: row.store_id,
-              vin: row.vin,
-              inventory_provider: row.inventory_provider,
-              ...toMergeUpdate(row),
-            })),
-            { onConflict: "store_id,vin,inventory_provider" },
-          )
-          .select("id");
-
-        if (error) {
-          for (const row of toUpdate) {
-            errors.push({
-              row: 0,
-              import_key: row.import_key,
-              message: `Update failed: ${error.message}`,
-            });
-          }
-        } else {
-          upserted += data?.length ?? toUpdate.length;
-        }
-      }
-    }
-  }
-
-  return { upserted, errors };
+function mapUpsertErrors(errors: VehicleUpsertError[]): HomenetImportError[] {
+  return errors.map((e) => ({
+    row: e.row,
+    message: e.message,
+    import_key: e.import_key,
+  }));
 }
 
 async function fetchStoreLookup(
@@ -326,12 +185,12 @@ async function importSingleInventoryFile(
     storeLookup.storeNameById.get(storeMapping.storeId) ||
     "";
 
-  const mappedRows: HomenetVehicleRow[] = [];
+  const mappedRows: CanonicalVehicleRow[] = [];
   const errors: HomenetImportError[] = [];
 
   parsed.rows.forEach((raw, index) => {
     try {
-      const mapped = mapDealerSendRow(raw, {
+      const mapped = mapDealerSendRowToCanonical(raw, {
         forcedStoreId: storeMapping.storeId,
         importSource: "homenet_dealer_send",
       });
@@ -363,12 +222,13 @@ async function importSingleInventoryFile(
     }
   });
 
-  let upserted = 0;
-  for (const batch of chunk(mappedRows, UPSERT_BATCH_SIZE)) {
-    const result = await upsertVehicleBatch(supabase, batch);
-    upserted += result.upserted;
-    errors.push(...result.errors);
-  }
+  const upsertResult = await upsertCanonicalVehicles(
+    supabase,
+    mappedRows,
+    "homenet",
+  );
+  const upserted = upsertResult.upserted;
+  errors.push(...mapUpsertErrors(upsertResult.errors));
 
   const skippedRows = parsed.rows.length - mappedRows.length;
   const ok = upserted > 0 || (mappedRows.length > 0 && errors.length === 0);
@@ -421,7 +281,10 @@ export async function runHomenetInventoryImport(
 export async function runHomenetMultiFileInventoryImport(
   supabase: SupabaseClient,
 ): Promise<HomenetImportSummary> {
-  const runId = await startFeedImportRun(supabase);
+  const runId = await startFeedImportRun(supabase, {
+    inventoryProvider: "homenet",
+    runKind: "import",
+  });
 
   try {
     const sftpConfig = readSftpConfigFromEnv();
@@ -458,6 +321,13 @@ export async function runHomenetMultiFileInventoryImport(
       );
     }
     await syncInventoryFeedSourceCounts();
+
+    await snapshotActiveCountsFromDb(supabase, {
+      inventoryProvider: "homenet",
+      feedImportRunId: runId,
+      storeIds: Array.from(storeIds),
+      runKind: "import",
+    });
 
     return summary;
   } catch (error: unknown) {

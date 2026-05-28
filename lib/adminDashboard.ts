@@ -146,7 +146,7 @@ export async function getAdminWorkspaceSnapshot(): Promise<AdminWorkspaceSnapsho
   if (configured) {
     try {
       const [runs, mappings, pages, activeVehicleCount] = await Promise.all([
-        listFeedImportRuns(1).catch(() => [] as FeedImportRunRow[]),
+        listFeedImportRuns({ limit: 1 }).catch(() => [] as FeedImportRunRow[]),
         listFeedFileMappingsAdmin().catch(() => []),
         listAllSitePages().catch(() => []),
         countPublicActiveInventory().catch(() => 0),

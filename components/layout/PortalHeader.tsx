@@ -56,14 +56,14 @@ export function PortalHeader() {
   return (
 
     <header
-      className={`fixed top-0 z-50 w-full border-b ${
+      className={`fixed top-0 z-[100] w-full overflow-visible border-b ${
         isHome
           ? "homepage-header border-transparent bg-[var(--hp-page)]"
           : "border-[var(--line)] bg-[var(--cream)]"
       }`}
     >
 
-      <div className="mx-auto flex h-[4.125rem] max-w-[90rem] items-center justify-between gap-4 px-4 sm:h-[4.625rem] sm:px-6 lg:px-8">
+      <div className="relative z-[100] mx-auto flex h-[4.125rem] max-w-[90rem] items-center justify-between gap-4 overflow-visible px-4 sm:h-[4.625rem] sm:px-6 lg:px-8">
 
         <CavenderLogo href="/" size="header" variant="dark" priority />
 
@@ -71,7 +71,7 @@ export function PortalHeader() {
 
         <nav
 
-          className="hidden items-center gap-6 lg:flex"
+          className="relative z-[100] hidden items-center gap-6 overflow-visible lg:flex"
 
           aria-label="Main navigation"
 
@@ -177,7 +177,7 @@ export function PortalHeader() {
 
             id="mobile-main-nav"
 
-            className={`absolute inset-x-0 top-full z-50 max-h-[min(70vh,28rem)] overflow-y-auto border-b px-4 py-2 shadow-card lg:hidden ${
+            className={`absolute inset-x-0 top-full z-[110] max-h-[min(70vh,28rem)] overflow-y-auto border-b px-4 py-2 shadow-card lg:hidden ${
               isHome
                 ? "border-[var(--hp-line-cool)] bg-[var(--hp-page)]"
                 : "border-[var(--line)] bg-[var(--cream)]"

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DedicatedPageContentEditor } from "@/components/admin/dedicated-page/DedicatedPageContentEditor";
+import { InventorySitePageEditor } from "@/components/admin/InventorySitePageEditor";
 import { PageBuilder } from "@/components/admin/PageBuilder";
 import {
   fetchAllPageSectionsForAdmin,
@@ -29,6 +30,10 @@ export default async function AdminPageBuilderPage({ params }: PageProps) {
 
   if (isDedicatedPageSlug(page.slug)) {
     return <DedicatedPageContentEditor pageId={params.pageId} page={page} />;
+  }
+
+  if (page.page_type === "inventory") {
+    return <InventorySitePageEditor page={page} />;
   }
 
   const [sections, collections] = await Promise.all([

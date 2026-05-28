@@ -22,10 +22,16 @@ import {
   isDedicatedSitePageSlug,
 } from "./dedicatedSitePages";
 import { RESERVED_CMS_SLUGS, type AdminSitePageListItem, type SitePage } from "./cmsTypes";
+import {
+  inventoryPresetHasActiveFilter,
+  parseInventoryPagePreset,
+  type InventoryPagePreset,
+} from "./inventorySitePages";
 import { getSitePageDeletePolicy } from "./sitePageDeletePolicy";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 
-const PAGE_SELECT = "id, slug, title, meta_description, status, created_at, updated_at";
+const PAGE_SELECT =
+  "id, slug, title, meta_description, status, page_type, inventory_preset, created_at, updated_at";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -76,6 +82,11 @@ function normalizePageRow(row: Record<string, unknown>): SitePage | null {
       row.status === "published" || row.status === "draft"
         ? row.status
         : "draft",
+    page_type: row.page_type === "inventory" ? "inventory" : "cms",
+    inventory_preset:
+      row.page_type === "inventory"
+        ? parseInventoryPagePreset(row.inventory_preset)
+        : null,
     created_at:
       typeof row.created_at === "string" ? row.created_at : row.created_at != null ? String(row.created_at) : null,
     updated_at:
@@ -413,6 +424,8 @@ export interface SitePageCreateInput {
   slug?: string;
   meta_description?: string | null;
   status?: "draft" | "published";
+  page_type?: "cms" | "inventory";
+  inventory_preset?: InventoryPagePreset | null;
 }
 
 export interface SitePageUpdateInput {
@@ -420,6 +433,7 @@ export interface SitePageUpdateInput {
   slug?: string;
   meta_description?: string | null;
   status?: "draft" | "published";
+  inventory_preset?: InventoryPagePreset | null;
 }
 
 export async function createSitePage(
@@ -431,6 +445,17 @@ export async function createSitePage(
   const desiredSlug = slugifyPageSlug(input.slug?.trim() || title);
   const slug = await resolveUniquePageSlug(desiredSlug);
 
+  const pageType = input.page_type === "inventory" ? "inventory" : "cms";
+  let inventoryPreset: InventoryPagePreset | null = null;
+  if (pageType === "inventory") {
+    inventoryPreset = parseInventoryPagePreset(input.inventory_preset ?? {});
+    if (!inventoryPresetHasActiveFilter(inventoryPreset)) {
+      throw new Error(
+        "Inventory pages need at least one filter (condition, budget, body style, lifestyle, or store).",
+      );
+    }
+  }
+
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("site_pages")
@@ -439,6 +464,8 @@ export async function createSitePage(
       slug,
       meta_description: input.meta_description?.trim() || null,
       status: input.status ?? "draft",
+      page_type: pageType,
+      inventory_preset: pageType === "inventory" ? inventoryPreset : null,
       updated_at: new Date().toISOString(),
     })
     .select(PAGE_SELECT)
@@ -491,6 +518,20 @@ export async function updateSitePage(
   }
   if (input.status !== undefined) {
     payload.status = input.status;
+  }
+  if (input.inventory_preset !== undefined) {
+    const existing = await fetchSitePageById(id);
+    if (!existing) throw new Error("Page not found");
+    if (existing.page_type !== "inventory") {
+      throw new Error("inventory_preset can only be set on inventory listing pages");
+    }
+    const preset = parseInventoryPagePreset(input.inventory_preset ?? {});
+    if (!inventoryPresetHasActiveFilter(preset)) {
+      throw new Error(
+        "Inventory pages need at least one filter (condition, budget, body style, lifestyle, or store).",
+      );
+    }
+    payload.inventory_preset = preset;
   }
 
   const supabase = getSupabaseAdmin();
@@ -770,7 +811,13 @@ export async function duplicateSitePage(
     slug,
     meta_description: source.meta_description,
     status: "draft",
+    page_type: source.page_type,
+    inventory_preset: source.inventory_preset,
   });
+
+  if (source.page_type === "inventory") {
+    return page;
+  }
 
   const seeds: PageSectionSeedInput[] = sections.map((section) => ({
     section_type: section.section_type,

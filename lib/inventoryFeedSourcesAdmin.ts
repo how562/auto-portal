@@ -3,9 +3,19 @@ import {
   syncInventoryFeedSourceCounts,
 } from "./inventoryActiveSource";
 import {
+  buildStoreComparison,
+  loadFeedHealthIndex,
+  resolveFeedHealth,
+  type ProviderFeedHealth,
+} from "./inventoryFeedSourceHealth";
+import {
   INVENTORY_PROVIDER_LABELS,
   type InventoryProvider,
 } from "./inventoryProviders";
+import {
+  logInventorySourceSwitch,
+  validateProviderSwitch,
+} from "./inventorySourceSwitch";
 import { getSupabaseAdmin } from "./supabaseAdmin";
 
 export interface InventoryFeedSourceRow {
@@ -15,9 +25,12 @@ export interface InventoryFeedSourceRow {
   label: string;
   status: "configured" | "disabled";
   last_import_at: string | null;
+  last_intake_at: string | null;
   last_vehicle_count: number;
+  last_error_message: string | null;
   created_at: string;
   updated_at: string;
+  health: ProviderFeedHealth;
 }
 
 export interface DealershipInventorySettingsRow {
@@ -32,12 +45,7 @@ export interface StoreInventorySourcesBundle {
   activeFeedSourceId: string | null;
   activeProvider: InventoryProvider;
   sources: InventoryFeedSourceRow[];
-  comparison: {
-    homenetCount: number;
-    vautoCount: number;
-    difference: number;
-    mismatchWarning: boolean;
-  };
+  comparison: ReturnType<typeof buildStoreComparison>;
 }
 
 export async function ensureInventoryFeedSourcesForStore(
@@ -111,6 +119,7 @@ export async function listStoreInventorySourceBundles(): Promise<
 > {
   await ensureAllInventoryFeedSources();
   const supabase = getSupabaseAdmin();
+  const healthIndex = await loadFeedHealthIndex();
 
   const { data: stores, error: storesError } = await supabase
     .from("stores")
@@ -146,10 +155,26 @@ export async function listStoreInventorySourceBundles(): Promise<
   );
 
   const sourcesByStore = new Map<string, InventoryFeedSourceRow[]>();
-  for (const row of (sources ?? []) as InventoryFeedSourceRow[]) {
-    const list = sourcesByStore.get(row.store_id) ?? [];
-    list.push(row);
-    sourcesByStore.set(row.store_id, list);
+  for (const row of sources ?? []) {
+    const storeId = row.store_id as string;
+    const provider = row.provider as InventoryProvider;
+    const enriched: InventoryFeedSourceRow = {
+      id: row.id as string,
+      store_id: storeId,
+      provider,
+      label: row.label as string,
+      status: row.status as "configured" | "disabled",
+      last_import_at: (row.last_import_at as string | null) ?? null,
+      last_intake_at: (row.last_intake_at as string | null) ?? null,
+      last_vehicle_count: Number(row.last_vehicle_count) || 0,
+      last_error_message: (row.last_error_message as string | null) ?? null,
+      created_at: String(row.created_at ?? ""),
+      updated_at: String(row.updated_at ?? ""),
+      health: resolveFeedHealth(healthIndex, storeId, provider),
+    };
+    const list = sourcesByStore.get(storeId) ?? [];
+    list.push(enriched);
+    sourcesByStore.set(storeId, list);
   }
 
   const bundles: StoreInventorySourcesBundle[] = [];
@@ -170,24 +195,25 @@ export async function listStoreInventorySourceBundles(): Promise<
       activeFeedSourceId,
       activeProvider,
       sources: storeSources,
-      comparison: {
-        homenetCount: homenet,
-        vautoCount: vauto,
-        difference: Math.abs(homenet - vauto),
-        mismatchWarning:
-          homenet > 0 && vauto > 0 && Math.abs(homenet - vauto) > 0,
-      },
+      comparison: buildStoreComparison(homenet, vauto),
     });
   }
 
   return bundles;
 }
 
+export interface SetActiveInventoryFeedSourceInput {
+  storeId: string;
+  feedSourceId: string;
+  acknowledgeMismatch?: boolean;
+}
+
 export async function setActiveInventoryFeedSource(
-  storeId: string,
-  feedSourceId: string,
+  input: SetActiveInventoryFeedSourceInput,
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
+  const storeId = input.storeId.trim();
+  const feedSourceId = input.feedSourceId.trim();
 
   const { data: source, error: sourceError } = await supabase
     .from("inventory_feed_sources")
@@ -203,6 +229,19 @@ export async function setActiveInventoryFeedSource(
     throw new Error("Feed source does not belong to this dealership");
   }
 
+  const targetProvider = source.provider as InventoryProvider;
+
+  const validation = await validateProviderSwitch({
+    storeId,
+    targetFeedSourceId: feedSourceId,
+    targetProvider,
+    acknowledgeMismatch: input.acknowledgeMismatch,
+  });
+
+  if (!validation.allowed) {
+    throw new Error(validation.message ?? "Cannot switch inventory source");
+  }
+
   const { error } = await supabase.from("dealership_inventory_settings").upsert(
     {
       store_id: storeId,
@@ -215,4 +254,15 @@ export async function setActiveInventoryFeedSource(
   if (error) {
     throw new Error(`Failed to set active source: ${error.message}`);
   }
+
+  await logInventorySourceSwitch({
+    storeId,
+    fromFeedSourceId: validation.currentFeedSourceId,
+    toFeedSourceId: feedSourceId,
+    fromProvider: validation.currentProvider,
+    toProvider: targetProvider,
+    homenetCount: validation.comparison.homenetCount,
+    vautoCount: validation.comparison.vautoCount,
+    acknowledgedMismatch: Boolean(input.acknowledgeMismatch),
+  });
 }

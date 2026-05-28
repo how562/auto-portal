@@ -3,8 +3,23 @@ import { isAdminRequest } from "@/lib/adminAuthConfig";
 import {
   getFeedImportRunWithItems,
   listFeedImportRuns,
+  type ListFeedImportRunsOptions,
 } from "@/lib/feedImportRunsAdmin";
+import type { FeedImportRunKind } from "@/lib/inventoryIngestion/types";
+import type { InventoryProvider } from "@/lib/inventoryProviders";
 import { isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
+
+function parseProvider(value: string | null): ListFeedImportRunsOptions["inventoryProvider"] {
+  if (value === "homenet" || value === "vauto") return value;
+  return "all";
+}
+
+function parseRunKind(value: string | null): ListFeedImportRunsOptions["runKind"] {
+  if (value === "import" || value === "intake" || value === "reconcile") {
+    return value;
+  }
+  return "all";
+}
 
 export async function GET(request: Request) {
   if (!isAdminRequest(request)) {
@@ -33,7 +48,18 @@ export async function GET(request: Request) {
       100,
       Math.max(1, Number(searchParams.get("limit") ?? 25) || 25),
     );
-    const runs = await listFeedImportRuns(limit);
+    const inventoryProvider = parseProvider(
+      searchParams.get("provider"),
+    ) as InventoryProvider | "all";
+    const runKind = parseRunKind(searchParams.get("runKind")) as
+      | FeedImportRunKind
+      | "all";
+
+    const runs = await listFeedImportRuns({
+      limit,
+      inventoryProvider,
+      runKind,
+    });
     const latest = runs[0] ?? null;
 
     return NextResponse.json({ runs, latest });

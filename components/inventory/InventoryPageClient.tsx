@@ -31,6 +31,10 @@ import {
   INVENTORY_PAGE_SIZE,
   type InventoryFilters,
 } from "@/lib/inventorySearch";
+import {
+  applyInventoryPagePreset,
+  type InventoryPagePreset,
+} from "@/lib/inventorySitePages";
 import type { InventoryViewMode } from "@/lib/inventoryView";
 import { getStoredViewMode, storeViewMode } from "@/lib/inventoryView";
 import type { Store, Vehicle } from "@/lib/types";
@@ -46,6 +50,14 @@ interface InventoryPageClientProps {
   serverPaginated: boolean;
   /** Optional CMS banner — omit to collapse the slot. */
   bannerImageUrl?: string | null;
+  /** Defaults to `/inventory`. Use `/${slug}` for inventory listing pages. */
+  basePath?: string;
+  /** Page H1 for inventory landing pages. */
+  pageTitle?: string;
+  /** Locked filter dimensions from CMS inventory_preset. */
+  lockedPreset?: InventoryPagePreset;
+  /** Filters restored by “reset” on landing pages (preset defaults). */
+  resetFilters?: InventoryFilters;
 }
 
 function applyMakeModelFilter(
@@ -73,10 +85,21 @@ export function InventoryPageClient({
   totalCount,
   serverPaginated,
   bannerImageUrl = null,
+  basePath = "/inventory",
+  pageTitle,
+  lockedPreset,
+  resetFilters: resetFiltersProp,
 }: InventoryPageClientProps) {
   const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
   const router = useRouter();
+  const resetFilters = resetFiltersProp ?? DEFAULT_INVENTORY_FILTERS;
+
+  const enforcePreset = useCallback(
+    (next: InventoryFilters) =>
+      lockedPreset ? applyInventoryPagePreset(next, lockedPreset) : next,
+    [lockedPreset],
+  );
   const [filters, setFilters] = useState<InventoryFilters>(initialFilters);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
@@ -100,28 +123,29 @@ export function InventoryPageClient({
 
   const syncUrl = useCallback(
     (next: InventoryFilters, nextPage = 1, nextSearch = searchQuery) => {
-      const params = filtersToSearchParams(next, nextPage, nextSearch);
+      const applied = enforcePreset(next);
+      const params = filtersToSearchParams(applied, nextPage, nextSearch);
       const qs = params.toString();
-      router.replace(qs ? `/inventory?${qs}` : "/inventory", { scroll: false });
+      router.replace(qs ? `${basePath}?${qs}` : basePath, { scroll: false });
     },
-    [router, searchQuery],
+    [router, searchQuery, basePath, enforcePreset],
   );
 
   const updateFilters = useCallback(
     (patch: Partial<InventoryFilters>) => {
       setFilters((prev) => {
-        const next = {
+        const next = enforcePreset({
           ...prev,
           ...patch,
           ...(patch.lifestyle != null && patch.lifestyle !== prev.lifestyle
             ? { lifeRefinement: null }
             : {}),
-        };
+        });
         syncUrl(next);
         return next;
       });
     },
-    [syncUrl],
+    [syncUrl, enforcePreset],
   );
 
   const applyFilterPatch = useCallback(
@@ -132,12 +156,12 @@ export function InventoryPageClient({
   );
 
   const clearAll = useCallback(() => {
-    setFilters(DEFAULT_INVENTORY_FILTERS);
+    setFilters(resetFilters);
     setSearchQuery(null);
     setMakeFilter("all");
     setModelFilter("all");
-    syncUrl(DEFAULT_INVENTORY_FILTERS, 1, null);
-  }, [syncUrl]);
+    syncUrl(resetFilters, 1, null);
+  }, [syncUrl, resetFilters]);
 
   const handleMakeChange = useCallback((make: string) => {
     setMakeFilter(make);
@@ -205,9 +229,9 @@ export function InventoryPageClient({
     (targetPage: number) => {
       const params = filtersToSearchParams(filters, targetPage, searchQuery);
       const qs = params.toString();
-      return qs ? `/inventory?${qs}` : "/inventory";
+      return qs ? `${basePath}?${qs}` : basePath;
     },
-    [filters, searchQuery],
+    [filters, searchQuery, basePath],
   );
 
   const lifeHeader = useMemo(
@@ -243,7 +267,8 @@ export function InventoryPageClient({
         <div className="portal-container space-y-4 pb-10 pt-3 sm:space-y-5 sm:pb-12 sm:pt-4">
           <InventoryCommandIntro
             vehicleCount={displayCount}
-            lifeTitle={lifeHeader?.title}
+            lifeTitle={lifeHeader?.title ?? pageTitle ?? undefined}
+            breadcrumbCurrentLabel={pageTitle}
           />
 
           <InventoryMissionControl

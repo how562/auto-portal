@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { OurStoryHero } from "@/components/our-story/OurStoryHero";
 import { OurStoryTimeline } from "@/components/our-story/OurStoryTimeline";
-import { OurStoryVideo } from "@/components/our-story/OurStoryVideo";
 import { OUR_STORY_PAGE_CONTENT } from "@/lib/ourStoryPageContent";
 import type { OurStoryPageContent } from "@/lib/ourStoryPageContent";
 
@@ -14,31 +14,20 @@ export function OurStoryPageView({
   content = OUR_STORY_PAGE_CONTENT,
 }: OurStoryPageViewProps) {
   const { hero, video, timeline, legacy, cta } = content;
+  const timelineIntro =
+    timeline.intro ?? OUR_STORY_PAGE_CONTENT.timeline.intro;
+  const timelineFinale =
+    timeline.finaleTagline ?? OUR_STORY_PAGE_CONTENT.timeline.finaleTagline;
 
   return (
     <div className="story-page">
-      <section className="story-hero" aria-labelledby="story-hero-title">
-        <div className="story-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero.imageUrl} alt="" className="story-hero__img" />
-          <div className="story-hero__overlay" aria-hidden />
-        </div>
-        <div className="portal-container story-hero__content">
-          <p className="story-hero__eyebrow">Cavender Auto Group</p>
-          <h1 id="story-hero-title" className="story-hero__title">
-            {hero.title}
-          </h1>
-          <p className="story-hero__subtitle">{hero.subtitle}</p>
-          <p className="story-hero__supporting">{hero.supportingLine}</p>
-          <span className="story-hero__rule" aria-hidden />
-        </div>
-      </section>
-
-      <OurStoryVideo video={video} />
+      <OurStoryHero hero={hero} video={video} />
 
       <OurStoryTimeline
         eyebrow={timeline.eyebrow}
         title={timeline.title}
+        intro={timelineIntro}
+        finaleTagline={timelineFinale}
         milestones={timeline.milestones}
       />
 

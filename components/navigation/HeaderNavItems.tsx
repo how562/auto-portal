@@ -140,7 +140,7 @@ function HeaderNavNode({
 }) {
  if (item.children && item.children.length > 0) {
  return (
- <div className="group relative">
+ <div className="group relative z-[100]">
  <button
  type="button"
  className={`${navLinkClass} inline-flex items-center gap-1`}
@@ -152,8 +152,8 @@ function HeaderNavNode({
  ▾
  </span>
  </button>
- <div className="pointer-events-none absolute left-0 top-full z-50 min-w-[12rem] pt-2 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
- <div className="rounded-xl border border-[var(--line)] bg-[var(--cream)] py-2 shadow-lg">
+ <div className="pointer-events-none absolute left-0 top-full z-[110] min-w-[12rem] pt-2 opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+ <div className="rounded-xl border border-[var(--line)] bg-[var(--cream)] py-2 shadow-lg ring-1 ring-black/5">
  {item.children.map((child) => (
  <div key={child.id} className="px-1">
  <HeaderNavLeaf

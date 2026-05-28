@@ -29,6 +29,7 @@ export async function GET(request: Request) {
 interface ActivateBody {
   storeId: string;
   feedSourceId: string;
+  acknowledgeMismatch?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -51,7 +52,11 @@ export async function POST(request: Request) {
       );
     }
 
-    await setActiveInventoryFeedSource(body.storeId.trim(), body.feedSourceId.trim());
+    await setActiveInventoryFeedSource({
+      storeId: body.storeId.trim(),
+      feedSourceId: body.feedSourceId.trim(),
+      acknowledgeMismatch: body.acknowledgeMismatch,
+    });
     const bundles = await listStoreInventorySourceBundles();
     const bundle = bundles.find((b) => b.storeId === body.storeId.trim());
     return NextResponse.json({ ok: true, bundle });

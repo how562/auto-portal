@@ -33,7 +33,11 @@ export function InventoryFeedSourcesScreen() {
     feedSourceId: string;
     provider: InventoryProvider;
     storeName: string;
+    dramaticMismatch: boolean;
+    homenetCount: number;
+    vautoCount: number;
   } | null>(null);
+  const [acknowledgeMismatch, setAcknowledgeMismatch] = useState(false);
   const [activating, setActivating] = useState(false);
 
   const load = useCallback(async () => {
@@ -74,6 +78,8 @@ export function InventoryFeedSourcesScreen() {
         body: JSON.stringify({
           storeId: pending.storeId,
           feedSourceId: pending.feedSourceId,
+          acknowledgeMismatch:
+            acknowledgeMismatch || !pending.dramaticMismatch,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -81,6 +87,7 @@ export function InventoryFeedSourcesScreen() {
         throw new Error(json.error ?? "Failed to switch source");
       }
       setPending(null);
+      setAcknowledgeMismatch(false);
       await load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to switch source");
@@ -168,7 +175,11 @@ export function InventoryFeedSourcesScreen() {
                 />
                 <div className="text-sm">
                   <p className="text-[var(--muted)]">Mismatch</p>
-                  {bundle.comparison.mismatchWarning ? (
+                  {bundle.comparison.dramaticMismatch ? (
+                    <p className="mt-0.5 font-medium text-red-800">
+                      Large gap — confirm before switching
+                    </p>
+                  ) : bundle.comparison.mismatchWarning ? (
                     <p className="mt-0.5 font-medium text-amber-800">
                       Counts differ — review before switching
                     </p>
@@ -185,6 +196,8 @@ export function InventoryFeedSourcesScreen() {
                       <th className="px-5 py-3 font-medium">Provider</th>
                       <th className="px-5 py-3 font-medium">Status</th>
                       <th className="px-5 py-3 font-medium">Last import</th>
+                      <th className="px-5 py-3 font-medium">Last success</th>
+                      <th className="px-5 py-3 font-medium">Last file</th>
                       <th className="px-5 py-3 font-medium tabular-nums">
                         Vehicles
                       </th>
@@ -208,6 +221,26 @@ export function InventoryFeedSourcesScreen() {
                           </td>
                           <td className="px-5 py-3 text-[var(--muted)]">
                             {formatWhen(source.last_import_at)}
+                            {source.last_intake_at &&
+                            source.provider === "vauto" ? (
+                              <span className="mt-0.5 block text-[10px]">
+                                Intake {formatWhen(source.last_intake_at)}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="px-5 py-3 text-[var(--muted)]">
+                            {formatWhen(source.health.lastSuccessfulImportAt)}
+                            {source.health.lastRunKind ? (
+                              <span className="mt-0.5 block text-[10px] capitalize">
+                                {source.health.lastRunKind}
+                                {source.health.lastRunStatus
+                                  ? ` · ${source.health.lastRunStatus}`
+                                  : ""}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="max-w-[10rem] truncate px-5 py-3 font-mono text-xs text-[var(--muted)]">
+                            {source.health.lastFileName ?? "—"}
                           </td>
                           <td className="px-5 py-3 tabular-nums">
                             {source.last_vehicle_count.toLocaleString()}
@@ -221,14 +254,19 @@ export function InventoryFeedSourcesScreen() {
                               <button
                                 type="button"
                                 className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--cream)]"
-                                onClick={() =>
+                                onClick={() => {
+                                  setAcknowledgeMismatch(false);
                                   setPending({
                                     storeId: bundle.storeId,
                                     feedSourceId: source.id,
                                     provider: source.provider,
                                     storeName: bundle.storeName,
-                                  })
-                                }
+                                    dramaticMismatch:
+                                      bundle.comparison.dramaticMismatch,
+                                    homenetCount: bundle.comparison.homenetCount,
+                                    vautoCount: bundle.comparison.vautoCount,
+                                  });
+                                }}
                               >
                                 Set active
                               </button>
@@ -272,19 +310,44 @@ export function InventoryFeedSourcesScreen() {
             <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
               {SWITCH_WARNING}
             </p>
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              HomeNet: {pending.homenetCount.toLocaleString()} vehicles · vAuto:{" "}
+              {pending.vautoCount.toLocaleString()} vehicles (stored separately, not
+              merged).
+            </p>
+            {pending.dramaticMismatch ? (
+              <label className="mt-4 flex cursor-pointer items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-950">
+                <input
+                  type="checkbox"
+                  checked={acknowledgeMismatch}
+                  onChange={(e) => setAcknowledgeMismatch(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  I have compared HomeNet and vAuto counts and accept switching live
+                  inventory to {INVENTORY_PROVIDER_LABELS[pending.provider]}.
+                </span>
+              </label>
+            ) : null}
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)]"
                 disabled={activating}
-                onClick={() => setPending(null)}
+                onClick={() => {
+                  setPending(null);
+                  setAcknowledgeMismatch(false);
+                }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 className="rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-                disabled={activating}
+                disabled={
+                  activating ||
+                  (pending.dramaticMismatch && !acknowledgeMismatch)
+                }
                 onClick={() => void confirmActivate()}
               >
                 {activating ? "Switching…" : "Switch source"}

@@ -117,17 +117,42 @@ export function OurStoryContentForm({
           value={content.timeline.title}
           onChange={(title) => patch("timeline", { ...content.timeline, title })}
         />
+        <TextAreaField
+          label="Intro paragraph"
+          value={content.timeline.intro ?? ""}
+          onChange={(intro) => patch("timeline", { ...content.timeline, intro })}
+          className="sm:col-span-2"
+          rows={2}
+        />
+        <TextField
+          label="Closing tagline (e.g. Confidence Is Cavender)"
+          value={content.timeline.finaleTagline ?? ""}
+          onChange={(finaleTagline) =>
+            patch("timeline", { ...content.timeline, finaleTagline })
+          }
+          className="sm:col-span-2"
+        />
       </FormSection>
 
       {content.timeline.milestones.map((milestone, index) => (
-        <FormSection key={milestone.id} title={`Timeline · ${milestone.year}`}>
+        <FormSection key={milestone.id} title={`Timeline · ${milestone.title}`}>
           <TextField
-            label="Year"
+            label="Display year / era"
             value={milestone.year}
             onChange={(year) => patchMilestone(index, { year })}
           />
           <TextField
-            label="Eyebrow / category"
+            label="Nav short label"
+            value={milestone.shortLabel ?? ""}
+            onChange={(shortLabel) => patchMilestone(index, { shortLabel })}
+          />
+          <TextField
+            label="Generation label (optional)"
+            value={milestone.generation ?? ""}
+            onChange={(generation) => patchMilestone(index, { generation })}
+          />
+          <TextField
+            label="Eyebrow / chapter"
             value={milestone.eyebrow}
             onChange={(eyebrow) => patchMilestone(index, { eyebrow })}
           />
@@ -167,6 +192,18 @@ export function OurStoryContentForm({
             onChange={(linkUrl) => patchMilestone(index, { linkUrl })}
             mono
           />
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={milestone.variant === "finale"}
+              onChange={(e) =>
+                patchMilestone(index, {
+                  variant: e.target.checked ? "finale" : "default",
+                })
+              }
+            />
+            Finale milestone (emphasized closing card)
+          </label>
         </FormSection>
       ))}
 

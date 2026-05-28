@@ -8,12 +8,13 @@ import {
   insertRawFeedArchive,
   logInventoryImportFailure,
 } from "@/lib/rawFeedArchive";
+import { inspectVautoFeedContent } from "@/lib/import/providers/vauto";
 import {
   downloadAllInventoryFiles,
   getSftpEnvDebug,
   readVautoSftpConfigFromEnv,
-  type DownloadedInventoryFile,
 } from "@/lib/import/sftpInventory";
+import { recordInventorySnapshotsForStores } from "@/lib/inventorySnapshots";
 import type { HomenetImportSummary } from "@/lib/import/homenetImport";
 import { touchInventoryFeedSourceImport } from "@/lib/inventoryActiveSource";
 
@@ -45,28 +46,6 @@ export interface VautoIntakeSummary {
   hasPassword?: boolean;
   passwordLength?: number;
   sftpPath?: string;
-}
-
-function inspectFileContent(file: DownloadedInventoryFile): {
-  headerPreview: string[];
-  rowCountEstimate: number | null;
-  detectedFormat: string;
-} {
-  const lines = file.content.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  const headerPreview = lines.slice(0, 3);
-  const lower = file.fileName.toLowerCase();
-  let rowCountEstimate: number | null = null;
-  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
-    rowCountEstimate = Math.max(0, lines.length - 1);
-  }
-  const detectedFormat = lower.endsWith(".xml")
-    ? "xml"
-    : lower.endsWith(".json")
-      ? "json"
-      : lower.endsWith(".csv")
-        ? "csv"
-        : "txt";
-  return { headerPreview, rowCountEstimate, detectedFormat };
 }
 
 function toRunSummary(summary: VautoIntakeSummary): HomenetImportSummary {
@@ -119,7 +98,7 @@ export async function runVautoInventoryIntake(
 
     for (const file of downloaded) {
       try {
-        const inspection = inspectFileContent(file);
+        const inspection = inspectVautoFeedContent(file.content);
         const byteSize = Buffer.byteLength(file.content, "utf8");
         const archiveId = await insertRawFeedArchive(supabase, {
           feedImportRunId: runId,
@@ -197,20 +176,33 @@ export async function runVautoInventoryIntake(
       })
       .eq("provider", "vauto");
 
-    if (filesSucceeded > 0) {
-      const totalRows = fileSummaries.reduce(
-        (sum, f) => sum + (f.rowCountEstimate ?? 0),
-        0,
+    const { data: vautoSources } = await supabase
+      .from("inventory_feed_sources")
+      .select("store_id")
+      .eq("provider", "vauto");
+
+    const totalRows = fileSummaries.reduce(
+      (sum, f) => sum + (f.rowCountEstimate ?? 0),
+      0,
+    );
+
+    if (filesSucceeded > 0 && vautoSources?.length) {
+      const perStoreEstimate = Math.floor(
+        totalRows / Math.max(1, vautoSources.length),
       );
-      const { data: sources } = await supabase
-        .from("inventory_feed_sources")
-        .select("store_id")
-        .eq("provider", "vauto")
-        .limit(1);
-      const storeId = sources?.[0]?.store_id as string | undefined;
-      if (storeId) {
-        await touchInventoryFeedSourceImport(storeId, "vauto", totalRows);
+      for (const src of vautoSources) {
+        const storeId = src.store_id as string;
+        await touchInventoryFeedSourceImport(storeId, "vauto", perStoreEstimate);
       }
+      await recordInventorySnapshotsForStores(
+        supabase,
+        vautoSources.map((src) => ({
+          storeId: src.store_id as string,
+          inventoryProvider: "vauto" as const,
+          activeVehicleCount: perStoreEstimate,
+          feedImportRunId: runId,
+        })),
+      );
     }
 
     return summary;

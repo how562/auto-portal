@@ -1,31 +1,30 @@
 import { InventoryPageClient } from "@/components/inventory/InventoryPageClient";
-import { brandPageTitle, BRAND_NAME } from "@/lib/brand";
 import { loadInventoryPageData } from "@/lib/loadInventoryPage";
+import type { SitePage } from "@/lib/cmsTypes";
+import { presetToInventoryFilters } from "@/lib/inventorySitePages";
 
-export const dynamic = "force-dynamic";
-
-export const metadata = {
-  title: brandPageTitle("Find Your Match"),
-  description: `A guided discovery experience across ${BRAND_NAME}—curated matches, not a traditional lot listing.`,
-};
-
-interface InventoryPageProps {
+interface InventoryLandingPageViewProps {
+  page: SitePage;
   searchParams: Record<string, string | string[] | undefined>;
 }
 
-export default async function InventoryPage({
+export async function InventoryLandingPageView({
+  page,
   searchParams,
-}: InventoryPageProps) {
+}: InventoryLandingPageViewProps) {
+  const preset = page.inventory_preset ?? {};
   const {
     vehicles,
     stores,
     filters,
     searchQuery,
     loadError,
-    page,
+    page: pageNum,
     totalCount,
     serverPaginated,
-  } = await loadInventoryPageData(searchParams);
+  } = await loadInventoryPageData(searchParams, { preset });
+
+  const basePath = `/${page.slug}`;
 
   return (
     <InventoryPageClient
@@ -34,9 +33,13 @@ export default async function InventoryPage({
       initialFilters={filters}
       initialSearchQuery={searchQuery}
       loadError={loadError}
-      page={page}
+      page={pageNum}
       totalCount={totalCount}
       serverPaginated={serverPaginated}
+      basePath={basePath}
+      pageTitle={page.title}
+      lockedPreset={preset}
+      resetFilters={presetToInventoryFilters(preset)}
     />
   );
 }

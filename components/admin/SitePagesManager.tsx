@@ -25,7 +25,7 @@ interface SitePagesManagerProps {
   initialPages: AdminSitePageListItem[];
 }
 
-type CreateMode = "template" | "blank" | null;
+type CreateMode = "template" | "blank" | "inventory" | null;
 
 function mergePagePatch(
   existing: AdminSitePageListItem,
@@ -48,6 +48,9 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [inventoryCondition, setInventoryCondition] = useState<
+    "all" | "new" | "used" | "cpo"
+  >("used");
   const [openingCmsDemo, setOpeningCmsDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,6 +108,43 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
     }
   }
 
+  async function createInventoryPage(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setError(null);
+    try {
+      const inventory_preset: Record<string, string> = {};
+      if (inventoryCondition !== "all") {
+        inventory_preset.condition = inventoryCondition;
+      }
+      const res = await fetch("/api/admin/site-pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: title.trim(),
+          slug: slug.trim() || undefined,
+          status: "draft",
+          page_type: "inventory",
+          inventory_preset,
+        }),
+      });
+      const data = (await res.json()) as { page?: SitePage; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Create failed");
+      if (data.page) {
+        setPages((prev) => [
+          ...prev,
+          { ...data.page!, section_count: 0 } satisfies AdminSitePageListItem,
+        ]);
+        router.push(`/admin/pages/${data.page.id}`);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Create failed");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function createBlankPage(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
@@ -118,6 +158,7 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
           title: title.trim(),
           slug: slug.trim() || undefined,
           status: "draft",
+          page_type: "cms",
         }),
       });
       const data = (await res.json()) as { page?: SitePage; error?: string };
@@ -195,6 +236,15 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
           </button>
           <button
             type="button"
+            className={createMode === "inventory" ? btnPrimaryMd : btnSecondaryMd}
+            onClick={() =>
+              setCreateMode(createMode === "inventory" ? null : "inventory")
+            }
+          >
+            Inventory listing
+          </button>
+          <button
+            type="button"
             className={btnSecondaryMd}
             disabled={openingCmsDemo}
             onClick={() => void openCmsDemoPage()}
@@ -211,6 +261,83 @@ export function SitePagesManager({ initialPages }: SitePagesManagerProps) {
         <section className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6">
           <CreatePageFromTemplate onCancel={() => setCreateMode(null)} />
         </section>
+      ) : null}
+
+      {createMode === "inventory" ? (
+        <form
+          onSubmit={createInventoryPage}
+          className="rounded-2xl border border-[var(--line)] bg-white p-5 sm:p-6"
+        >
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Inventory listing page
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            A dedicated URL (e.g. /pre-owned) that shows inventory with locked filters.
+            Refine filters after creation in the page editor.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-1 sm:col-span-2">
+              <span className="text-xs font-medium text-[var(--muted)]">Title</span>
+              <input
+                required
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (!slugTouched) {
+                    setSlug(slugifyBlueprintSlug(e.target.value));
+                  }
+                }}
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+                placeholder="Pre-Owned"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-[var(--muted)]">Slug</span>
+              <input
+                value={slug}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setSlug(e.target.value);
+                }}
+                onBlur={() => setSlug(slugifyBlueprintSlug(slug))}
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 font-mono text-sm"
+                placeholder="pre-owned"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-[var(--muted)]">Condition</span>
+              <select
+                value={inventoryCondition}
+                onChange={(e) =>
+                  setInventoryCondition(
+                    e.target.value as "all" | "new" | "used" | "cpo",
+                  )
+                }
+                className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+              >
+                <option value="used">Pre-owned</option>
+                <option value="new">New</option>
+                <option value="cpo">CPO</option>
+              </select>
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={creating || !title.trim() || inventoryCondition === "all"}
+              className={`${btnPrimaryMd} disabled:opacity-60`}
+            >
+              {creating ? "Creating…" : "Create inventory page"}
+            </button>
+            <button
+              type="button"
+              className={btnSecondaryMd}
+              onClick={() => setCreateMode(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       ) : null}
 
       {createMode === "blank" ? (
@@ -533,7 +660,8 @@ function SitePageTableRow({
   const isSystemLive = Boolean(dedicated?.keepPublished);
   const isCmsDemo = page.slug === CMS_DEMO_SLUG;
   const previewHref = isCmsDemo ? `/${page.slug}` : `/admin/pages/${page.id}/preview`;
-  const hasNoSections = page.section_count === 0;
+  const isInventoryPage = page.page_type === "inventory";
+  const hasNoSections = !isInventoryPage && page.section_count === 0;
   const deletePolicy = getSitePageDeletePolicy(page);
 
   return (
@@ -543,6 +671,11 @@ function SitePageTableRow({
           <Link href={`/admin/pages/${page.id}`} className="font-medium hover:underline">
             {getSitePageDisplayTitle(page)}
           </Link>
+          {isInventoryPage ? (
+            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-900">
+              Inventory
+            </span>
+          ) : null}
           {hasNoSections ? (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
               No sections

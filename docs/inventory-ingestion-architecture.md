@@ -32,6 +32,15 @@ DB check constraints on `vehicles.inventory_provider` and `inventory_feed_source
 | Snapshots (future) | `inventory_snapshots` | Counts / diff baseline |
 | Schedules (future) | `feed_import_schedules` | Cron metadata |
 
+## Parser modules (provider-isolated)
+
+| Provider | Parse | Map → canonical | Upsert |
+|----------|--------|-----------------|--------|
+| HomeNet | `lib/import/providers/homenet` (`dealerSendParse`) | `mapDealerSendRowToCanonical` | `lib/import/vehicleUpsert.ts` |
+| vAuto | `lib/import/providers/vauto/vautoParse.ts` | `vautoMap.ts` (aliases TBD) | same upsert when import enabled |
+
+Shared model: `lib/import/canonicalVehicle.ts` — portal/inventory code never imports provider parsers.
+
 ## Pipeline stages
 
 ```
@@ -67,7 +76,7 @@ Switching source in admin does **not** delete inactive provider rows.
 
 - Ubuntu + OpenSSH/SFTP
 - User: `vauto`
-- Path: `/feeds/vauto/incoming`
+- Path: `/vauto` (set `VAUTO_SFTP_PATH=/vauto` in env; example default in `.env.local.example` may differ)
 - Env: `VAUTO_SFTP_HOST`, `VAUTO_SFTP_PORT`, `VAUTO_SFTP_USER`, `VAUTO_SFTP_PASSWORD`, `VAUTO_SFTP_PATH`
 
 Phase 1 endpoint: `GET /api/import-vauto?secret=…` — archives files, logs run, **no vehicle upsert**.

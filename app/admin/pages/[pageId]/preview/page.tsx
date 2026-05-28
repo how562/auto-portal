@@ -44,6 +44,32 @@ export default async function AdminPagePreviewPage({ params }: PageProps) {
   const page = await fetchSitePageById(params.pageId);
   if (!page) notFound();
 
+  if (page.page_type === "inventory") {
+    const liveHref = `/${page.slug}`;
+    return (
+      <div className="mx-auto max-w-lg space-y-4 py-12">
+        <h1 className="text-xl font-semibold">Inventory listing preview</h1>
+        <p className="text-sm text-[var(--muted)]">
+          Inventory pages use the live inventory UI at{" "}
+          <code className="rounded bg-[var(--cream)] px-1">{liveHref}</code>.
+          {page.status === "published" ? (
+            <>
+              {" "}
+              <Link href={liveHref} className="font-medium underline" target="_blank">
+                Open live page
+              </Link>
+            </>
+          ) : (
+            " Publish the page first, then open the live URL."
+          )}
+        </p>
+        <Link href={`/admin/pages/${page.id}`} className="text-sm font-medium underline">
+          Back to editor
+        </Link>
+      </div>
+    );
+  }
+
   const dedicated = isDedicatedPageSlug(page.slug)
     ? getDedicatedSitePage(page.slug)
     : undefined;

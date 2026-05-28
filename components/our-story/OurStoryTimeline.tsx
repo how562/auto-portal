@@ -10,10 +10,18 @@ const MOBILE_MAX = 767;
 interface OurStoryTimelineProps {
   eyebrow: string;
   title: string;
+  intro?: string;
+  finaleTagline?: string;
   milestones: OurStoryMilestone[];
 }
 
-export function OurStoryTimeline({ eyebrow, title, milestones }: OurStoryTimelineProps) {
+export function OurStoryTimeline({
+  eyebrow,
+  title,
+  intro,
+  finaleTagline,
+  milestones,
+}: OurStoryTimelineProps) {
   const zoneRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const skipTargetId = useId().replace(/:/g, "");
@@ -127,11 +135,12 @@ export function OurStoryTimeline({ eyebrow, title, milestones }: OurStoryTimelin
   }, [activeIndex, scrollToIndex, useVertical]);
 
   return (
-    <>
+    <div className="story-timeline-stage">
       <div className="story-timeline-intro">
         <div className="portal-container">
           <p className="story-timeline-intro__eyebrow">{eyebrow}</p>
           <h2 className="story-timeline-intro__title">{title}</h2>
+          {intro ? <p className="story-timeline-intro__lead">{intro}</p> : null}
           {useVertical === false ? (
             <a href={`#${skipTargetId}`} className="story-timeline-skip">
               Skip timeline
@@ -160,12 +169,13 @@ export function OurStoryTimeline({ eyebrow, title, milestones }: OurStoryTimelin
                     type="button"
                     role="tab"
                     aria-selected={index === activeIndex}
+                    aria-label={`${milestone.year}, ${milestone.title}`}
                     className={`story-timeline-progress__year ${
                       index === activeIndex ? "is-active" : ""
                     }`}
                     onClick={() => scrollToIndex(index)}
                   >
-                    {milestone.year}
+                    {milestone.shortLabel ?? milestone.year}
                   </button>
                 ))}
               </div>
@@ -210,12 +220,21 @@ export function OurStoryTimeline({ eyebrow, title, milestones }: OurStoryTimelin
           </div>
         </div>
       ) : useVertical === true ? (
-        <OurStoryTimelineVertical milestones={milestones} />
+        <OurStoryTimelineVertical
+          milestones={milestones}
+          finaleTagline={finaleTagline}
+        />
+      ) : null}
+
+      {useVertical === false && finaleTagline ? (
+        <div className="story-timeline-horizon-finale portal-container">
+          <p className="story-timeline-horizon-finale__tagline">{finaleTagline}</p>
+        </div>
       ) : null}
 
       <div id={skipTargetId} tabIndex={-1} className="sr-only">
         End of timeline
       </div>
-    </>
+    </div>
   );
 }

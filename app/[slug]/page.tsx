@@ -10,7 +10,12 @@ import { brandPageTitle } from "@/lib/brand";
 import { pageUsesHeaderHero } from "@/lib/cmsPageHeaderLayout";
 import { RESERVED_CMS_SLUGS } from "@/lib/cmsTypes";
 import { fetchPublishedDedicatedPageContent } from "@/lib/dedicatedPageContent";
-import { fetchEnrichedCMSPage, fetchPublishedPageBySlug } from "@/lib/cmsPages";
+import {
+  fetchEnrichedCMSPage,
+  fetchPublishedInventoryPageBySlug,
+  fetchPublishedPageBySlug,
+} from "@/lib/cmsPages";
+import { InventoryLandingPageView } from "@/components/inventory/InventoryLandingPageView";
 
 import "@/app/cms-page.css";
 
@@ -18,6 +23,7 @@ export const dynamic = "force-dynamic";
 
 interface CMSPageProps {
   params: { slug: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata({
@@ -38,13 +44,22 @@ export async function generateMetadata({
     return { title: brandPageTitle("Page not found") };
   }
 
+  if (page.page_type === "inventory") {
+    return {
+      title: brandPageTitle(page.title),
+      description:
+        page.meta_description ??
+        `Browse ${page.title} at Cavender Auto Group.`,
+    };
+  }
+
   return {
     title: brandPageTitle(page.title),
     description: page.meta_description ?? undefined,
   };
 }
 
-export default async function CMSPage({ params }: CMSPageProps) {
+export default async function CMSPage({ params, searchParams }: CMSPageProps) {
   const { slug } = params;
 
   if (slug === "mathbox-settings") {
@@ -53,6 +68,13 @@ export default async function CMSPage({ params }: CMSPageProps) {
 
   if (RESERVED_CMS_SLUGS.has(slug)) {
     notFound();
+  }
+
+  const inventoryPage = await fetchPublishedInventoryPageBySlug(slug);
+  if (inventoryPage) {
+    return (
+      <InventoryLandingPageView page={inventoryPage} searchParams={searchParams} />
+    );
   }
 
   const data = await fetchEnrichedCMSPage(slug);

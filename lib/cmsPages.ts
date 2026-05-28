@@ -8,12 +8,38 @@ import type {
   EnrichedCMSPageData,
   SitePage,
 } from "./cmsTypes";
+import { parseInventoryPagePreset } from "./inventorySitePages";
 import { getSupabase } from "./supabase";
 import { isSupabaseAdminConfigured } from "./supabaseAdmin";
 import { fetchStores } from "./stores";
 import type { Store } from "./types";
 
-const PAGE_SELECT = "id, slug, title, meta_description, status";
+const PAGE_SELECT =
+  "id, slug, title, meta_description, status, page_type, inventory_preset";
+
+function parsePublishedSitePage(row: Record<string, unknown>): SitePage | null {
+  const id = typeof row.id === "string" ? row.id : null;
+  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
+  const title = typeof row.title === "string" ? row.title.trim() : "";
+  if (!id || !slug || !title) return null;
+
+  const pageType = row.page_type === "inventory" ? "inventory" : "cms";
+  return {
+    id,
+    slug,
+    title,
+    meta_description:
+      typeof row.meta_description === "string"
+        ? row.meta_description.trim() || null
+        : null,
+    status: row.status === "published" ? "published" : "draft",
+    page_type: pageType,
+    inventory_preset:
+      pageType === "inventory"
+        ? parseInventoryPagePreset(row.inventory_preset)
+        : null,
+  };
+}
 
 export async function fetchPublishedPageBySlug(
   slug: string,
@@ -31,7 +57,16 @@ export async function fetchPublishedPageBySlug(
     throw new Error(`Failed to load page: ${error.message}`);
   }
 
-  return (data as SitePage | null) ?? null;
+  if (!data) return null;
+  return parsePublishedSitePage(data as Record<string, unknown>);
+}
+
+export async function fetchPublishedInventoryPageBySlug(
+  slug: string,
+): Promise<SitePage | null> {
+  const page = await fetchPublishedPageBySlug(slug);
+  if (!page || page.page_type !== "inventory") return null;
+  return page;
 }
 
 export async function fetchPageSections(pageId: string): Promise<CMSSection[]> {

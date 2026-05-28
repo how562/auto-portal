@@ -7,6 +7,8 @@ import { usePortalText } from "@/components/providers/TextSettingsProvider";
 interface InventoryCommandIntroProps {
   vehicleCount: number;
   lifeTitle?: string | null;
+  /** When set, breadcrumb shows this instead of generic “Inventory”. */
+  breadcrumbCurrentLabel?: string;
 }
 
 function StatusBadge({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,7 @@ function StatusBadge({ children }: { children: React.ReactNode }) {
 export function InventoryCommandIntro({
   vehicleCount,
   lifeTitle,
+  breadcrumbCurrentLabel,
 }: InventoryCommandIntroProps) {
   const { t } = useLanguage();
   const inventoryTitle = usePortalText(
@@ -47,7 +50,7 @@ export function InventoryCommandIntro({
             /
           </li>
           <li className="font-medium text-[var(--ink)]">
-            {t("vdp.inventory")}
+            {breadcrumbCurrentLabel ?? t("vdp.inventory")}
           </li>
         </ol>
       </nav>

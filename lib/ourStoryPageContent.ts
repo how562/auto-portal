@@ -1,6 +1,11 @@
 export interface OurStoryMilestone {
   id: string;
+  /** Large display year or era marker (e.g. 1939, II, 80+). */
   year: string;
+  /** Compact label for horizontal timeline navigation. */
+  shortLabel?: string;
+  /** Optional generation chapter label shown as a pill. */
+  generation?: string;
   eyebrow: string;
   title: string;
   description: string;
@@ -8,6 +13,8 @@ export interface OurStoryMilestone {
   imageAlt: string;
   linkLabel: string;
   linkUrl: string;
+  /** Finale milestone — expanded typography and closing emphasis. */
+  variant?: "default" | "finale";
 }
 
 export interface OurStoryValue {
@@ -39,7 +46,9 @@ export interface OurStoryPageContent {
   timeline: {
     eyebrow: string;
     title: string;
+    intro: string;
     milestones: OurStoryMilestone[];
+    finaleTagline: string;
   };
   legacy: {
     heading: string;
@@ -52,7 +61,8 @@ export interface OurStoryPageContent {
   };
 }
 
-const TIMELINE_IMAGE = "/images/hero/dealership.jpg";
+/** Optional historic photography — leave empty to show editorial placeholder. */
+const TIMELINE_IMAGE = "";
 
 export const OUR_STORY_PAGE_CONTENT: OurStoryPageContent = {
   hero: {
@@ -72,109 +82,125 @@ export const OUR_STORY_PAGE_CONTENT: OurStoryPageContent = {
   },
   timeline: {
     eyebrow: "Since 1939",
-    title: "A legacy in motion",
+    title: "A generational legacy",
+    intro:
+      "From a single Oldsmobile dealership to one of Texas’s premier automotive groups — four generations, one family name, and a promise that has never changed.",
+    finaleTagline: "Confidence Is Cavender",
     milestones: [
       {
         id: "1939",
         year: "1939",
-        eyebrow: "The Beginning",
+        shortLabel: "1939",
+        eyebrow: "Chapter I",
         title: "The Beginning",
         description:
-          "Cavender Auto Group traces its roots to a family commitment to honest service and lasting relationships — the foundation of everything that followed.",
+          "E.A. Kenzel convinced James Cavender to become the sales manager of his Oldsmobile dealership. Shortly after, James purchased the dealership, beginning the Cavender Auto Family legacy.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Early Cavender dealership era",
+        imageAlt: "James Cavender and the founding Cavender dealership era",
         linkLabel: "",
         linkUrl: "",
       },
       {
-        id: "1950s",
-        year: "1950s",
-        eyebrow: "Relationships",
-        title: "Building Relationships",
+        id: "1940s-1950s",
+        year: "1940s–50s",
+        shortLabel: "1950s",
+        eyebrow: "Chapter II",
+        title: "Building a Reputation",
         description:
-          "Through the post-war years, Cavender grew by earning trust one customer at a time — a tradition that still defines how we do business.",
+          "James Cavender built the company around honesty, integrity, ethics, and customer trust — values that continue to define the Cavender name today.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Mid-century automotive retail",
+        imageAlt: "Mid-century Cavender dealership and community trust",
         linkLabel: "",
         linkUrl: "",
       },
       {
-        id: "1970s",
-        year: "1970s",
-        eyebrow: "Expansion",
-        title: "Growth Across Texas",
+        id: "gen-2",
+        year: "II",
+        shortLabel: "Gen II",
+        generation: "Second Generation",
+        eyebrow: "Billy & Jimmy Cavender",
+        title: "Twin sons, shared purpose",
         description:
-          "As Texas expanded, so did Cavender — deepening roots in the communities we serve while staying true to family values.",
+          "James Cavender’s twin sons learned the business alongside their father. Billy eventually led the Cadillac dealership while Jimmy managed the Oldsmobile dealership, expanding the family legacy.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Texas expansion",
+        imageAlt: "Second generation Cavender family leadership",
         linkLabel: "",
         linkUrl: "",
       },
       {
-        id: "1990s",
-        year: "1990s",
-        eyebrow: "Legacy",
-        title: "A Family Legacy Expands",
+        id: "gen-3",
+        year: "III",
+        shortLabel: "Gen III",
+        generation: "Third Generation",
+        eyebrow: "Continuing the tradition",
+        title: "Work ethic & customer-first service",
         description:
-          "New generations joined the business, carrying forward a standard of integrity and community investment across multiple locations.",
+          "The next generation carried forward the same work ethic and customer-first philosophy while growing the company throughout South Texas.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Family legacy",
+        imageAlt: "Third generation Cavender leadership in South Texas",
         linkLabel: "",
         linkUrl: "",
       },
       {
-        id: "2000s",
-        year: "2000s",
-        eyebrow: "Growth",
-        title: "New Brands, New Communities",
+        id: "gen-4",
+        year: "IV",
+        shortLabel: "Gen IV",
+        generation: "Fourth Generation",
+        eyebrow: "Today’s leadership",
+        title: "Carrying the legacy forward",
         description:
-          "Cavender welcomed additional franchises and markets — always with the same promise: treat people right and stand behind what we sell.",
+          "Today, the fourth generation continues the traditions started over 80 years ago while leading Cavender Auto Group into the future.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Modern dealership growth",
+        imageAlt: "Fourth generation Cavender Auto Group leadership",
         linkLabel: "",
         linkUrl: "",
       },
       {
-        id: "2021",
-        year: "2021",
-        eyebrow: "Philanthropy",
+        id: "growth",
+        year: "TX",
+        shortLabel: "Growth",
+        eyebrow: "South Texas",
+        title: "Growth across South Texas",
+        description:
+          "From a single dealership in 1939 to one of the premier automotive groups in Texas, Cavender Auto Group now serves communities across South Texas with multiple dealership locations and hundreds of associates.",
+        imageUrl: TIMELINE_IMAGE,
+        imageAlt: "Cavender Auto Group dealerships across South Texas",
+        linkLabel: "",
+        linkUrl: "",
+      },
+      {
+        id: "cares",
+        year: "Give",
+        shortLabel: "Cares",
+        eyebrow: "Community",
         title: "Cavender Cares",
         description:
-          "Cavender Cares launched as a dedicated philanthropic branch — channeling employee passion and company resources into the communities we call home.",
+          "The Cavender family believes that before a company can do well, it must first do good. Cavender Cares supports health and wellness, education, veterans, first responders, individuals with disabilities, and local charitable organizations throughout South Texas.",
         imageUrl: "/images/hero/community.jpg",
-        imageAlt: "Cavender Cares community giving",
+        imageAlt: "Cavender Cares community philanthropy across South Texas",
         linkLabel: "Explore Cavender Cares",
         linkUrl: "/cavender-cares",
       },
       {
-        id: "today",
-        year: "Today",
-        eyebrow: "Present",
-        title: "Serving Texas With One Standard",
+        id: "confidence",
+        year: "80+",
+        shortLabel: "Today",
+        generation: "Our promise",
+        eyebrow: "Since 1939",
+        title: "Confidence Is Cavender",
         description:
-          "Today, Cavender Auto Group represents multiple brands and dealerships united by one standard of excellence — for customers, teammates, and neighbors.",
+          "For more than 80 years, the Cavender name has stood for integrity, honesty, ethics, customer-first service, and community involvement.",
         imageUrl: TIMELINE_IMAGE,
-        imageAlt: "Cavender Auto Group today",
+        imageAlt: "Cavender Auto Group — Confidence Is Cavender",
         linkLabel: "",
         linkUrl: "",
-      },
-      {
-        id: "tomorrow",
-        year: "Tomorrow",
-        eyebrow: "Future",
-        title: "The Road Ahead",
-        description:
-          "The next chapter is written with the same principles that began in 1939: family, trust, community, and progress — for generations to come.",
-        imageUrl: TIMELINE_IMAGE,
-        imageAlt: "The road ahead",
-        linkLabel: "",
-        linkUrl: "",
+        variant: "finale",
       },
     ],
   },
   legacy: {
     heading: "Built on family. Driven by trust.",
-    body: "For generations, Cavender Auto Group has grown by staying focused on people — our customers, our team members, and the communities we serve.",
+    body: "The principles that began in 1939 still guide every dealership, every associate, and every customer interaction across Cavender Auto Group.",
     values: [
       {
         id: "family",

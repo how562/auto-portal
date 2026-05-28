@@ -1,7 +1,9 @@
 import { getSupabaseAdmin } from "./supabaseAdmin";
+import type { FeedImportRunKind } from "./inventoryIngestion/types";
+import type { InventoryProvider } from "./inventoryProviders";
 
 const RUN_SELECT =
-  "id, started_at, completed_at, status, files_processed, files_succeeded, files_failed, files_skipped, total_upserted, error_message, created_at";
+  "id, started_at, completed_at, status, files_processed, files_succeeded, files_failed, files_skipped, total_upserted, error_message, created_at, inventory_provider, run_kind, store_id";
 
 const ITEM_SELECT =
   "id, run_id, file_name, store_id, store_name, status, rows_processed, upserted, skipped, error_message, skip_reason, store_mapping_source, created_at";
@@ -18,6 +20,9 @@ export interface FeedImportRunRow {
   total_upserted: number;
   error_message: string | null;
   created_at: string;
+  inventory_provider: InventoryProvider | null;
+  run_kind: FeedImportRunKind | null;
+  store_id: string | null;
 }
 
 export interface FeedImportRunItemRow {
@@ -36,9 +41,18 @@ export interface FeedImportRunItemRow {
   created_at: string;
 }
 
+export interface ListFeedImportRunsOptions {
+  limit?: number;
+  inventoryProvider?: InventoryProvider | "all";
+  runKind?: FeedImportRunKind | "all";
+}
+
 function normalizeRun(row: Record<string, unknown>): FeedImportRunRow | null {
   const id = typeof row.id === "string" ? row.id : "";
   if (!id) return null;
+
+  const provider = row.inventory_provider;
+  const runKind = row.run_kind;
 
   return {
     id,
@@ -54,6 +68,13 @@ function normalizeRun(row: Record<string, unknown>): FeedImportRunRow | null {
     error_message:
       typeof row.error_message === "string" ? row.error_message : null,
     created_at: String(row.created_at ?? ""),
+    inventory_provider:
+      provider === "homenet" || provider === "vauto" ? provider : null,
+    run_kind:
+      runKind === "import" || runKind === "intake" || runKind === "reconcile"
+        ? runKind
+        : null,
+    store_id: typeof row.store_id === "string" ? row.store_id : null,
   };
 }
 
@@ -83,14 +104,25 @@ function normalizeItem(row: Record<string, unknown>): FeedImportRunItemRow | nul
 }
 
 export async function listFeedImportRuns(
-  limit = 25,
+  options: ListFeedImportRunsOptions = {},
 ): Promise<FeedImportRunRow[]> {
+  const limit = Math.min(100, Math.max(1, options.limit ?? 25));
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("feed_import_runs")
     .select(RUN_SELECT)
     .order("started_at", { ascending: false })
     .limit(limit);
+
+  if (options.inventoryProvider && options.inventoryProvider !== "all") {
+    query = query.eq("inventory_provider", options.inventoryProvider);
+  }
+  if (options.runKind && options.runKind !== "all") {
+    query = query.eq("run_kind", options.runKind);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to load import runs: ${error.message}`);
