@@ -13,6 +13,7 @@ const SCREENSHOT_PREFERRED_TYPES: CMSSectionType[] = [
   "form",
   "locations",
   "split_feature",
+  "half_half",
   "inventory_collection",
   "custom_html",
 ];

@@ -262,6 +262,7 @@ export function CmsSectionEditorCard({
                   section={local}
                   fields={enFields}
                   setField={setField}
+                  sectionType={local.section_type}
                 />
               ) : (
                 <CanonicalFieldsForm
@@ -269,6 +270,7 @@ export function CmsSectionEditorCard({
                   fields={esFields}
                   setField={setField}
                   es
+                  sectionType={local.section_type}
                 />
               )}
 
@@ -312,13 +314,25 @@ function CanonicalFieldsForm({
   fields,
   setField,
   es = false,
+  sectionType,
 }: {
   section: CMSSection;
   fields: CMSCanonicalFieldKey[];
   setField: <K extends keyof CMSSection>(k: K, v: CMSSection[K]) => void;
   es?: boolean;
+  sectionType: CMSSection["section_type"];
 }) {
   const label = (name: string) => (es ? `${name} (ES)` : name);
+  const fieldLabel = (field: "headline" | "subheadline" | "body") => {
+    if (sectionType === "half_half") {
+      if (field === "headline") return label("Title line 1");
+      if (field === "subheadline") return label("Title line 2 (brush accent)");
+      if (field === "body") return label("Intro paragraphs");
+    }
+    if (field === "headline") return label("Headline");
+    if (field === "subheadline") return label("Subheadline");
+    return label("Body");
+  };
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -337,7 +351,7 @@ function CanonicalFieldsForm({
       {fieldEnabled(fields, es ? "headline_es" : "headline") ? (
         <label className="block space-y-1 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-            {label("Headline")}
+            {fieldLabel("headline")}
           </span>
           <input
             value={(es ? section.headline_es : section.headline) ?? ""}
@@ -354,7 +368,7 @@ function CanonicalFieldsForm({
       {fieldEnabled(fields, es ? "subheadline_es" : "subheadline") ? (
         <label className="block space-y-1 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-            {label("Subheadline")}
+            {fieldLabel("subheadline")}
           </span>
           <input
             value={(es ? section.subheadline_es : section.subheadline) ?? ""}
@@ -371,7 +385,7 @@ function CanonicalFieldsForm({
       {fieldEnabled(fields, es ? "body_es" : "body") ? (
         <label className="block space-y-1 sm:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-            {label("Body")}
+            {fieldLabel("body")}
           </span>
           <textarea
             rows={5}
@@ -587,6 +601,69 @@ function TypeSettingsFields({
           <option value="dark">Dark band</option>
         </select>
       </label>
+    );
+  }
+
+  if (t === "half_half") {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Signature (handwritten)
+          </span>
+          <input
+            value={settingString(s, "signature_text")}
+            onChange={(e) => setSetting("signature_text", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Signature (ES)
+          </span>
+          <input
+            value={settingString(s, "signature_text_es")}
+            onChange={(e) => setSetting("signature_text_es", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1 sm:col-span-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Image alt text
+          </span>
+          <input
+            value={settingString(s, "image_alt")}
+            onChange={(e) => setSetting("image_alt", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Image position
+          </span>
+          <select
+            value={settingString(s, "image_position", "right")}
+            onChange={(e) => setSetting("image_position", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          >
+            <option value="right">Right (copy left)</option>
+            <option value="left">Left (copy right)</option>
+          </select>
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Layout variant
+          </span>
+          <select
+            value={settingString(s, "variant", "compact")}
+            onChange={(e) => setSetting("variant", e.target.value)}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+          >
+            <option value="compact">Compact (full-bleed photo)</option>
+            <option value="default">Default (padded photo)</option>
+          </select>
+        </label>
+      </div>
     );
   }
 

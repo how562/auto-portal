@@ -87,6 +87,7 @@ const IMAGE_SIZE_BY_TYPE: Partial<Record<CMSSectionType, string>> = {
   community_hero: "Collage slots: 800 × 600 px per tile",
   image_text: "1200 × 900 px (4:3 media frame)",
   split_feature: "1000 × 800 px (5:4 feature image)",
+  half_half: "1200 × 900 min (editorial crop, full-bleed in compact layout)",
   card_grid: "Optional per card — icons or none",
   inventory_collection: "Vehicle primary_image_url from feed",
   cavender_commitment: "900 × 700 px per side image",
@@ -97,6 +98,7 @@ const USE_CASE_BY_TYPE: Partial<Record<CMSSectionType, string>> = {
   text_block: "Policy copy, about narrative, or supporting paragraphs.",
   image_text: "Story section with copy beside photo or video placeholder.",
   split_feature: "Two selling points plus a supporting photograph.",
+  half_half: "50/50 cream copy and full-bleed photography with gold brush accent.",
   cta_band: "Conversion moment between content sections.",
   faq: "Answer common shopper questions without leaving the page.",
   stats: "Highlight key numbers after social proof or hero.",
@@ -156,6 +158,8 @@ function defaultCategoryForType(sectionType: CMSSectionType): ShowcaseCategoryId
       return "social-proof";
     case "split_feature":
       return "comparison";
+    case "half_half":
+      return "page-headers";
     case "locations":
       return "locations";
     case "top_picks":

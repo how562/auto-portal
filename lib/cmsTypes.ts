@@ -7,6 +7,7 @@ export const CMS_SECTION_TYPES = [
   "text_block",
   "image_text",
   "split_feature",
+  "half_half",
   "cta_band",
   "faq",
   "stats",

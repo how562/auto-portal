@@ -7,6 +7,13 @@ export interface AboutUsFeature {
   icon: "honesty" | "customer" | "quality";
 }
 
+export interface AboutUsPillar {
+  id: string;
+  title: string;
+  description: string;
+  icon: "local_roots" | "our_people" | "our_promise";
+}
+
 export interface AboutUsValue {
   id: string;
   title: string;
@@ -17,55 +24,87 @@ export interface AboutUsValue {
 export interface AboutUsPageContent {
   header?: PageHeaderConfig;
   hero: {
-    title: string;
-    tagline: string[];
+    /** @deprecated use titleLine1 — kept for CMS migration */
+    title?: string;
+    /** @deprecated use introParagraphs */
+    tagline?: string[];
+    titleLine1: string;
+    titleLine2: string;
+    introParagraphs: string[];
+    signature: string;
     imageUrl: string;
+    imageAlt: string;
   };
   whoWeAre: {
     eyebrow: string;
     headline: string;
-    headlineAccent: string;
     paragraphs: string[];
-    signature: string;
+    pillars: AboutUsPillar[];
     imageUrl: string;
+    imageAlt: string;
   };
   ourApproach: {
     eyebrow: string;
     headline: string;
+    headlineAccent: string;
     features: AboutUsFeature[];
     imageUrl: string;
+    imageAlt: string;
   };
   ourValues: {
     eyebrow: string;
-    headline: string;
     items: AboutUsValue[];
   };
 }
 
 export const ABOUT_US_PAGE_CONTENT: AboutUsPageContent = {
   hero: {
-    title: "About Us",
-    tagline: [
-      "We're more than a dealership.",
-      "We're a team that puts people first.",
+    titleLine1: "Built on trust.",
+    titleLine2: "Driven by people.",
+    introParagraphs: [
+      "Cavender Auto Group has been serving Texas for over 85 years — and we're proud to say that much of our success comes from the trust built with the families and communities we serve every day.",
+      "We're not just here to sell cars. We're here to build lasting relationships founded on honesty, respect, and service you can trust.",
     ],
-    imageUrl: "/hero/dealership.jpg",
+    signature: "Cavender Family",
+    imageUrl: "/images/hero/community.jpg",
+    imageAlt: "Cavender Auto Group leadership team",
   },
   whoWeAre: {
     eyebrow: "Who We Are",
-    headline: "Built on trust. Driven by",
-    headlineAccent: "passion.",
+    headline: "A legacy built here in Texas.",
     paragraphs: [
-      "For decades, Cavender Auto Group has been a trusted name in Texas — not just for the vehicles we sell, but for the relationships we build. From your first visit to long after you drive off the lot, we're here for you.",
-      "Our team brings together experience, integrity, and a genuine love for what we do. Whether you're buying your first car or your fifth, you'll find a group of people who listen, guide, and make the process feel easy.",
+      "Founded in San Antonio and grown across South Texas, Cavender Auto Group is family-owned and deeply rooted in the communities we serve. Our mission is simple: treat every guest the way we'd want our own family treated.",
     ],
-    signature: "The Cavender Auto Group Team",
-    imageUrl: "/hero/community.jpg",
+    pillars: [
+      {
+        id: "local-roots",
+        title: "Local Roots",
+        description:
+          "Born in Texas, built for Texas — we know the roads, the people, and the pride that comes with both.",
+        icon: "local_roots",
+      },
+      {
+        id: "our-people",
+        title: "Our People",
+        description:
+          "A team of professionals who listen first, guide honestly, and stand behind every promise we make.",
+        icon: "our_people",
+      },
+      {
+        id: "our-promise",
+        title: "Our Promise",
+        description:
+          "Straight answers, fair deals, and service you can count on long after you drive off the lot.",
+        icon: "our_promise",
+      },
+    ],
+    imageUrl: "/images/hero/dealership.jpg",
+    imageAlt: "Cavender dealership exterior at dusk",
   },
   ourApproach: {
     eyebrow: "Our Approach",
-    headline:
-      "It's not just about selling cars. It's about building relationships.",
+    headline: "It's not just about selling cars.",
+    headlineAccent: "It's about building relationships.",
     features: [
       {
         id: "honesty",
@@ -89,11 +128,11 @@ export const ABOUT_US_PAGE_CONTENT: AboutUsPageContent = {
         icon: "quality",
       },
     ],
-    imageUrl: "/hero/vehicle.jpg",
+    imageUrl: "/images/hero/vehicle.jpg",
+    imageAlt: "Premium pickup truck at sunset",
   },
   ourValues: {
     eyebrow: "Our Values",
-    headline: "The standards we live by.",
     items: [
       {
         id: "integrity",

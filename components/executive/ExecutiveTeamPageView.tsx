@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { ExecutiveProfileCard } from "@/components/executive/ExecutiveProfileCard";
 import { ExecutiveValuesBand } from "@/components/executive/ExecutiveValuesBand";
-import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import {
   EXECUTIVE_TEAM_PAGE_CONTENT,
   type ExecutiveTeamPageContent,
 } from "@/lib/executiveTeamPageContent";
-import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/executive-team-page.css";
 
@@ -18,12 +16,9 @@ export function ExecutiveTeamPageView({
   content = EXECUTIVE_TEAM_PAGE_CONTENT,
 }: ExecutiveTeamPageViewProps) {
   const { intro, executives, leadershipMessage, cta } = content;
-  const header = resolvePageHeader("executive-team", content);
 
   return (
     <div className="executive-team-page">
-      <PageHeaderRenderer header={header} />
-
       <section className="executive-team-intro" aria-labelledby="executive-team-intro-title">
         <div className="portal-container executive-team-intro__inner">
           <p className="executive-team-intro__eyebrow">

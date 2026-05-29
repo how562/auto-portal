@@ -1,94 +1,78 @@
 /**
- * Value Your Trade — vendor iframe embed.
+ * Value Your Trade — utility intro + full-width partner iframe.
  */
 
 .value-your-trade-page {
-  --vyt-gold: var(--gold, #b8956b);
-  --vyt-ink: var(--ink, #1a1a1a);
+  --vyt-gold: #c59d5f;
+  --vyt-ink: #1a1a1b;
+  --vyt-muted: #6b6560;
+  --vyt-cream: #faf8f5;
   background: #fff;
 }
 
-/* —— Hero (matches About / Locations / Schedule Service) —— */
-.vyt-hero {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  height: clamp(280px, 38vw, 420px);
-  overflow: hidden;
+/* —— Utility intro band —— */
+.vyt-utility {
+  background: var(--vyt-cream);
 }
 
-.vyt-hero__media {
-  position: absolute;
-  inset: 0;
+.vyt-utility__inner {
+  padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(2rem, 4vw, 2.75rem);
+  max-width: 40rem;
 }
 
-.vyt-hero__img {
+.vyt-utility__eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vyt-gold);
+}
+
+.vyt-utility__title {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--vyt-ink);
+}
+
+.vyt-utility__intro {
+  margin: 1rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--vyt-muted);
+  white-space: pre-line;
+}
+
+/* Full-width rule below intro */
+.vyt-page-divider {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.vyt-hero__overlay {
-  position: absolute;
-  inset: 0;
+  height: 2px;
+  margin: 0;
+  border: 0;
   background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.55) 50%,
-    rgba(0, 0, 0, 0.45) 100%
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--vyt-gold) 55%, transparent) 8%,
+    color-mix(in srgb, var(--vyt-gold) 85%, transparent) 50%,
+    color-mix(in srgb, var(--vyt-gold) 55%, transparent) 92%,
+    transparent 100%
   );
 }
 
-.vyt-hero__content {
-  position: relative;
-  z-index: 1;
-  max-width: 44rem;
-  padding: 0 1.5rem;
-  text-align: center;
-  color: #fff;
-}
-
-.vyt-hero__title {
-  margin: 0;
-  font-size: clamp(2.25rem, 5.5vw, 4rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
-}
-
-.vyt-hero__divider {
-  display: block;
-  width: 3.5rem;
-  height: 3px;
-  margin: 1.25rem auto 1.5rem;
-  background: var(--vyt-gold);
-}
-
-.vyt-hero__tagline {
-  margin: 0;
-  font-size: clamp(0.9375rem, 2vw, 1.125rem);
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-/* —— Iframe embed —— */
+/* —— Full-width iframe —— */
 .vyt-embed {
-  padding: clamp(1.5rem, 3vw, 2rem) 0 clamp(2.5rem, 5vw, 3.5rem);
+  padding: clamp(2rem, 4vw, 3rem) 0 clamp(3rem, 6vw, 4.5rem);
   background: #fff;
-}
-
-.vyt-embed__inner {
-  max-width: 72rem;
 }
 
 .vyt-embed__frame {
   display: block;
   width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
   border: 0;
   background: #fff;
 }

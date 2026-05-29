@@ -88,9 +88,10 @@
   background: var(--cc-gold);
 }
 
-/* —— Main —— */
+/* —— Main (image left, form right) —— */
 .contact-cavenders-main {
   padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(3rem, 6vw, 5rem);
+  background: #fff;
 }
 
 .contact-cavenders-main__grid {
@@ -99,46 +100,46 @@
   align-items: start;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .contact-cavenders-main__grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
     gap: 3rem 3.5rem;
+    align-items: stretch;
   }
 }
 
-.contact-cavenders-intro__heading {
-  margin: 0 0 1.25rem;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--cc-ink);
-}
-
-.contact-cavenders-intro__body p {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-  line-height: 1.7;
-  color: var(--cc-muted);
-}
-
-.contact-cavenders-intro__body p:last-child {
-  margin-bottom: 0;
-}
-
-.contact-cavenders-intro__figure {
-  margin: 2rem 0 0;
+.contact-cavenders-main__figure {
+  margin: 0;
   overflow: hidden;
-  border-radius: 6px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
-.contact-cavenders-intro__figure img {
+.contact-cavenders-main__figure img {
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 6 / 7;
+  aspect-ratio: 12 / 7;
   object-fit: cover;
   object-position: center top;
+}
+
+.contact-cavenders-main__form {
+  min-width: 0;
+}
+
+/* Split header — intro copy only (photo lives beside form) */
+.contact-cavenders-page .ph-split__media {
+  display: none;
+}
+
+.contact-cavenders-page .half-half-block--compact .ph-split__grid {
+  min-height: auto;
+}
+
+@media (min-width: 900px) {
+  .contact-cavenders-page .ph-split__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* —— Form card —— */

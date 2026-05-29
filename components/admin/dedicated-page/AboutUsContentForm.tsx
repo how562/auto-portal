@@ -1,6 +1,6 @@
 "use client";
 
-import type { AboutUsPageContent } from "@/lib/aboutUsPageContent";
+import type { AboutUsPageContent, AboutUsPillar } from "@/lib/aboutUsPageContent";
 import {
   FormSection,
   TextAreaField,
@@ -8,6 +8,12 @@ import {
   linesFromTextarea,
   textareaFromLines,
 } from "@/components/admin/dedicated-page/formFields";
+
+const PILLAR_ICONS: AboutUsPillar["icon"][] = [
+  "local_roots",
+  "our_people",
+  "our_promise",
+];
 
 export function AboutUsContentForm({
   content,
@@ -23,22 +29,40 @@ export function AboutUsContentForm({
     onChange({ ...content, [key]: value });
   }
 
+  const pillars =
+    content.whoWeAre.pillars?.length >= 3
+      ? content.whoWeAre.pillars
+      : content.whoWeAre.pillars ?? [];
+
   return (
     <div className="space-y-6">
-      <FormSection title="Hero">
+      <FormSection title="Hero (50/50 header)">
         <TextField
-          label="Title"
-          value={content.hero.title}
-          onChange={(title) => patch("hero", { ...content.hero, title })}
-          className="sm:col-span-2"
+          label="Title line 1"
+          value={content.hero.titleLine1 ?? ""}
+          onChange={(titleLine1) => patch("hero", { ...content.hero, titleLine1 })}
+        />
+        <TextField
+          label="Title line 2 (brush accent)"
+          value={content.hero.titleLine2 ?? ""}
+          onChange={(titleLine2) => patch("hero", { ...content.hero, titleLine2 })}
+        />
+        <TextField
+          label="Signature"
+          value={content.hero.signature ?? ""}
+          onChange={(signature) => patch("hero", { ...content.hero, signature })}
         />
         <TextAreaField
-          label="Tagline (one line per row)"
-          value={textareaFromLines(content.hero.tagline)}
+          label="Intro paragraphs (one per line)"
+          value={textareaFromLines(content.hero.introParagraphs ?? content.hero.tagline ?? [])}
           onChange={(text) =>
-            patch("hero", { ...content.hero, tagline: linesFromTextarea(text) })
+            patch("hero", {
+              ...content.hero,
+              introParagraphs: linesFromTextarea(text),
+            })
           }
           className="sm:col-span-2"
+          rows={4}
         />
         <TextField
           label="Hero image URL"
@@ -46,6 +70,12 @@ export function AboutUsContentForm({
           onChange={(imageUrl) => patch("hero", { ...content.hero, imageUrl })}
           className="sm:col-span-2"
           mono
+        />
+        <TextField
+          label="Hero image alt"
+          value={content.hero.imageAlt ?? ""}
+          onChange={(imageAlt) => patch("hero", { ...content.hero, imageAlt })}
+          className="sm:col-span-2"
         />
       </FormSection>
 
@@ -59,18 +89,7 @@ export function AboutUsContentForm({
           label="Headline"
           value={content.whoWeAre.headline}
           onChange={(headline) => patch("whoWeAre", { ...content.whoWeAre, headline })}
-        />
-        <TextField
-          label="Headline accent"
-          value={content.whoWeAre.headlineAccent}
-          onChange={(headlineAccent) =>
-            patch("whoWeAre", { ...content.whoWeAre, headlineAccent })
-          }
-        />
-        <TextField
-          label="Signature"
-          value={content.whoWeAre.signature}
-          onChange={(signature) => patch("whoWeAre", { ...content.whoWeAre, signature })}
+          className="sm:col-span-2"
         />
         <TextAreaField
           label="Paragraphs (one per line)"
@@ -82,7 +101,7 @@ export function AboutUsContentForm({
             })
           }
           className="sm:col-span-2"
-          rows={5}
+          rows={4}
         />
         <TextField
           label="Image URL"
@@ -91,6 +110,61 @@ export function AboutUsContentForm({
           className="sm:col-span-2"
           mono
         />
+        <TextField
+          label="Image alt"
+          value={content.whoWeAre.imageAlt ?? ""}
+          onChange={(imageAlt) => patch("whoWeAre", { ...content.whoWeAre, imageAlt })}
+          className="sm:col-span-2"
+        />
+        {pillars.map((pillar, index) => (
+          <div key={pillar.id} className="sm:col-span-2 rounded-xl border border-[var(--line)] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              Pillar {index + 1}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField
+                label="Title"
+                value={pillar.title}
+                onChange={(title) => {
+                  const next = [...pillars];
+                  next[index] = { ...pillar, title };
+                  patch("whoWeAre", { ...content.whoWeAre, pillars: next });
+                }}
+              />
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-[var(--muted)]">Icon</span>
+                <select
+                  value={pillar.icon}
+                  onChange={(e) => {
+                    const next = [...pillars];
+                    next[index] = {
+                      ...pillar,
+                      icon: e.target.value as AboutUsPillar["icon"],
+                    };
+                    patch("whoWeAre", { ...content.whoWeAre, pillars: next });
+                  }}
+                  className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
+                >
+                  {PILLAR_ICONS.map((icon) => (
+                    <option key={icon} value={icon}>
+                      {icon.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <TextAreaField
+                label="Description"
+                value={pillar.description}
+                onChange={(description) => {
+                  const next = [...pillars];
+                  next[index] = { ...pillar, description };
+                  patch("whoWeAre", { ...content.whoWeAre, pillars: next });
+                }}
+                className="sm:col-span-2"
+              />
+            </div>
+          </div>
+        ))}
       </FormSection>
 
       <FormSection title="Our approach">
@@ -100,10 +174,16 @@ export function AboutUsContentForm({
           onChange={(eyebrow) => patch("ourApproach", { ...content.ourApproach, eyebrow })}
         />
         <TextField
-          label="Headline"
+          label="Headline line 1"
           value={content.ourApproach.headline}
           onChange={(headline) => patch("ourApproach", { ...content.ourApproach, headline })}
-          className="sm:col-span-2"
+        />
+        <TextField
+          label="Headline line 2 (brush accent)"
+          value={content.ourApproach.headlineAccent}
+          onChange={(headlineAccent) =>
+            patch("ourApproach", { ...content.ourApproach, headlineAccent })
+          }
         />
         <TextField
           label="Image URL"
@@ -111,6 +191,12 @@ export function AboutUsContentForm({
           onChange={(imageUrl) => patch("ourApproach", { ...content.ourApproach, imageUrl })}
           className="sm:col-span-2"
           mono
+        />
+        <TextField
+          label="Image alt"
+          value={content.ourApproach.imageAlt ?? ""}
+          onChange={(imageAlt) => patch("ourApproach", { ...content.ourApproach, imageAlt })}
+          className="sm:col-span-2"
         />
         {content.ourApproach.features.map((feature, index) => (
           <div key={feature.id} className="sm:col-span-2 rounded-xl border border-[var(--line)] p-4">
@@ -166,11 +252,7 @@ export function AboutUsContentForm({
           label="Eyebrow"
           value={content.ourValues.eyebrow}
           onChange={(eyebrow) => patch("ourValues", { ...content.ourValues, eyebrow })}
-        />
-        <TextField
-          label="Headline"
-          value={content.ourValues.headline}
-          onChange={(headline) => patch("ourValues", { ...content.ourValues, headline })}
+          className="sm:col-span-2"
         />
         {content.ourValues.items.map((item, index) => (
           <div key={item.id} className="sm:col-span-2 rounded-xl border border-[var(--line)] p-4">

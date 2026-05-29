@@ -81,7 +81,7 @@
 
 /* —— Intro —— */
 .executive-team-intro {
-  padding: clamp(2.25rem, 4.5vw, 3rem) 0 clamp(2rem, 4vw, 2.5rem);
+  padding: clamp(2.25rem, 4.5vw, 3rem) 0 clamp(2.75rem, 4.5vw, 3.25rem);
   background: #fff;
 }
 

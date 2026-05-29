@@ -1,87 +1,21 @@
 /**
- * About Us page — matches editorial dealership about layout.
+ * About Us — pixel-match editorial 50/50 layout.
  */
 
 .about-us-page {
-  --about-gold: var(--gold, #b8956b);
-  --about-ink: var(--ink, #1a1a1a);
-  --about-muted: var(--muted, #6b6560);
+  --about-gold: #c59d5f;
+  --about-ink: #1a1a1b;
+  --about-muted: #6b6560;
+  --about-cream: #faf8f5;
   --about-gray: #f3f3f3;
+  --ph-gold: #c59d5f;
+  --ph-ink: #1a1a1b;
   background: #fff;
-}
-
-/* —— Hero —— */
-.about-us-hero {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  height: clamp(280px, 38vw, 420px);
-  overflow: hidden;
-}
-
-.about-us-hero__media {
-  position: absolute;
-  inset: 0;
-}
-
-.about-us-hero__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.about-us-hero__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.55) 50%,
-    rgba(0, 0, 0, 0.45) 100%
-  );
-}
-
-.about-us-hero__content {
-  position: relative;
-  z-index: 1;
-  max-width: 42rem;
-  padding: 0 1.5rem;
-  text-align: center;
-  color: #fff;
-}
-
-.about-us-hero__title {
-  margin: 0;
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
-}
-
-.about-us-hero__divider {
-  display: block;
-  width: 3.5rem;
-  height: 3px;
-  margin: 1.25rem auto 1.5rem;
-  background: var(--about-gold);
-}
-
-.about-us-hero__tagline {
-  margin: 0;
-  font-size: clamp(1rem, 2.2vw, 1.25rem);
-  font-weight: 400;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.92);
 }
 
 /* —— Bands —— */
 .about-us-band {
-  padding: clamp(3rem, 6vw, 5rem) 0;
+  padding: clamp(3.5rem, 7vw, 5.5rem) 0;
 }
 
 .about-us-band--white {
@@ -92,17 +26,31 @@
   background: var(--about-gray);
 }
 
+.about-us-band--marble {
+  background-color: #f7f6f4;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 20% 0%, rgba(255, 255, 255, 0.9) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 70% at 80% 100%, rgba(0, 0, 0, 0.03) 0%, transparent 50%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(240, 238, 234, 0.6) 35%,
+      rgba(255, 255, 255, 0.35) 70%,
+      rgba(235, 232, 227, 0.5) 100%
+    );
+}
+
 /* —— Split sections —— */
 .about-us-split {
   display: grid;
-  gap: 2.5rem;
+  gap: clamp(2rem, 4vw, 3rem);
   align-items: center;
 }
 
 @media (min-width: 900px) {
   .about-us-split {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 3.5rem 4rem;
+    gap: clamp(2.5rem, 5vw, 4.5rem);
   }
 
   .about-us-split--reverse .about-us-split__media {
@@ -110,59 +58,95 @@
   }
 }
 
+.about-us-split__copy {
+  max-width: 36rem;
+}
+
+@media (min-width: 900px) {
+  .about-us-split__copy {
+    padding-right: 0.5rem;
+  }
+
+  .about-us-split--reverse .about-us-split__copy {
+    padding-right: 0;
+    padding-left: 0.5rem;
+  }
+}
+
+/* Eyebrow + gold rule */
+.about-us-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.about-us-eyebrow-line {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2px;
+  background: var(--about-gold);
+}
+
 .about-us-eyebrow {
-  margin: 0 0 0.75rem;
-  font-size: 0.6875rem;
+  margin: 0;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--about-gold);
 }
 
+/* Headlines */
 .about-us-headline {
   margin: 0;
-  font-size: clamp(1.75rem, 3.8vw, 2.65rem);
+  font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+  font-size: clamp(1.875rem, 3.6vw, 2.75rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.08;
   letter-spacing: -0.02em;
   color: var(--about-ink);
 }
 
-.about-us-headline-accent {
-  display: inline-block;
-  border-bottom: 3px solid var(--about-gold);
-  padding-bottom: 0.1em;
+.about-us-headline-line {
+  display: block;
+}
+
+.about-us-headline-line--accent {
+  position: relative;
+  margin-top: 0.2em;
+  padding-bottom: 0.35rem;
+}
+
+.about-us-brush-accent {
+  display: block;
+  width: min(100%, 14rem);
+  height: 0.875rem;
+  margin-top: 0.15rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 28' preserveAspectRatio='none'%3E%3Cpath d='M3 20 C45 6, 95 24, 140 12 C165 6, 190 14, 217 9' stroke='%23c59d5f' stroke-width='5.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M8 22 C55 14, 110 20, 175 16 C195 14, 208 18, 215 17' stroke='%23d4b07a' stroke-width='2.5' fill='none' stroke-linecap='round' opacity='0.75'/%3E%3C/svg%3E")
+    left center / 100% 100% no-repeat;
 }
 
 .about-us-body {
   margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  gap: 1rem;
 }
 
 .about-us-body p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: clamp(0.9375rem, 1.5vw, 1.0625rem);
   line-height: 1.72;
   color: color-mix(in srgb, var(--about-ink) 78%, transparent);
 }
 
-.about-us-signature {
-  margin: 2rem 0 0;
-  font-family: "Gopadel", Georgia, "Times New Roman", serif;
-  font-size: 1.375rem;
-  font-style: italic;
-  font-weight: 500;
-  color: var(--about-gold);
-}
-
+/* Photography */
 .about-us-photo {
   overflow: hidden;
-  border-radius: 0.75rem;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 16px 40px rgba(0, 0, 0, 0.06);
+    0 4px 20px rgba(0, 0, 0, 0.07),
+    0 18px 44px rgba(0, 0, 0, 0.08);
 }
 
 .about-us-photo img {
@@ -170,6 +154,64 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+  object-position: center;
+}
+
+@media (min-width: 900px) {
+  .about-us-photo img {
+    aspect-ratio: 5 / 4;
+    min-height: 360px;
+  }
+}
+
+/* Rounded on seam side (edge facing copy column) */
+.about-us-photo--seam-left {
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.about-us-photo--seam-right {
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+@media (max-width: 899px) {
+  .about-us-photo--seam-left,
+  .about-us-photo--seam-right {
+    border-radius: 0.75rem;
+  }
+}
+
+/* —— Who We Are pillars —— */
+.about-us-pillars {
+  margin: 2.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .about-us-pillars {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+}
+
+.about-us-pillar {
+  text-align: left;
+}
+
+.about-us-pillar__title {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--about-ink);
+}
+
+.about-us-pillar__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--about-muted);
 }
 
 /* —— Approach features —— */
@@ -177,15 +219,21 @@
   margin: 2rem 0 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
 }
 
 .about-us-feature {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
+  padding: 1.25rem 0;
+}
+
+.about-us-feature:first-child {
+  padding-top: 0;
+}
+
+.about-us-feature--divider {
+  border-top: 1px solid color-mix(in srgb, var(--about-ink) 12%, transparent);
 }
 
 .about-us-feature__title {
@@ -202,11 +250,15 @@
   color: var(--about-muted);
 }
 
+/* —— Icons —— */
 .about-us-icon-shell {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+}
+
+.about-us-icon-shell--filled {
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 9999px;
@@ -214,21 +266,33 @@
   color: var(--about-gold);
 }
 
-.about-us-icon-shell svg {
+.about-us-icon-shell--filled svg {
   width: 1.25rem;
   height: 1.25rem;
 }
 
-.about-us-values .about-us-icon-shell {
-  width: 3rem;
-  height: 3rem;
-  margin: 0 auto 1rem;
-  background: transparent;
-  border: 1.5px solid var(--about-gold);
+.about-us-icon-shell--outline {
+  width: 2.5rem;
+  height: 2.5rem;
   color: var(--about-gold);
 }
 
-.about-us-values .about-us-icon-shell svg {
+.about-us-icon-shell--outline svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.about-us-icon-shell--value {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 1rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--about-gold);
+  color: var(--about-gold);
+  background: transparent;
+}
+
+.about-us-icon-shell--value svg {
   width: 1.35rem;
   height: 1.35rem;
 }
@@ -236,7 +300,6 @@
 /* —— Values —— */
 .about-us-values__header {
   text-align: center;
-  max-width: 36rem;
   margin: 0 auto 2.75rem;
 }
 
@@ -244,29 +307,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.6875rem;
+  gap: 1rem;
+  margin: 0;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--about-gold);
 }
 
 .about-us-values__eyebrow-line {
   flex: 1;
-  max-width: 4rem;
-  height: 1px;
-  background: color-mix(in srgb, var(--about-gold) 55%, transparent);
-}
-
-.about-us-values__headline {
-  margin: 0;
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: var(--about-ink);
+  max-width: 5rem;
+  height: 2px;
+  background: var(--about-gold);
 }
 
 .about-us-values__grid {
@@ -292,20 +346,20 @@
 
 .about-us-value {
   text-align: center;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
 }
 
 @media (min-width: 1024px) {
   .about-us-value--divider {
-    border-left: 1px solid color-mix(in srgb, var(--about-ink) 12%, transparent);
+    border-left: 1px solid color-mix(in srgb, var(--about-ink) 14%, transparent);
   }
 }
 
 .about-us-value__title {
   margin: 0 0 0.5rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--about-ink);
 }

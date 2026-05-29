@@ -13,6 +13,7 @@ export const CMS_LIBRARY_SECTION_TYPES = [
   "text_block",
   "image_text",
   "split_feature",
+  "half_half",
   "cta_band",
   "card_grid",
   "faq",
@@ -104,6 +105,26 @@ const LIBRARY_META: Record<
       "settings.left_title / left_body",
       "settings.right_title / right_body",
       "settings.items[]",
+    ],
+  },
+  half_half: {
+    bestUseCase:
+      "Page openers and story bands — cream copy left, full-bleed photo right (About Us style).",
+    copyGuidance:
+      "Eyebrow: 2–4 words caps. Headline: title line 1. Subheadline: line 2 with gold brush accent. Body: 1–3 paragraphs (blank line between). Signature in settings.",
+    imageGuidance:
+      "Editorial portrait or team photo. Image fills the column edge-to-edge in compact variant.",
+    recommendedImageSize: "1200×900 min (4:3 or taller)",
+    supportedFieldsList: [
+      "eyebrow",
+      "headline",
+      "subheadline",
+      "body",
+      "image_url",
+      "settings.signature_text",
+      "settings.image_alt",
+      "settings.image_position (left | right)",
+      "settings.variant (compact | default)",
     ],
   },
   cta_band: {

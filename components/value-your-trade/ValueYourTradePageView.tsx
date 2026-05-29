@@ -1,9 +1,8 @@
-import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import {
   VALUE_YOUR_TRADE_PAGE_CONTENT,
   type ValueYourTradePageContent,
 } from "@/lib/valueYourTradePageContent";
-import { resolvePageHeader } from "@/lib/pageHeaderResolve";
+import { resolveValueYourTradeUtilityHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/value-your-trade-page.css";
 
@@ -15,36 +14,32 @@ export function ValueYourTradePageView({
   content = VALUE_YOUR_TRADE_PAGE_CONTENT,
 }: ValueYourTradePageViewProps) {
   const { iframe } = content;
-  const header = resolvePageHeader("value-your-trade", content);
+  const intro = resolveValueYourTradeUtilityHeader(content);
 
   return (
     <div className="value-your-trade-page">
-      <PageHeaderRenderer
-        header={header}
-        slots={{
-          form: (
-            <iframe
-              src={iframe.src}
-              title={iframe.title}
-              className="vyt-embed__frame w-full rounded-lg border border-[var(--line)]"
-              style={{ height: `${iframe.height}px` }}
-            />
-          ),
-        }}
-      />
+      <section className="vyt-utility" aria-labelledby="vyt-utility-title">
+        <div className="portal-container vyt-utility__inner">
+          {intro.eyebrow ? <p className="vyt-utility__eyebrow">{intro.eyebrow}</p> : null}
+          <h1 id="vyt-utility-title" className="vyt-utility__title">
+            {intro.title}
+          </h1>
+          {intro.introText ? (
+            <p className="vyt-utility__intro">{intro.introText}</p>
+          ) : null}
+        </div>
+      </section>
 
-      {!header || header.type !== "utility" || !header.utility.formSlot ? (
-        <section className="vyt-embed" aria-label={iframe.title}>
-          <div className="portal-container vyt-embed__inner">
-            <iframe
-              src={iframe.src}
-              title={iframe.title}
-              className="vyt-embed__frame"
-              style={{ height: `${iframe.height}px` }}
-            />
-          </div>
-        </section>
-      ) : null}
+      <div className="vyt-page-divider" role="separator" aria-hidden />
+
+      <section className="vyt-embed" aria-label={iframe.title}>
+        <iframe
+          src={iframe.src}
+          title={iframe.title}
+          className="vyt-embed__frame"
+          style={{ height: `${iframe.height}px` }}
+        />
+      </section>
     </div>
   );
 }

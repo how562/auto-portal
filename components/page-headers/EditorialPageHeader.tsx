@@ -2,65 +2,51 @@ import Link from "next/link";
 import type { EditorialPageHeaderFields } from "@/lib/pageHeaderTypes";
 
 export function EditorialPageHeader({ data }: { data: EditorialPageHeaderFields }) {
-  const hasBannerImage = Boolean(data.image?.trim());
-  const hasIntro = Boolean(
-    data.introText?.trim() || data.eyebrow?.trim() || data.signatureText?.trim(),
-  );
   const cta = data.primaryButtonLabel?.trim() && data.primaryButtonUrl?.trim();
+  const categories = (data.categoryLabels ?? []).filter((label) => label.trim());
 
   return (
-    <header className="ph-editorial">
-      <div className="ph-editorial__banner">
-        {hasBannerImage ? (
-          <div className="ph-editorial__banner-media" aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={data.image} alt="" className="ph-editorial__banner-img" />
-            <div className="ph-editorial__banner-overlay" />
+    <header className="ph-editorial" aria-labelledby="page-header-title">
+      <div className="ph-editorial__texture" aria-hidden />
+      <div className="portal-container ph-editorial__inner">
+        <div className="ph-editorial__grid">
+          <div className="ph-editorial__lead">
+            <span className="ph-editorial__rule ph-editorial__rule--accent" aria-hidden />
+            {data.eyebrow ? (
+              <p className="ph-editorial__eyebrow">{data.eyebrow}</p>
+            ) : null}
+            <h1 id="page-header-title" className="ph-editorial__title">
+              {data.title}
+            </h1>
           </div>
-        ) : (
-          <div
-            className="ph-editorial__banner-media"
-            style={{ background: "#2a2a2a" }}
-            aria-hidden
-          />
-        )}
-        <div className="ph-editorial__banner-content">
-          <h1 id="page-header-title" className="ph-editorial__banner-title">
-            {data.title}
-          </h1>
-        </div>
-      </div>
 
-      {hasIntro ? (
-        <div className="ph-editorial__intro">
-          <div className="portal-container ph-editorial__intro-grid">
-            <div>
-              {data.eyebrow ? (
-                <p className="ph-editorial__eyebrow">{data.eyebrow}</p>
-              ) : null}
-              {data.introText ? (
-                <p className="ph-editorial__intro-text">{data.introText}</p>
-              ) : null}
-              {data.signatureText ? (
-                <p className="ph-editorial__signature">{data.signatureText}</p>
-              ) : null}
-              {cta ? (
-                <div className="ph-editorial__cta">
-                  <Link href={data.primaryButtonUrl} className="ph-editorial__cta-link">
-                    {data.primaryButtonLabel}
-                  </Link>
-                </div>
-              ) : null}
-            </div>
-            {hasBannerImage ? (
-              <figure className="ph-editorial__figure">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={data.image} alt={data.imageAlt || ""} />
-              </figure>
+          <div className="ph-editorial__statement">
+            {data.introText ? (
+              <p className="ph-editorial__statement-text">{data.introText}</p>
+            ) : null}
+            {data.signatureText ? (
+              <p className="ph-editorial__signature">{data.signatureText}</p>
+            ) : null}
+            {cta ? (
+              <Link href={data.primaryButtonUrl} className="ph-editorial__cta">
+                {data.primaryButtonLabel}
+              </Link>
             ) : null}
           </div>
         </div>
-      ) : null}
+
+        {categories.length > 0 ? (
+          <ul className="ph-editorial__categories" aria-label="Topics">
+            {categories.map((label) => (
+              <li key={label} className="ph-editorial__category">
+                {label}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <span className="ph-editorial__rule ph-editorial__rule--foot" aria-hidden />
+      </div>
     </header>
   );
 }

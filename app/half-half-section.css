@@ -1,0 +1,88 @@
+/**
+ * Half & half — reusable 50/50 cream copy + full-bleed photography.
+ * Uses ph-split structure from page-headers.css.
+ */
+
+.half-half-block--compact .ph-split__grid {
+  min-height: clamp(442px, 52.7vh, 578px);
+}
+
+.half-half-block--compact .ph-split__copy {
+  padding-left: clamp(3rem, 7vw, 5.25rem);
+  padding-right: clamp(1.25rem, 3vw, 2.25rem);
+}
+
+.half-half-block--compact .ph-split__copy-inner {
+  margin-left: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+.half-half-block--compact .ph-split__media {
+  position: relative;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.half-half-block--compact .ph-split__media-img {
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (min-width: 900px) {
+  .half-half-block--compact .ph-split__grid {
+    align-items: stretch;
+  }
+
+  .half-half-block--compact .ph-split__media {
+    min-height: 100%;
+  }
+
+  .half-half-block--compact .ph-split__media-img {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    min-height: 100%;
+    max-height: none;
+  }
+
+  .ph-split__grid--image-left {
+    direction: ltr;
+  }
+
+  .ph-split__grid--image-left .ph-split__copy {
+    order: 2;
+  }
+
+  .ph-split__grid--image-left .ph-split__media {
+    order: 1;
+  }
+}
+
+@media (max-width: 899px) {
+  .half-half-block--compact .ph-split__grid {
+    min-height: auto;
+  }
+
+  .half-half-block--compact .ph-split__copy {
+    padding-left: clamp(2rem, 6vw, 3rem);
+    padding-right: 1.5rem;
+  }
+
+  .half-half-block--compact .ph-split__copy-inner {
+    margin-left: 0;
+  }
+
+  .half-half-block--compact .ph-split__media-img {
+    position: relative;
+    min-height: clamp(240px, 38vh, 360px);
+  }
+}
+
+/* Page header title sizing */
+header.half-half-block .ph-split__title {
+  font-size: clamp(2.5rem, 5.5vw, 4.25rem);
+}

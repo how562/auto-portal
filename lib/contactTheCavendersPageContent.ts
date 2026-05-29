@@ -30,7 +30,7 @@ export interface ContactTheCavendersPageContent {
 export const CONTACT_THE_CAVENDERS_PAGE_CONTENT: ContactTheCavendersPageContent = {
   hero: {
     title: "Contact The Cavenders",
-    subtitle: "Your voice matters.",
+    subtitle: "",
     supportingText:
       "Whether you have feedback, a concern, a question, or a positive experience to share, Rob and Lee Cavender want to hear directly from you.",
     backgroundImageUrl: "/images/hero/community.jpg",

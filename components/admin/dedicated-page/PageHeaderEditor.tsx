@@ -28,7 +28,8 @@ interface PageHeaderEditorProps {
 const TYPE_LABELS: Record<PageHeaderType, string> = {
   none: "None (hidden)",
   cinematic: "Cinematic",
-  editorial: "Editorial",
+  editorial: "Editorial (dark spread)",
+  split: "Half & half (50/50)",
   utility: "Utility",
   magazine: "Magazine",
 };
@@ -89,6 +90,13 @@ export function PageHeaderEditor({
         <EditorialFields
           data={header.editorial}
           onChange={(editorial) => patchHeader({ type: "editorial", editorial })}
+        />
+      ) : null}
+
+      {currentType === "split" && header?.type === "split" ? (
+        <SplitFields
+          data={header.split}
+          onChange={(split) => patchHeader({ type: "split", split })}
         />
       ) : null}
 
@@ -212,27 +220,26 @@ function EditorialFields({
       <TextField label="Eyebrow" value={data.eyebrow} onChange={(eyebrow) => patch({ eyebrow })} />
       <TextField label="Title" value={data.title} onChange={(title) => patch({ title })} />
       <TextAreaField
-        label="Intro text"
+        label="Supporting statement (right column)"
         value={data.introText}
         onChange={(introText) => patch({ introText })}
         className="sm:col-span-2"
         rows={4}
+        hint="Magazine spread layout — no header photography."
       />
       <TextField
-        label="Signature (optional)"
+        label="Attribution / signature (optional)"
         value={data.signatureText}
         onChange={(signatureText) => patch({ signatureText })}
         className="sm:col-span-2"
       />
-      <div className="sm:col-span-2">
-        <CmsImageField
-          label="Image"
-          value={data.image}
-          onChange={(image) => patch({ image })}
-          hint={PAGE_HEADER_IMAGE_HINTS.editorialImage}
-        />
-      </div>
-      <TextField label="Image alt" value={data.imageAlt} onChange={(imageAlt) => patch({ imageAlt })} />
+      <TextAreaField
+        label="Category labels (one per line, optional)"
+        value={textareaFromLines(data.categoryLabels ?? [])}
+        onChange={(text) => patch({ categoryLabels: linesFromTextarea(text) })}
+        className="sm:col-span-2"
+        rows={2}
+      />
       <TextField
         label="Primary button label"
         value={data.primaryButtonLabel}
@@ -244,6 +251,51 @@ function EditorialFields({
         onChange={(primaryButtonUrl) => patch({ primaryButtonUrl })}
         mono
       />
+    </>
+  );
+}
+
+function SplitFields({
+  data,
+  onChange,
+}: {
+  data: import("@/lib/pageHeaderTypes").SplitFeaturePageHeaderFields;
+  onChange: (data: import("@/lib/pageHeaderTypes").SplitFeaturePageHeaderFields) => void;
+}) {
+  const patch = (p: Partial<typeof data>) => onChange({ ...data, ...p });
+
+  return (
+    <>
+      <TextField label="Eyebrow" value={data.eyebrow} onChange={(eyebrow) => patch({ eyebrow })} />
+      <TextField label="Title (line 1)" value={data.title} onChange={(title) => patch({ title })} />
+      <TextField
+        label="Title (line 2 — gold brush accent)"
+        value={data.titleLine2}
+        onChange={(titleLine2) => patch({ titleLine2 })}
+      />
+      <TextAreaField
+        label="Body copy (left column)"
+        value={data.introText}
+        onChange={(introText) => patch({ introText })}
+        className="sm:col-span-2"
+        rows={8}
+        hint="Separate paragraphs with a blank line."
+      />
+      <TextField
+        label="Handwritten signature"
+        value={data.signatureText}
+        onChange={(signatureText) => patch({ signatureText })}
+        className="sm:col-span-2"
+      />
+      <div className="sm:col-span-2">
+        <CmsImageField
+          label="Image (right column)"
+          value={data.image}
+          onChange={(image) => patch({ image })}
+          hint={PAGE_HEADER_IMAGE_HINTS.splitFeature}
+        />
+      </div>
+      <TextField label="Image alt" value={data.imageAlt} onChange={(imageAlt) => patch({ imageAlt })} />
     </>
   );
 }

@@ -6,13 +6,6 @@ import type { ContactTheCavendersPageContent } from "@/lib/contactTheCavendersPa
 
 import "@/app/contact-the-cavenders-page.css";
 
-function splitParagraphs(text: string): string[] {
-  return text
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
-
 interface ContactTheCavendersPageViewProps {
   content?: ContactTheCavendersPageContent;
 }
@@ -20,34 +13,25 @@ interface ContactTheCavendersPageViewProps {
 export function ContactTheCavendersPageView({
   content = CONTACT_THE_CAVENDERS_PAGE_CONTENT,
 }: ContactTheCavendersPageViewProps) {
-  const introParagraphs = splitParagraphs(content.intro.body);
+  const { intro, form } = content;
   const header = resolvePageHeader("contact-the-cavenders", content);
 
   return (
     <div className="contact-cavenders-page">
       <PageHeaderRenderer header={header} />
 
-      <section className="contact-cavenders-main" aria-labelledby="contact-cavenders-intro">
+      <section className="contact-cavenders-main" aria-label="Send a message">
         <div className="portal-container contact-cavenders-main__grid">
-          <div className="contact-cavenders-intro">
-            <h2 id="contact-cavenders-intro" className="contact-cavenders-intro__heading">
-              {content.intro.heading}
-            </h2>
-            <div className="contact-cavenders-intro__body">
-              {introParagraphs.map((paragraph) => (
-                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
-              ))}
-            </div>
-            <figure className="contact-cavenders-intro__figure">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={content.intro.leadershipImageUrl}
-                alt={content.intro.leadershipImageAlt}
-              />
-            </figure>
+          <figure className="contact-cavenders-main__figure">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={intro.leadershipImageUrl}
+              alt={intro.leadershipImageAlt}
+            />
+          </figure>
+          <div className="contact-cavenders-main__form">
+            <ContactCavendersForm formContent={form} />
           </div>
-
-          <ContactCavendersForm formContent={content.form} />
         </div>
       </section>
 

@@ -9,6 +9,7 @@ const PRESET_STORAGE_TYPES = new Set<string>([
   "text_block",
   "image_text",
   "split_feature",
+  "half_half",
   "cta_band",
   "card_grid",
   "faq",

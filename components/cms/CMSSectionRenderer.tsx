@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { CMSFormSection } from "@/components/cms/CMSFormSection";
+import { HalfHalfBlock } from "@/components/sections/HalfHalfBlock";
 import {
   SectionBodyText,
   StandardSectionCopy,
@@ -22,6 +23,7 @@ import {
   registryHasDedicatedRenderer,
 } from "@/lib/cmsSectionRegistry";
 import { parseSettings, settingItems, settingString } from "@/lib/cmsSettings";
+import { halfHalfFromCmsSection } from "@/lib/halfHalfSection";
 import {
   resolvePageHeaderMedia,
   shouldUsePageHeaderHero,
@@ -412,6 +414,18 @@ function ImageTextSection({
       </div>
     </SectionShell>
   );
+}
+
+function HalfHalfCmsSection({
+  section,
+  copy,
+  locale,
+}: {
+  section: EnrichedCMSSection;
+  copy: SectionCopy;
+  locale: "en" | "es";
+}) {
+  return <HalfHalfBlock {...halfHalfFromCmsSection(section, copy, locale)} />;
 }
 
 function SplitFeatureSection({
@@ -835,6 +849,7 @@ function CMSSectionBlock({
   pageSlug,
   sectionIndex,
   allSections,
+  locale,
 }: {
   section: EnrichedCMSSection;
   copy: SectionCopy;
@@ -842,6 +857,7 @@ function CMSSectionBlock({
   pageSlug?: string;
   sectionIndex: number;
   allSections: EnrichedCMSSection[];
+  locale: "en" | "es";
 }) {
   const stores = section.stores ?? [];
 
@@ -867,6 +883,8 @@ function CMSSectionBlock({
       return <ImageTextSection section={section} copy={copy} />;
     case "split_feature":
       return <SplitFeatureSection section={section} copy={copy} />;
+    case "half_half":
+      return <HalfHalfCmsSection section={section} copy={copy} locale={locale} />;
     case "cta_band":
       return <CtaBandSection section={section} copy={copy} />;
     case "faq":
@@ -924,6 +942,7 @@ export function CMSSectionRenderer({
           pageSlug={pageSlug}
           sectionIndex={index}
           allSections={localizedSections}
+          locale={locale}
         />
       ))}
     </div>

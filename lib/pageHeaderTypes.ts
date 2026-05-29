@@ -2,6 +2,7 @@ export const PAGE_HEADER_TYPES = [
   "none",
   "cinematic",
   "editorial",
+  "split",
   "utility",
   "magazine",
 ] as const;
@@ -28,11 +29,27 @@ export interface CinematicPageHeaderFields extends PageHeaderButtonFields {
   logoAlt: string;
 }
 
+/** 50/50 feature opener — cream copy left, photography right (Contact, About-style). */
+export interface SplitFeaturePageHeaderFields {
+  eyebrow: string;
+  title: string;
+  /** Second headline line — receives gold brushstroke accent. */
+  titleLine2: string;
+  introText: string;
+  signatureText: string;
+  image: string;
+  imageAlt: string;
+}
+
 export interface EditorialPageHeaderFields {
   eyebrow: string;
   title: string;
+  /** Right-column supporting statement (magazine spread). */
   introText: string;
   signatureText: string;
+  /** Optional labels below the spread (e.g. chapter topics). */
+  categoryLabels: string[];
+  /** Legacy — not rendered in editorial spread; use page body sections for photography. */
   image: string;
   imageAlt: string;
   primaryButtonLabel: string;
@@ -69,6 +86,7 @@ export type PageHeaderConfig =
   | { type: "none" }
   | { type: "cinematic"; cinematic: CinematicPageHeaderFields }
   | { type: "editorial"; editorial: EditorialPageHeaderFields }
+  | { type: "split"; split: SplitFeaturePageHeaderFields }
   | { type: "utility"; utility: UtilityPageHeaderFields }
   | { type: "magazine"; magazine: MagazinePageHeaderFields };
 
@@ -88,7 +106,7 @@ export type PageHeaderSlug =
   | "stories";
 
 export const RECOMMENDED_PAGE_HEADER_TYPE: Record<PageHeaderSlug, PageHeaderType> = {
-  "about-us": "editorial",
+  "about-us": "split",
   "executive-team": "editorial",
   careers: "editorial",
   locations: "utility",
@@ -97,7 +115,7 @@ export const RECOMMENDED_PAGE_HEADER_TYPE: Record<PageHeaderSlug, PageHeaderType
   "value-your-trade": "utility",
   "cavender-commitment": "cinematic",
   "cavender-cares": "cinematic",
-  "contact-the-cavenders": "cinematic",
+  "contact-the-cavenders": "split",
   "our-story": "magazine",
   stories: "magazine",
 };
@@ -106,6 +124,7 @@ export const PAGE_HEADER_IMAGE_HINTS = {
   cinematicDesktop: "1920×720",
   cinematicMobile: "768×900",
   editorialImage: "1200×900",
+  splitFeature: "1200×900 — portrait or editorial crop, rounded in layout",
   utilityVehicle: "1200×700 transparent PNG/WebP preferred",
   magazineLogo: "SVG or transparent PNG preferred",
 } as const;
@@ -127,12 +146,25 @@ export function emptyCinematicHeader(): CinematicPageHeaderFields {
   };
 }
 
+export function emptySplitHeader(): SplitFeaturePageHeaderFields {
+  return {
+    eyebrow: "",
+    title: "",
+    titleLine2: "",
+    introText: "",
+    signatureText: "",
+    image: "",
+    imageAlt: "",
+  };
+}
+
 export function emptyEditorialHeader(): EditorialPageHeaderFields {
   return {
     eyebrow: "",
     title: "",
     introText: "",
     signatureText: "",
+    categoryLabels: [],
     image: "",
     imageAlt: "",
     primaryButtonLabel: "",
@@ -175,6 +207,8 @@ export function defaultHeaderForType(type: PageHeaderType): PageHeaderConfig {
       return { type: "cinematic", cinematic: emptyCinematicHeader() };
     case "editorial":
       return { type: "editorial", editorial: emptyEditorialHeader() };
+    case "split":
+      return { type: "split", split: emptySplitHeader() };
     case "utility":
       return { type: "utility", utility: emptyUtilityHeader() };
     case "magazine":

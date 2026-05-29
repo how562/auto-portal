@@ -26,8 +26,8 @@ export function ValueYourTradeContentForm({
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--muted)]">
-        The page shows a hero band plus a full-width partner iframe. No extra sections
-        are rendered on the public site.
+        The page shows a utility intro band, a full-width divider, and a partner iframe below.
+        Hero image URL is not used on the public layout.
       </p>
 
       <FormSection title="Hero">

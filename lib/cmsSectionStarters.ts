@@ -64,6 +64,22 @@ export function getSectionStarter(
             "Work with advisors who listen first, then match you to the right vehicle.",
         }),
       };
+    case "half_half":
+      return {
+        eyebrow: "About Us",
+        headline: "Built on trust.",
+        subheadline: "Driven by people.",
+        body:
+          "Cavender Auto Group has been serving Texas for over 85 years — and we're proud to say that much of our success comes from the trust built with the families and communities we serve every day.\n\nWe're not just here to sell cars. We're here to build lasting relationships founded on honesty, respect, and service you can trust.",
+        image_url: "/images/hero/community.jpg",
+        settings: withDefaultDesign({
+          preset_key: "half_half",
+          signature_text: "Cavender Family",
+          image_alt: "Cavender Auto Group team",
+          image_position: "right",
+          variant: "compact",
+        }),
+      };
     case "cta_band":
       return {
         headline: "Ready to take the next step?",
@@ -181,6 +197,7 @@ export function getStarterForSectionType(type: CMSSectionType): PageSectionUpdat
             "text_block",
             "image_text",
             "split_feature",
+            "half_half",
             "cta_band",
             "card_grid",
             "faq",

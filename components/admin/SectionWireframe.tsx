@@ -41,6 +41,18 @@ export function SectionWireframe({ type, className = "" }: SectionWireframeProps
           <div className={`${block} min-h-0`} />
         </div>
       )}
+      {type === "half_half" && (
+        <div className="grid h-full grid-cols-2 gap-0">
+          <div className="flex flex-col justify-center gap-1.5 bg-[#faf8f5] p-2">
+            <div className={`h-0.5 w-6 ${blockGold}`} />
+            <div className={`h-2 w-4/5 ${blockDark}`} />
+            <div className={`h-1.5 w-3/5 ${blockDark}`} />
+            <div className={`h-1 w-full ${block}`} />
+            <div className={`mt-1 h-1 w-2/5 ${blockGold}`} />
+          </div>
+          <div className={`${block} min-h-0`} />
+        </div>
+      )}
       {type === "split_feature" && (
         <div className="grid h-full grid-cols-[1fr_1.1fr] gap-2">
           <div className="flex flex-col gap-1.5">

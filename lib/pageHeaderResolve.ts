@@ -14,6 +14,7 @@ import {
   type CinematicPageHeaderFields,
   type EditorialPageHeaderFields,
   type MagazinePageHeaderFields,
+  type SplitFeaturePageHeaderFields,
   type PageHeaderConfig,
   type PageHeaderSlug,
   type PageHeaderType,
@@ -64,6 +65,10 @@ function mergeEditorial(
     title: mergeStrings(stored.title, fallback.title),
     introText: mergeStrings(stored.introText, fallback.introText),
     signatureText: mergeStrings(stored.signatureText, fallback.signatureText),
+    categoryLabels:
+      Array.isArray(stored.categoryLabels) && stored.categoryLabels.length > 0
+        ? stored.categoryLabels
+        : (fallback.categoryLabels ?? []),
     image: mergeStrings(stored.image, fallback.image),
     imageAlt: mergeStrings(stored.imageAlt, fallback.imageAlt),
     primaryButtonLabel: mergeStrings(stored.primaryButtonLabel, fallback.primaryButtonLabel),
@@ -92,6 +97,21 @@ function mergeUtility(
       fallback.secondaryButtonLabel,
     ),
     secondaryButtonUrl: mergeStrings(stored.secondaryButtonUrl, fallback.secondaryButtonUrl),
+  };
+}
+
+function mergeSplit(
+  stored: SplitFeaturePageHeaderFields,
+  fallback: SplitFeaturePageHeaderFields,
+): SplitFeaturePageHeaderFields {
+  return {
+    eyebrow: mergeStrings(stored.eyebrow, fallback.eyebrow),
+    title: mergeStrings(stored.title, fallback.title),
+    titleLine2: mergeStrings(stored.titleLine2, fallback.titleLine2),
+    introText: mergeStrings(stored.introText, fallback.introText),
+    signatureText: mergeStrings(stored.signatureText, fallback.signatureText),
+    image: mergeStrings(stored.image, fallback.image),
+    imageAlt: mergeStrings(stored.imageAlt, fallback.imageAlt),
   };
 }
 
@@ -133,6 +153,12 @@ function mergeHeaderConfig(
       editorial: mergeEditorial(stored.editorial, fallback.editorial),
     };
   }
+  if (stored.type === "split" && fallback.type === "split") {
+    return {
+      type: "split",
+      split: mergeSplit(stored.split, fallback.split),
+    };
+  }
   if (stored.type === "utility" && fallback.type === "utility") {
     return {
       type: "utility",
@@ -157,19 +183,22 @@ export function deriveHeaderFromLegacy(
   switch (slug) {
     case "about-us": {
       const c = content as AboutUsPageContent;
+      const introParagraphs =
+        c.hero?.introParagraphs?.length
+          ? c.hero.introParagraphs
+          : c.hero?.tagline?.length
+            ? c.hero.tagline
+            : [];
       return {
-        type: "editorial",
-        editorial: {
-          eyebrow: c.whoWeAre?.eyebrow ?? "",
-          title: c.hero?.title ?? "About Us",
-          introText: [c.hero?.tagline?.join(" "), c.whoWeAre?.paragraphs?.[0]]
-            .filter(Boolean)
-            .join("\n\n"),
-          signatureText: c.whoWeAre?.signature ?? "",
-          image: c.hero?.imageUrl ?? c.whoWeAre?.imageUrl ?? "",
-          imageAlt: "About Cavender Auto Group",
-          primaryButtonLabel: "",
-          primaryButtonUrl: "",
+        type: "split",
+        split: {
+          eyebrow: "About Us",
+          title: c.hero?.titleLine1 ?? c.hero?.title ?? "Built on trust.",
+          titleLine2: c.hero?.titleLine2 ?? "Driven by people.",
+          introText: introParagraphs.join("\n\n"),
+          signatureText: c.hero?.signature ?? "Cavender Family",
+          image: c.hero?.imageUrl ?? "",
+          imageAlt: c.hero?.imageAlt ?? "Cavender Auto Group team",
         },
       };
     }
@@ -178,12 +207,11 @@ export function deriveHeaderFromLegacy(
       return {
         type: "editorial",
         editorial: {
-          eyebrow: c.intro?.eyebrow ?? "",
+          eyebrow: c.intro?.eyebrow ?? "Leadership",
           title: c.hero?.title ?? "Executive Team",
-          introText: [c.hero?.tagline?.join(" "), c.intro?.paragraph]
-            .filter(Boolean)
-            .join("\n\n"),
+          introText: c.intro?.paragraph ?? c.hero?.tagline?.join(" ") ?? "",
           signatureText: "",
+          categoryLabels: ["Leadership", "Our Team", "Cavender Auto Group"],
           image: c.hero?.imageUrl ?? "",
           imageAlt: "Cavender executive leadership",
           primaryButtonLabel: "",
@@ -260,12 +288,12 @@ export function deriveHeaderFromLegacy(
         utility: {
           eyebrow: "Trade-in",
           title: c.hero?.title ?? "Value Your Trade",
-          introText: c.hero?.tagline?.join(" ") ?? "",
+          introText: c.hero?.tagline?.join("\n") ?? "",
           supportPoints: [],
-          formSlot: "trade-iframe",
+          formSlot: "",
           toolSlot: "",
-          vehicleImage: c.hero?.imageUrl ?? "",
-          vehicleImageAlt: "Value your trade",
+          vehicleImage: "",
+          vehicleImageAlt: "",
           primaryButtonLabel: "",
           primaryButtonUrl: "",
           secondaryButtonLabel: "",
@@ -315,21 +343,23 @@ export function deriveHeaderFromLegacy(
     }
     case "contact-the-cavenders": {
       const c = content as ContactTheCavendersPageContent;
+      const introBody = c.intro?.body?.trim() ?? "";
       return {
-        type: "cinematic",
-        cinematic: {
-          eyebrow: c.hero?.subtitle ?? "",
-          title: c.hero?.title ?? "Contact The Cavenders",
-          subtitle: c.hero?.supportingText ?? "",
-          backgroundImage: c.hero?.backgroundImageUrl ?? "",
-          mobileBackgroundImage: "",
-          overlayOpacity: 45,
-          primaryButtonLabel: "",
-          primaryButtonUrl: "",
-          secondaryButtonLabel: "",
-          secondaryButtonUrl: "",
-          logoImageUrl: "",
-          logoAlt: "",
+        type: "split",
+        split: {
+          eyebrow: "Contact Leadership",
+          title: "Your voice",
+          titleLine2: "matters.",
+          introText: [
+            c.hero?.supportingText,
+            c.intro?.heading,
+            introBody,
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+          signatureText: c.quote?.attribution?.replace(/^—\s*/, "") ?? "Rob & Lee Cavender",
+          image: "",
+          imageAlt: c.intro?.leadershipImageAlt ?? "Rob and Lee Cavender",
         },
       };
     }
@@ -358,17 +388,100 @@ export function deriveHeaderFromLegacy(
   }
 }
 
+function stripValueYourTradeUtilityFields(
+  utility: UtilityPageHeaderFields,
+): UtilityPageHeaderFields {
+  return {
+    ...utility,
+    formSlot: "",
+    toolSlot: "",
+    vehicleImage: "",
+    vehicleImageAlt: "",
+  };
+}
+
+/** Always utility intro for Value Your Trade — ignores outdated CMS header types. */
+export function resolveValueYourTradeUtilityHeader(
+  content: ValueYourTradePageContent | null | undefined,
+): UtilityPageHeaderFields {
+  const fallback = deriveHeaderFromLegacy("value-your-trade", content ?? {});
+  if (fallback.type !== "utility") {
+    const c = content;
+    return stripValueYourTradeUtilityFields({
+      eyebrow: "Trade-in",
+      title: c?.hero?.title ?? "Value Your Trade",
+      introText: c?.hero?.tagline?.join("\n") ?? "",
+      supportPoints: [],
+      formSlot: "",
+      toolSlot: "",
+      vehicleImage: "",
+      vehicleImageAlt: "",
+      primaryButtonLabel: "",
+      primaryButtonUrl: "",
+      secondaryButtonLabel: "",
+      secondaryButtonUrl: "",
+    });
+  }
+
+  const stored = content?.header;
+  if (stored?.type === "utility") {
+    return stripValueYourTradeUtilityFields(
+      mergeUtility(stored.utility, fallback.utility),
+    );
+  }
+
+  return stripValueYourTradeUtilityFields(fallback.utility);
+}
+
 export function resolvePageHeader(
   slug: PageHeaderSlug,
   content: WithOptionalPageHeader | null | undefined,
 ): PageHeaderConfig | null {
+  if (slug === "value-your-trade") {
+    if (content?.header?.type === "none") return null;
+    return {
+      type: "utility",
+      utility: resolveValueYourTradeUtilityHeader(
+        content as ValueYourTradePageContent | null | undefined,
+      ),
+    };
+  }
+
   const fallback = deriveHeaderFromLegacy(slug, content ?? {});
   const stored = content?.header;
 
   if (stored?.type === "none") return null;
-  if (!stored) return fallback.type === "none" ? null : fallback;
+  if (!stored) {
+    if (fallback.type === "none") return null;
+    return fallback;
+  }
 
-  return mergeHeaderConfig(stored, fallback);
+  let resolved = mergeHeaderConfig(stored, fallback);
+
+  // Contact — leadership photo sits beside the form, not in the header.
+  if (slug === "contact-the-cavenders" && resolved.type === "split") {
+    resolved = {
+      type: "split",
+      split: { ...resolved.split, image: "" },
+    };
+  }
+
+  // Pages migrated to split header — ignore outdated CMS header types.
+  if (
+    (slug === "contact-the-cavenders" || slug === "about-us") &&
+    stored.type !== "split" &&
+    fallback.type === "split"
+  ) {
+    if (slug === "contact-the-cavenders") {
+      return {
+        type: "split",
+        split: { ...fallback.split, image: "" },
+      };
+    }
+    return fallback;
+  }
+
+  return resolved;
 }
 
 export function ensurePageHeaderOnContent<T extends WithOptionalPageHeader>(
