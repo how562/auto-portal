@@ -1,3 +1,4 @@
+import { DEFAULT_DEALERSHIP_DIRECTORY } from "./dealershipDirectoryContent";
 import type { ScheduleServiceFeature } from "./serviceSchedulingTypes";
 
 export const SCHEDULE_SERVICE_PAGE_CONTENT = {
@@ -44,16 +45,8 @@ export const SCHEDULE_SERVICE_PAGE_CONTENT = {
       icon: "support",
     },
   ] satisfies ScheduleServiceFeature[],
+  dealerships: structuredClone(DEFAULT_DEALERSHIP_DIRECTORY),
 };
 
-/** Rotating storefront imagery when a location has no dedicated photo. */
-export const SERVICE_LOCATION_IMAGE_POOL = [
-  "/images/hero/dealership.jpg",
-  "/images/hero/community.jpg",
-  "/images/hero/vehicle.jpg",
-  "/images/hero/lifestyle.jpg",
-] as const;
+export { serviceLocationImageUrl } from "./dealershipImagery";
 
-export function serviceLocationImageUrl(index: number): string {
-  return SERVICE_LOCATION_IMAGE_POOL[index % SERVICE_LOCATION_IMAGE_POOL.length];
-}

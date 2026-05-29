@@ -1,0 +1,59 @@
+/* Shared department contact rows on location cards. */
+
+.dealership-dept-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.dealership-dept-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dealership-dept-list__label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dealership-dept-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.dealership-dept-list__phone {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+}
+
+a.dealership-dept-list__phone:hover {
+  color: var(--loc-gold, var(--ss-gold, #b8956b));
+}
+
+.dealership-dept-list__link {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--loc-gold, var(--ss-gold, #b8956b));
+  text-decoration: none;
+}
+
+.dealership-dept-list__link:hover {
+  text-decoration: underline;
+}

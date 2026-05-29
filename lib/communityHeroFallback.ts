@@ -4,6 +4,7 @@ import type {
   CommunityHeroImageSlot,
 } from "./communityHeroTypes";
 import { HERO_IMAGE_POSITIONS } from "./communityHeroTypes";
+import { DEFAULT_HERO_VIDEO_SETTINGS } from "./communityHeroVideo";
 
 export const HERO_DEFAULT_IMAGES: Record<
   CommunityHeroImagePosition,
@@ -46,4 +47,5 @@ export const COMMUNITY_HERO_FALLBACK: CommunityHeroContent = {
     { label: "Browse Inventory", url: "/inventory", variant: "secondary" },
   ],
   images: resolveHeroImageSlots([]),
+  video: { ...DEFAULT_HERO_VIDEO_SETTINGS },
 };

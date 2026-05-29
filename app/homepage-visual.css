@@ -50,7 +50,8 @@
 }
 
 /* Tighter vertical rhythm — one source of truth for homepage block spacing */
-.homepage-surface .homepage-hero {
+.homepage-surface .homepage-hero,
+.homepage-surface .fs-video-hero {
   padding-bottom: var(--hp-section-y);
 }
 

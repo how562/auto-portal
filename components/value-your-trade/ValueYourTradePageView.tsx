@@ -19,14 +19,16 @@ export function ValueYourTradePageView({
   return (
     <div className="value-your-trade-page">
       <section className="vyt-utility" aria-labelledby="vyt-utility-title">
-        <div className="portal-container vyt-utility__inner">
-          {intro.eyebrow ? <p className="vyt-utility__eyebrow">{intro.eyebrow}</p> : null}
-          <h1 id="vyt-utility-title" className="vyt-utility__title">
-            {intro.title}
-          </h1>
-          {intro.introText ? (
-            <p className="vyt-utility__intro">{intro.introText}</p>
-          ) : null}
+        <div className="portal-container">
+          <div className="vyt-utility__inner">
+            {intro.eyebrow ? <p className="vyt-utility__eyebrow">{intro.eyebrow}</p> : null}
+            <h1 id="vyt-utility-title" className="vyt-utility__title">
+              {intro.title}
+            </h1>
+            {intro.introText ? (
+              <p className="vyt-utility__intro">{intro.introText}</p>
+            ) : null}
+          </div>
         </div>
       </section>
 

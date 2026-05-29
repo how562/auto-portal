@@ -17,7 +17,8 @@
 
 .vyt-utility__inner {
   padding: clamp(2.5rem, 5vw, 3.5rem) 0 clamp(2rem, 4vw, 2.75rem);
-  max-width: 40rem;
+  max-width: 36rem;
+  text-align: left;
 }
 
 .vyt-utility__eyebrow {

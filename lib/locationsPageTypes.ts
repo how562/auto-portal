@@ -1,3 +1,4 @@
+import type { DealershipCmsEntry, DealershipDepartmentContact } from "@/lib/dealershipDirectoryTypes";
 import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
 
 export interface LocationsPageFeature {
@@ -26,6 +27,8 @@ export interface LocationsPageContent {
     body: string;
     features: LocationsPageFeature[];
   };
+  /** Per-dealership copy, imagery, and department contacts. */
+  dealerships: DealershipCmsEntry[];
 }
 
 export interface DealershipLocation {
@@ -40,4 +43,6 @@ export interface DealershipLocation {
   mapPosition: { top: string; left: string };
   /** Show on inset Texas map (e.g. DFW / Rockwall). */
   showOnInset?: boolean;
+  viewCtaLabel?: string;
+  departments?: DealershipDepartmentContact[];
 }

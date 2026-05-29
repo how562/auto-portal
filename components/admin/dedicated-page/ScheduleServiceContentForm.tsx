@@ -1,6 +1,7 @@
 "use client";
 
 import type { ScheduleServicePageContent } from "@/lib/serviceSchedulingTypes";
+import { DealershipDirectoryForm } from "@/components/admin/dedicated-page/DealershipDirectoryForm";
 import {
   FormSection,
   TextAreaField,
@@ -24,8 +25,8 @@ export function ScheduleServiceContentForm({
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--muted)]">
-        Service location cards use store scheduling URLs from the database. Edit page
-        copy and feature band here.
+        Edit page copy, feature band, and dealership images plus sales, service, and parts
+        contact numbers and CTA links. Blank fields fall back to store data.
       </p>
 
       <FormSection title="Hero">
@@ -118,6 +119,11 @@ export function ScheduleServiceContentForm({
           </div>
         ))}
       </FormSection>
+
+      <DealershipDirectoryForm
+        dealerships={content.dealerships}
+        onChange={(dealerships) => patch("dealerships", dealerships)}
+      />
     </div>
   );
 }

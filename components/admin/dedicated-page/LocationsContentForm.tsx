@@ -1,6 +1,7 @@
 "use client";
 
 import type { LocationsPageContent } from "@/lib/locationsPageTypes";
+import { DealershipDirectoryForm } from "@/components/admin/dedicated-page/DealershipDirectoryForm";
 import {
   FormSection,
   TextAreaField,
@@ -26,8 +27,8 @@ export function LocationsContentForm({
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--muted)]">
-        Dealership cards and map markers still come from store data in the database.
-        Edit page copy and imagery here.
+        Edit page copy, dealership images, department contacts, and map marker positions.
+        Blank fields fall back to store data from the database.
       </p>
 
       <FormSection title="Hero">
@@ -145,6 +146,12 @@ export function LocationsContentForm({
           </div>
         ))}
       </FormSection>
+
+      <DealershipDirectoryForm
+        dealerships={content.dealerships}
+        onChange={(dealerships) => patch("dealerships", dealerships)}
+        showMapFields
+      />
     </div>
   );
 }

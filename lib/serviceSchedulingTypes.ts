@@ -1,3 +1,4 @@
+import type { DealershipCmsEntry, DealershipDepartmentContact } from "@/lib/dealershipDirectoryTypes";
 import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
 
 /** CMS-ready copy for the schedule service page. */
@@ -21,6 +22,8 @@ export interface ScheduleServicePageContent {
     subheadline: string;
   };
   features: ScheduleServiceFeature[];
+  /** Per-dealership copy, imagery, and department contacts. */
+  dealerships: DealershipCmsEntry[];
 }
 
 export interface ServiceLocation {
@@ -35,4 +38,6 @@ export interface ServiceLocation {
   scheduleUrl: string | null;
   scheduleAvailable: boolean;
   callAvailable: boolean;
+  scheduleCtaLabel?: string;
+  departments?: DealershipDepartmentContact[];
 }

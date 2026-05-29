@@ -33,7 +33,7 @@ export function HomepageInventorySearchBridge({
   hideHelperLine = false,
   hideEyebrow = false,
 }: {
-  variant?: "standalone" | "hero";
+  variant?: "standalone" | "hero" | "video-hero";
   /** Removes the smaller helper line under the eyebrow. */
   hideHelperLine?: boolean;
   /** Removes the eyebrow label above the search input. */
@@ -57,27 +57,28 @@ export function HomepageInventorySearchBridge({
     submitSearch(query);
   }
 
-  const chipsSource =
-    variant === "hero"
-      ? HOMEPAGE_INVENTORY_SEARCH_CHIPS.slice(0, 5)
-      : HOMEPAGE_INVENTORY_SEARCH_CHIPS;
+  const isHeroVariant = variant === "hero" || variant === "video-hero";
+
+  const chipsSource = isHeroVariant
+    ? HOMEPAGE_INVENTORY_SEARCH_CHIPS.slice(0, 5)
+    : HOMEPAGE_INVENTORY_SEARCH_CHIPS;
 
   const chipButtonClass =
-    variant === "hero"
+    isHeroVariant
       ? "homepage-search-pill inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[var(--line-dark)] bg-white px-4 text-sm font-semibold text-[var(--muted)] transition hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--ink)_18%,var(--line-dark))] hover:bg-white hover:text-[var(--ink)] hover:shadow-[0_4px_14px_rgba(9,33,63,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
       : "rounded-full border border-[var(--line)] bg-white/60 px-3 py-1 text-[11px] font-semibold text-[var(--muted)] transition hover:border-[var(--line-dark)] hover:bg-white hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]";
 
   const chips = (
     <ul
       className={
-        variant === "hero"
+        isHeroVariant
           ? "flex w-full flex-nowrap items-center gap-2 whitespace-nowrap lg:justify-end"
           : "flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
       }
       aria-label="Quick inventory searches"
     >
       {chipsSource.map((chip) => (
-        <li key={chip.id} className={variant === "hero" ? "shrink-0" : ""}>
+        <li key={chip.id} className={isHeroVariant ? "shrink-0" : ""}>
           <button
             type="button"
             onClick={() => router.push(homepageInventorySearchChipHref(chip))}
@@ -93,7 +94,7 @@ export function HomepageInventorySearchBridge({
   const form = (
     <form
       className={
-        variant === "hero"
+        isHeroVariant
           ? "homepage-search-form w-full"
           : hideEyebrow && hideHelperLine
             ? "mt-0"
@@ -134,7 +135,14 @@ export function HomepageInventorySearchBridge({
 
   return (
     <section aria-labelledby={`${inputId}-eyebrow`}>
-      {variant === "hero" ? (
+      {variant === "video-hero" ? (
+        <div className="homepage-search-bridge--video-hero w-full">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
+            <div className="w-full lg:basis-[54%] xl:basis-[60%]">{form}</div>
+            <div className="min-w-0 flex-1 overflow-x-auto">{chips}</div>
+          </div>
+        </div>
+      ) : variant === "hero" ? (
         <div className="homepage-search-bridge--hero w-full">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
             <div className="w-full lg:basis-[54%] xl:basis-[60%]">{form}</div>

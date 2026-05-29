@@ -17,8 +17,8 @@ export function settingString(
 export function settingNumber(
   settings: Record<string, unknown>,
   key: string,
-  fallback: number,
-): number {
+  fallback?: number,
+): number | undefined {
   const v = settings[key];
   if (typeof v === "number" && !Number.isNaN(v)) return v;
   if (typeof v === "string") {
@@ -26,6 +26,17 @@ export function settingNumber(
     if (!Number.isNaN(n)) return n;
   }
   return fallback;
+}
+
+export function settingBool(
+  settings: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
+  const v = settings[key];
+  if (typeof v === "boolean") return v;
+  if (v === "true" || v === "1") return true;
+  if (v === "false" || v === "0") return false;
+  return undefined;
 }
 
 export function settingItems<T extends Record<string, unknown>>(

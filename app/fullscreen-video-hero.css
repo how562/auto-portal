@@ -1,0 +1,212 @@
+/**
+ * Fullscreen video homepage hero — sits below fixed PortalHeader.
+ */
+
+.fs-video-hero {
+  --fsvh-gold: var(--gold, #b8956b);
+  --fsvh-ink: #f8f6f2;
+  --fsvh-muted: rgba(248, 246, 242, 0.82);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: min(100dvh, 56rem);
+  max-height: 100dvh;
+  overflow: hidden;
+  color: var(--fsvh-ink);
+}
+
+.fs-video-hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.fs-video-hero__poster,
+.fs-video-hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.fs-video-hero__video {
+  z-index: 1;
+}
+
+.fs-video-hero__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.fs-video-hero__content {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.75rem, 5vw, 4rem);
+}
+
+.fs-video-hero__inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+  width: 100%;
+}
+
+.fs-video-hero__copy {
+  max-width: 42rem;
+}
+
+.fs-video-hero__accent {
+  display: block;
+  width: 3.25rem;
+  height: 3px;
+  margin-bottom: 1.25rem;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--fsvh-gold) 0%,
+    color-mix(in srgb, var(--fsvh-gold) 40%, transparent) 100%
+  );
+}
+
+.fs-video-hero__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fsvh-gold);
+  text-decoration: none;
+}
+
+a.fs-video-hero__eyebrow:hover {
+  color: #fff;
+}
+
+.fs-video-hero__title {
+  margin: 0;
+  font-size: clamp(2.5rem, 6.5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.fs-video-hero__subcopy {
+  margin: 1.15rem 0 0;
+  max-width: 36rem;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.65;
+  color: var(--fsvh-muted);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+}
+
+.fs-video-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.fs-video-hero__btn {
+  min-height: 3rem;
+  min-width: 10.5rem;
+}
+
+.fs-video-hero__btn--primary {
+  border-color: var(--fsvh-gold);
+  background: var(--fsvh-gold);
+  color: #1a1a1a;
+}
+
+.fs-video-hero__btn--primary:hover {
+  background: color-mix(in srgb, var(--fsvh-gold) 88%, white);
+  border-color: color-mix(in srgb, var(--fsvh-gold) 88%, white);
+}
+
+.fs-video-hero__btn--secondary {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  color: #fff;
+}
+
+.fs-video-hero__btn--secondary:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* Light overlay — flip text to dark */
+.fs-video-hero[data-overlay="light"] {
+  --fsvh-ink: #1a1a1a;
+  --fsvh-muted: #4a4540;
+}
+
+.fs-video-hero[data-overlay="light"] .fs-video-hero__title {
+  text-shadow: none;
+}
+
+.fs-video-hero[data-overlay="light"] .fs-video-hero__subcopy {
+  text-shadow: none;
+}
+
+.fs-video-hero[data-overlay="light"] .fs-video-hero__btn--secondary {
+  border-color: rgba(26, 26, 26, 0.35);
+  color: var(--fsvh-ink);
+}
+
+.fs-video-hero[data-overlay="light"] .fs-video-hero__btn--secondary:hover {
+  background: rgba(26, 26, 26, 0.06);
+}
+
+/* Integrated search on video hero */
+.fs-video-hero__search {
+  width: 100%;
+  max-width: 56rem;
+}
+
+.homepage-search-bridge--video-hero .homepage-search-form {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.homepage-search-bridge--video-hero .homepage-search-pill {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--ink);
+}
+
+@media (max-width: 767px) {
+  .fs-video-hero {
+    min-height: min(92dvh, 44rem);
+  }
+
+  .fs-video-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fs-video-hero__btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-video-hero__video {
+    display: none;
+  }
+}

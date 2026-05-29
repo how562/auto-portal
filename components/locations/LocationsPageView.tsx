@@ -9,6 +9,7 @@ import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
 import { LocationDealershipCard } from "@/components/locations/LocationDealershipCard";
 import { LocationsFeatureIcon } from "@/components/locations/LocationsFeatureIcons";
 import { LocationsMapPanel } from "@/components/locations/LocationsMapPanel";
+import { mergeDealershipLocationsWithCms } from "@/lib/dealershipDirectoryMerge";
 
 import "@/app/locations-page.css";
 
@@ -21,7 +22,11 @@ export function LocationsPageView({
   locations,
   content = LOCATIONS_PAGE_CONTENT,
 }: LocationsPageViewProps) {
-  const count = locations.length;
+  const mergedLocations = mergeDealershipLocationsWithCms(
+    locations,
+    content.dealerships,
+  );
+  const count = mergedLocations.length;
   const tagline =
     count > 0
       ? `Proudly serving South and Central Texas. ${count} locations. One standard.`
@@ -55,7 +60,7 @@ export function LocationsPageView({
               {content.map.ctaLabel}
             </a>
           </div>
-          <LocationsMapPanel locations={locations} />
+          <LocationsMapPanel locations={mergedLocations} />
         </div>
       </section>
 
@@ -65,13 +70,13 @@ export function LocationsPageView({
         aria-label="All dealership locations"
       >
         <div className="portal-container">
-          {locations.length === 0 ? (
+          {mergedLocations.length === 0 ? (
             <p className="locations-grid-section__empty">
               Our locations are being updated. Please check back soon.
             </p>
           ) : (
             <ul className="locations-grid">
-              {locations.map((location) => (
+              {mergedLocations.map((location) => (
                 <li key={location.id}>
                   <LocationDealershipCard location={location} />
                 </li>

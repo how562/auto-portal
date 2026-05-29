@@ -1,4 +1,7 @@
 import type { DealershipLocation } from "@/lib/locationsPageTypes";
+import { DealershipDepartmentList } from "@/components/dealership/DealershipDepartmentList";
+
+import "@/app/dealership-dept-list.css";
 
 export function LocationDealershipCard({ location }: { location: DealershipLocation }) {
   return (
@@ -22,13 +25,16 @@ export function LocationDealershipCard({ location }: { location: DealershipLocat
           <span>{location.addressLine1}</span>
           {location.addressLine2 ? <span>{location.addressLine2}</span> : null}
         </address>
+        {location.departments?.length ? (
+          <DealershipDepartmentList departments={location.departments} />
+        ) : null}
         <a
           href={location.viewUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="locations-card__cta"
         >
-          View location
+          {location.viewCtaLabel ?? "View location"}
         </a>
       </div>
     </article>

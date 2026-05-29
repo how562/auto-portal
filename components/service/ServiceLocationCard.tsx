@@ -1,4 +1,7 @@
 import type { ServiceLocation } from "@/lib/serviceSchedulingTypes";
+import { DealershipDepartmentList } from "@/components/dealership/DealershipDepartmentList";
+
+import "@/app/dealership-dept-list.css";
 
 function splitAddress(address: string): { line1: string; line2: string | null } {
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
@@ -34,6 +37,9 @@ export function ServiceLocationCard({
             {addressLines.line2 ? <span>{addressLines.line2}</span> : null}
           </address>
         ) : null}
+        {location.departments?.length ? (
+          <DealershipDepartmentList departments={location.departments} />
+        ) : null}
         {location.scheduleAvailable && location.scheduleUrl ? (
           <a
             href={location.scheduleUrl}
@@ -41,7 +47,7 @@ export function ServiceLocationCard({
             rel="noopener noreferrer"
             className="schedule-service-card__cta"
           >
-            Schedule Service
+            {location.scheduleCtaLabel ?? "Schedule Service"}
           </a>
         ) : (
           <span className="schedule-service-card__cta schedule-service-card__cta--disabled">

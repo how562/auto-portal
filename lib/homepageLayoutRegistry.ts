@@ -38,7 +38,8 @@ export const HOMEPAGE_LAYOUT_SECTION_DEFS: HomepageLayoutSectionDef[] = [
   {
     id: "editorial_hero",
     label: "Hero",
-    description: "Editorial headline, collage imagery, and inventory search bridge.",
+    description:
+      "Editorial collage or fullscreen video hero (CMS: Hero layout), plus inventory search bridge.",
     zone: "main",
     previewVariant: "hero",
   },

@@ -26,8 +26,9 @@ interface PortalExperienceProps {
   homepageLayout: HomepageLayoutConfig;
 }
 
-const EditorialHero = dynamic(
-  () => import("@/components/home/EditorialHero").then((m) => m.EditorialHero),
+const HomepageHeroSection = dynamic(
+  () =>
+    import("@/components/home/HomepageHeroSection").then((m) => m.HomepageHeroSection),
   { ssr: false },
 );
 const DiscoveryCategoriesSection = dynamic(
@@ -77,7 +78,7 @@ export function PortalExperience(props: PortalExperienceProps) {
         <PortalHeader />
         <div className="homepage-header-spacer" aria-hidden />
         {!hidden.has("editorial_hero") ? (
-          <EditorialHero content={props.communityHero} />
+          <HomepageHeroSection content={props.communityHero} />
         ) : null}
         {!hidden.has("discovery_categories") ? (
           <DiscoveryCategoriesSection vehicles={props.vehicles} />

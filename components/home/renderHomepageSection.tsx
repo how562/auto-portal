@@ -22,11 +22,11 @@ async function loadNamedComponent<T extends Record<string, unknown>>(
   return resolved;
 }
 
-const EditorialHero = dynamic(
+const HomepageHeroSection = dynamic(
   () =>
     loadNamedComponent(
-      () => import("@/components/home/EditorialHero"),
-      "EditorialHero",
+      () => import("@/components/home/HomepageHeroSection"),
+      "HomepageHeroSection",
     ),
   { ssr: false },
 );
@@ -100,7 +100,7 @@ export function renderHomepageSection(
 ) {
   switch (id) {
     case "editorial_hero":
-      return <EditorialHero key={id} content={ctx.communityHero} />;
+      return <HomepageHeroSection key={id} content={ctx.communityHero} />;
     case "discovery_categories":
       return <DiscoveryCategoriesSection key={id} vehicles={ctx.vehicles} />;
     case "driven_offers":

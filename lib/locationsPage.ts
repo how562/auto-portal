@@ -5,7 +5,7 @@ import type { Store } from "./types";
 import {
   LOCATION_IMAGE_POOL,
   LOCATION_MAP_POSITIONS,
-} from "./locationsPageContent";
+} from "./dealershipImagery";
 import type { DealershipLocation } from "./locationsPageTypes";
 
 function splitAddress(address: string): { line1: string; line2: string | null } {

@@ -35,6 +35,21 @@ export interface CommunityHeroHeadlineLine {
 
 import type { PageSection } from "./cmsTypes";
 
+/** Homepage hero presentation — `current` keeps the editorial collage hero. */
+export type HomepageHeroLayout = "current" | "video_fullscreen";
+
+export type HomepageHeroOverlayColor = "dark" | "light";
+
+export interface CommunityHeroVideoSettings {
+  heroLayout: HomepageHeroLayout;
+  videoUrl: string;
+  posterImage: string;
+  overlayColor: HomepageHeroOverlayColor;
+  /** 0–1 */
+  overlayOpacity: number;
+  showInventorySearchBar: boolean;
+}
+
 export interface CommunityHeroContent {
   eyebrow: CommunityHeroEyebrow;
   headlineLines: CommunityHeroHeadlineLine[];
@@ -42,6 +57,7 @@ export interface CommunityHeroContent {
   body: string;
   buttons: CommunityHeroButton[];
   images: CommunityHeroImageSlot[];
+  video: CommunityHeroVideoSettings;
   /** Source section for locale-aware re-parse (homepage community_hero). */
   pageSection?: PageSection;
 }

@@ -6,6 +6,7 @@ import {
 } from "./cmsAdmin";
 import { COMMITMENT_VALUE_ORDER } from "./cavenderCommitmentTypes";
 import { COMMUNITY_HERO_FALLBACK } from "./communityHeroFallback";
+import { communityHeroVideoSettingsToRecord } from "./communityHeroVideo";
 import { parseCommunityHeroFromPageSection } from "./communityHeroParse";
 import type { CommunityHeroContent } from "./communityHeroTypes";
 import { parseSettings } from "./cmsSettings";
@@ -112,6 +113,7 @@ async function ensureSection(
         headline_lines: fallback.headlineLines,
         buttons: fallback.buttons,
         images: fallback.images,
+        ...communityHeroVideoSettingsToRecord(fallback.video),
       },
       is_active: true,
     });
@@ -201,6 +203,7 @@ export function heroContentToPageSectionUpdate(
         url: img.url,
         alt: img.alt,
       })),
+      ...communityHeroVideoSettingsToRecord(content.video),
     },
     is_active: true,
   };

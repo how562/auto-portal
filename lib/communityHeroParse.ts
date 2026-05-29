@@ -1,4 +1,5 @@
 import { COMMUNITY_HERO_FALLBACK, resolveHeroImageSlots } from "./communityHeroFallback";
+import { parseCommunityHeroVideoSettings } from "./communityHeroVideo";
 import type {
   CommunityHeroButton,
   CommunityHeroContent,
@@ -150,6 +151,11 @@ export function parseCommunityHeroFromPageSection(
     settingString(settings, "eyebrow_href") ||
     "";
 
+  const video = parseCommunityHeroVideoSettings(settings);
+  if (!video.posterImage.trim() && images[0]?.url) {
+    video.posterImage = images[0].url;
+  }
+
   return {
     eyebrow: { label: eyebrowLabel, url: eyebrowUrl },
     headlineLines:
@@ -160,6 +166,7 @@ export function parseCommunityHeroFromPageSection(
     body: body.trim() || COMMUNITY_HERO_FALLBACK.body,
     buttons: buttons.length > 0 ? buttons : COMMUNITY_HERO_FALLBACK.buttons,
     images,
+    video,
     pageSection: section,
   };
 }
