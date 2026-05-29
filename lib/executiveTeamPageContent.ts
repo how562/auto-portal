@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface ExecutiveProfile {
   id: string;
   name: string;
@@ -22,6 +24,7 @@ export interface ExecutiveValue {
 }
 
 export interface ExecutiveTeamPageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     tagline: string[];

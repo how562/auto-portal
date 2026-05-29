@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface OurStoryMilestone {
   id: string;
   /** Large display year or era marker (e.g. 1939, II, 80+). */
@@ -30,6 +32,7 @@ export interface OurStoryCtaButton {
 }
 
 export interface OurStoryPageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     subtitle: string;

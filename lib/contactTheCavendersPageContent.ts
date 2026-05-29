@@ -1,4 +1,7 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface ContactTheCavendersPageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     subtitle: string;

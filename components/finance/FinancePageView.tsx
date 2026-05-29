@@ -1,5 +1,7 @@
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { FINANCE_PAGE_CONTENT } from "@/lib/financePageContent";
 import type { FinancePageContent } from "@/lib/financePageContent";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 import { FinanceDealerCard } from "@/components/finance/FinanceDealerCard";
 import { FinanceFeatureBand } from "@/components/finance/FinanceFeatureBand";
 
@@ -12,23 +14,11 @@ interface FinancePageViewProps {
 export function FinancePageView({
   content = FINANCE_PAGE_CONTENT,
 }: FinancePageViewProps) {
+  const header = resolvePageHeader("finance-center", content);
+
   return (
     <div className="finance-page">
-      <section className="finance-hero" aria-labelledby="finance-hero-title">
-        <div className="finance-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.hero.imageUrl} alt="" className="finance-hero__img" />
-          <div className="finance-hero__overlay" aria-hidden />
-        </div>
-        <div className="finance-hero__content">
-          <h1 id="finance-hero-title" className="finance-hero__title">
-            {content.hero.title}
-          </h1>
-          <span className="finance-hero__divider" aria-hidden />
-          <p className="finance-hero__subtitle">{content.hero.subtitle}</p>
-          <p className="finance-hero__supporting">{content.hero.supportingLine}</p>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="finance-intro" aria-labelledby="finance-intro-title">
         <div className="portal-container finance-intro__inner">

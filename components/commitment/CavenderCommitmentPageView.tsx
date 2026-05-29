@@ -1,17 +1,16 @@
-import Image from "next/image";
 import Link from "next/link";
 import { CommitmentFeatureIconSvg } from "@/components/commitment/CommitmentIcons";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { CommitmentMemoBackdrop } from "@/components/commitment/CommitmentMemoBackdrop";
 import { CommitmentVeteransVideo } from "@/components/commitment/CommitmentVeteransVideo";
 import {
   CAVENDER_COMMITMENT_PAGE_CONTENT,
   type CavenderCommitmentPageContent,
 } from "@/lib/cavenderCommitmentPageContent";
-import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
+import { btnSecondaryMd } from "@/lib/buttonClasses";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/cavender-commitment-page.css";
-
-const COMMITMENT_LOGO = "/brand/cavender-commitment.png";
 
 interface CavenderCommitmentPageViewProps {
   content?: CavenderCommitmentPageContent;
@@ -20,45 +19,14 @@ interface CavenderCommitmentPageViewProps {
 export function CavenderCommitmentPageView({
   content = CAVENDER_COMMITMENT_PAGE_CONTENT,
 }: CavenderCommitmentPageViewProps) {
-  const { memo, hero, explanation, intro, veteransVideo, disclaimer } = content;
+  const { hero, explanation, intro, veteransVideo, disclaimer } = content;
 
   const explanationParagraphs = [intro.body, hero.body].filter(Boolean);
+  const header = resolvePageHeader("cavender-commitment", content);
 
   return (
     <div className="cc-page">
-      <section className="cc-hero" aria-labelledby="cc-hero-title">
-        <div className="cc-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero.imageUrl} alt="" className="cc-hero__img" />
-          <div className="cc-hero__overlay" aria-hidden />
-          <div className="cc-hero__fade" aria-hidden />
-        </div>
-        <div className="cc-hero__content">
-          <p className="cc-hero__badge">{memo.classification}</p>
-          <Image
-            src={COMMITMENT_LOGO}
-            alt="Cavender Commitment"
-            width={1177}
-            height={217}
-            className="cc-hero__logo"
-            priority
-          />
-          <h1 id="cc-hero-title" className="cc-hero__title">
-            {hero.headlineLine1}
-            <span className="cc-hero__title-line"> {hero.headlineLine2}</span>
-          </h1>
-          <span className="cc-hero__divider" aria-hidden />
-          {hero.headlineAccent ? (
-            <p className="cc-hero__tagline">{hero.headlineAccent}</p>
-          ) : null}
-          <div className="cc-hero__actions">
-            <Link href={hero.primaryCta.href} className={btnPrimaryMd}>
-              {hero.primaryCta.label}
-            </Link>
-            <HeroSecondaryCta href={hero.secondaryCta.href} label={hero.secondaryCta.label} />
-          </div>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="cc-band cc-band--white" aria-labelledby="cc-explanation-title">
         <div className="portal-container cc-split">
@@ -139,18 +107,3 @@ export function CavenderCommitmentPageView({
   );
 }
 
-function HeroSecondaryCta({ href, label }: { href: string; label: string }) {
-  const className = `${btnSecondaryMd} cc-hero__btn-secondary`;
-  if (href.startsWith("#")) {
-    return (
-      <a href={href} className={className}>
-        {label}
-      </a>
-    );
-  }
-  return (
-    <Link href={href} className={className}>
-      {label}
-    </Link>
-  );
-}

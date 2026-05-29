@@ -2,10 +2,12 @@ import {
   AboutUsFeatureIcon,
   AboutUsValueIcon,
 } from "@/components/pages/AboutUsIcons";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import {
   ABOUT_US_PAGE_CONTENT,
   type AboutUsPageContent,
 } from "@/lib/aboutUsPageContent";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/about-us-page.css";
 
@@ -14,31 +16,12 @@ interface AboutUsPageProps {
 }
 
 export function AboutUsPage({ content = ABOUT_US_PAGE_CONTENT }: AboutUsPageProps) {
-  const { hero, whoWeAre, ourApproach, ourValues } = content;
+  const { whoWeAre, ourApproach, ourValues } = content;
+  const header = resolvePageHeader("about-us", content);
 
   return (
     <div className="about-us-page">
-      {/* Hero */}
-      <section className="about-us-hero" aria-labelledby="about-us-hero-title">
-        <div className="about-us-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero.imageUrl} alt="" className="about-us-hero__img" />
-          <div className="about-us-hero__overlay" aria-hidden />
-        </div>
-        <div className="about-us-hero__content">
-          <h1 id="about-us-hero-title" className="about-us-hero__title">
-            {hero.title}
-          </h1>
-          <span className="about-us-hero__divider" aria-hidden />
-          <p className="about-us-hero__tagline">
-            {hero.tagline.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </p>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       {/* Who We Are */}
       <section className="about-us-band about-us-band--white" aria-labelledby="about-us-who-title">

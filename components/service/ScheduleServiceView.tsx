@@ -6,7 +6,9 @@ import type {
   ScheduleServicePageContent,
   ServiceLocation,
 } from "@/lib/serviceSchedulingTypes";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { ScheduleServiceFeatureIcon } from "@/components/service/ScheduleServiceFeatureIcons";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 import { ServiceLocationCard } from "@/components/service/ServiceLocationCard";
 
 import "@/app/schedule-service-page.css";
@@ -26,27 +28,11 @@ export function ScheduleServiceView({
       ? `${locationCount} Locations. One Standard.`
       : "Locations. One Standard.";
 
+  const header = resolvePageHeader("schedule-service", content);
+
   return (
     <div className="schedule-service-page">
-      <section className="schedule-service-hero" aria-labelledby="schedule-service-title">
-        <div className="schedule-service-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={content.hero.imageUrl}
-            alt=""
-            className="schedule-service-hero__img"
-          />
-          <div className="schedule-service-hero__overlay" aria-hidden />
-        </div>
-        <p className="schedule-service-hero__kicker">{content.hero.kicker}</p>
-        <div className="schedule-service-hero__content">
-          <h1 id="schedule-service-title" className="schedule-service-hero__title">
-            {content.hero.title}
-          </h1>
-          <span className="schedule-service-hero__divider" aria-hidden />
-          <p className="schedule-service-hero__tagline">{content.hero.tagline}</p>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="schedule-service-intro" aria-labelledby="schedule-service-intro-title">
         <div className="portal-container schedule-service-intro__inner">

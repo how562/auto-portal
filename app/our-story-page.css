@@ -125,6 +125,11 @@
 }
 
 /* Gradient bridge into timeline */
+.story-opening__video-block {
+  padding: clamp(2rem, 4vw, 3rem) 0;
+  background: var(--story-cream);
+}
+
 .story-opening__fade {
   position: relative;
   z-index: 1;

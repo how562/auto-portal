@@ -1,9 +1,11 @@
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { FeaturedStory } from "@/components/stories/FeaturedStory";
-import { StoriesMasthead } from "@/components/stories/StoriesMasthead";
 import { StoryCard } from "@/components/stories/StoryCard";
 import { StoryCategorySection } from "@/components/stories/StoryCategorySection";
 import { StorySidebar } from "@/components/stories/StorySidebar";
-import { STORIES_PAGE_META, STORY_CATEGORIES } from "@/lib/storiesContent";
+import { STORY_CATEGORIES } from "@/lib/storiesContent";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
+import { STORIES_INDEX_PAGE_CONTENT } from "@/lib/storiesPageHeader";
 import type { CavenderStory } from "@/lib/storiesContent";
 import {
   getFeaturedStory,
@@ -22,10 +24,11 @@ export function StoriesPageView({ stories }: StoriesPageViewProps) {
   const featured = getFeaturedStory(stories);
   const sidebar = getSidebarStories(stories, featured, 4);
   const latest = getLatestStories(stories, featured, 8);
+  const header = resolvePageHeader("stories", STORIES_INDEX_PAGE_CONTENT);
 
   return (
     <div className="stories-page">
-      <StoriesMasthead meta={STORIES_PAGE_META} />
+      <PageHeaderRenderer header={header} />
 
       <div className="stories-featured-block">
         <div className="portal-container stories-featured-block__grid">

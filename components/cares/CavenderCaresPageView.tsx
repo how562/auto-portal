@@ -1,5 +1,7 @@
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { CAVENDER_CARES_PAGE_CONTENT } from "@/lib/cavenderCaresPageContent";
 import type { CavenderCaresPageContent } from "@/lib/cavenderCaresPageContent";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/cavender-cares-page.css";
 
@@ -33,35 +35,11 @@ export function CavenderCaresPageView({
   content = CAVENDER_CARES_PAGE_CONTENT,
 }: CavenderCaresPageViewProps) {
   const introParagraphs = splitParagraphs(content.intro.body);
+  const header = resolvePageHeader("cavender-cares", content);
 
   return (
     <div className="cares-page">
-      <section className="cares-hero" aria-labelledby="cares-hero-headline">
-        <div className="cares-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={content.hero.backgroundImageUrl}
-            alt=""
-            className="cares-hero__img"
-          />
-          <div className="cares-hero__overlay" aria-hidden />
-        </div>
-        <div className="cares-hero__content">
-          {content.hero.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={content.hero.logoUrl}
-              alt={content.hero.logoAlt}
-              className="cares-hero__logo"
-            />
-          ) : (
-            <p className="cares-hero__brand">{content.hero.logoAlt}</p>
-          )}
-          <h1 id="cares-hero-headline" className="cares-hero__headline">
-            {content.hero.headline}
-          </h1>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="cares-intro" aria-labelledby="cares-intro-heading">
         <div className="portal-container cares-intro__grid">

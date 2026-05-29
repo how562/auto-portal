@@ -1,4 +1,7 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface ValueYourTradePageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     tagline: string[];

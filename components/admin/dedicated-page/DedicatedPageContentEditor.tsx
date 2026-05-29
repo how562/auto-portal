@@ -11,9 +11,12 @@ import { FinanceContentForm } from "@/components/admin/dedicated-page/FinanceCon
 import { OurStoryContentForm } from "@/components/admin/dedicated-page/OurStoryContentForm";
 import { LocationsContentForm } from "@/components/admin/dedicated-page/LocationsContentForm";
 import { ScheduleServiceContentForm } from "@/components/admin/dedicated-page/ScheduleServiceContentForm";
+import { PageHeaderEditor } from "@/components/admin/dedicated-page/PageHeaderEditor";
 import { ValueYourTradeContentForm } from "@/components/admin/dedicated-page/ValueYourTradeContentForm";
 import type { SitePage } from "@/lib/cmsTypes";
 import type { DedicatedPageContent, DedicatedPageSlug } from "@/lib/dedicatedPageContent";
+import { deriveHeaderFromLegacy } from "@/lib/pageHeaderResolve";
+import type { PageHeaderConfig, PageHeaderSlug } from "@/lib/pageHeaderTypes";
 import { getDedicatedSitePage } from "@/lib/dedicatedSitePages";
 import { btnPrimaryMd, btnSecondaryMd } from "@/lib/buttonClasses";
 
@@ -204,6 +207,16 @@ export function DedicatedPageContentEditor({
         <p className="text-sm text-red-600">Could not load page content.</p>
       ) : (
         <>
+          <PageHeaderEditor
+            slug={slug as PageHeaderSlug}
+            header={
+              content.header ??
+              (deriveHeaderFromLegacy(slug as PageHeaderSlug, content) as PageHeaderConfig)
+            }
+            legacyContent={content}
+            onChange={(header) => setContent({ ...content, header })}
+          />
+
           {slug === "about-us" ? (
             <AboutUsContentForm
               content={content as import("@/lib/aboutUsPageContent").AboutUsPageContent}

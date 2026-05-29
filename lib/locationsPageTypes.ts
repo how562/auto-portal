@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface LocationsPageFeature {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export interface LocationsPageFeature {
 }
 
 export interface LocationsPageContent {
+  header?: PageHeaderConfig;
   hero: {
     kicker: string;
     title: string;

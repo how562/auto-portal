@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ExecutiveProfileCard } from "@/components/executive/ExecutiveProfileCard";
 import { ExecutiveValuesBand } from "@/components/executive/ExecutiveValuesBand";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import {
   EXECUTIVE_TEAM_PAGE_CONTENT,
   type ExecutiveTeamPageContent,
 } from "@/lib/executiveTeamPageContent";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 
 import "@/app/executive-team-page.css";
 
@@ -15,30 +17,12 @@ interface ExecutiveTeamPageViewProps {
 export function ExecutiveTeamPageView({
   content = EXECUTIVE_TEAM_PAGE_CONTENT,
 }: ExecutiveTeamPageViewProps) {
-  const { hero, intro, executives, leadershipMessage, cta } = content;
+  const { intro, executives, leadershipMessage, cta } = content;
+  const header = resolvePageHeader("executive-team", content);
 
   return (
     <div className="executive-team-page">
-      <section className="executive-team-hero" aria-labelledby="executive-team-hero-title">
-        <div className="executive-team-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero.imageUrl} alt="" className="executive-team-hero__img" />
-          <div className="executive-team-hero__overlay" aria-hidden />
-        </div>
-        <div className="executive-team-hero__content">
-          <h1 id="executive-team-hero-title" className="executive-team-hero__title">
-            {hero.title}
-          </h1>
-          <span className="executive-team-hero__divider" aria-hidden />
-          <p className="executive-team-hero__tagline">
-            {hero.tagline.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </p>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="executive-team-intro" aria-labelledby="executive-team-intro-title">
         <div className="portal-container executive-team-intro__inner">

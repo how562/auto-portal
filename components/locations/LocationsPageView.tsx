@@ -1,8 +1,11 @@
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { LOCATIONS_PAGE_CONTENT } from "@/lib/locationsPageContent";
 import type {
   DealershipLocation,
   LocationsPageContent,
 } from "@/lib/locationsPageTypes";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
 import { LocationDealershipCard } from "@/components/locations/LocationDealershipCard";
 import { LocationsFeatureIcon } from "@/components/locations/LocationsFeatureIcons";
 import { LocationsMapPanel } from "@/components/locations/LocationsMapPanel";
@@ -24,23 +27,17 @@ export function LocationsPageView({
       ? `Proudly serving South and Central Texas. ${count} locations. One standard.`
       : content.hero.tagline;
 
+  let header = resolvePageHeader("locations", content);
+  if (header?.type === "utility" && count > 0) {
+    header = {
+      type: "utility",
+      utility: { ...header.utility, introText: tagline },
+    } satisfies PageHeaderConfig;
+  }
+
   return (
     <div className="locations-page">
-      <section className="locations-hero" aria-labelledby="locations-hero-title">
-        <div className="locations-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.hero.imageUrl} alt="" className="locations-hero__img" />
-          <div className="locations-hero__overlay" aria-hidden />
-        </div>
-        <div className="locations-hero__content">
-          <p className="locations-hero__kicker">{content.hero.kicker}</p>
-          <h1 id="locations-hero-title" className="locations-hero__title">
-            {content.hero.title}
-          </h1>
-          <span className="locations-hero__divider" aria-hidden />
-          <p className="locations-hero__tagline">{tagline}</p>
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="locations-map-section" aria-labelledby="locations-map-title">
         <div className="portal-container locations-map-section__inner">

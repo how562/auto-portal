@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export type FinanceFeatureIconType =
   | "application"
   | "locations"
@@ -21,6 +23,7 @@ export interface FinancePageFeature {
 }
 
 export interface FinancePageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     subtitle: string;

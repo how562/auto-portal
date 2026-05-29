@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export type CommitmentFeatureIcon =
   | "oil"
   | "shield"
@@ -53,6 +55,7 @@ export interface CommitmentIntelPhoto {
 }
 
 export interface CavenderCommitmentPageContent {
+  header?: PageHeaderConfig;
   memo: {
     classification: string;
     documentId: string;

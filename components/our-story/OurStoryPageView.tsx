@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { OurStoryHero } from "@/components/our-story/OurStoryHero";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
 import { OurStoryTimeline } from "@/components/our-story/OurStoryTimeline";
+import { OurStoryVideoIntro } from "@/components/our-story/OurStoryVideoIntro";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 import { OUR_STORY_PAGE_CONTENT } from "@/lib/ourStoryPageContent";
 import type { OurStoryPageContent } from "@/lib/ourStoryPageContent";
 
@@ -13,7 +15,8 @@ interface OurStoryPageViewProps {
 export function OurStoryPageView({
   content = OUR_STORY_PAGE_CONTENT,
 }: OurStoryPageViewProps) {
-  const { hero, video, timeline, legacy, cta } = content;
+  const { video, timeline, legacy, cta } = content;
+  const header = resolvePageHeader("our-story", content);
   const timelineIntro =
     timeline.intro ?? OUR_STORY_PAGE_CONTENT.timeline.intro;
   const timelineFinale =
@@ -21,17 +24,20 @@ export function OurStoryPageView({
 
   return (
     <div className="story-page">
-      <OurStoryHero hero={hero} video={video} />
+      <PageHeaderRenderer header={header} />
+      <OurStoryVideoIntro video={video} />
 
-      <OurStoryTimeline
-        eyebrow={timeline.eyebrow}
-        title={timeline.title}
-        intro={timelineIntro}
-        finaleTagline={timelineFinale}
-        milestones={timeline.milestones}
-      />
+      <div id="story-timeline">
+        <OurStoryTimeline
+          eyebrow={timeline.eyebrow}
+          title={timeline.title}
+          intro={timelineIntro}
+          finaleTagline={timelineFinale}
+          milestones={timeline.milestones}
+        />
+      </div>
 
-      <section className="story-legacy" aria-labelledby="story-legacy-heading">
+      <section id="story-legacy" className="story-legacy" aria-labelledby="story-legacy-heading">
         <div className="portal-container">
           <h2 id="story-legacy-heading" className="story-legacy__heading">
             {legacy.heading}

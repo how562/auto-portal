@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface CavenderCaresImpactStat {
   id: string;
   value: string;
@@ -17,6 +19,7 @@ export interface CavenderCaresGalleryImage {
 }
 
 export interface CavenderCaresPageContent {
+  header?: PageHeaderConfig;
   hero: {
     logoUrl: string;
     logoAlt: string;

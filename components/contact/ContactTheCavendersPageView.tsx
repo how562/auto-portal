@@ -1,4 +1,6 @@
 import { ContactCavendersForm } from "@/components/contact/ContactCavendersForm";
+import { PageHeaderRenderer } from "@/components/page-headers/PageHeaderRenderer";
+import { resolvePageHeader } from "@/lib/pageHeaderResolve";
 import { CONTACT_THE_CAVENDERS_PAGE_CONTENT } from "@/lib/contactTheCavendersPageContent";
 import type { ContactTheCavendersPageContent } from "@/lib/contactTheCavendersPageContent";
 
@@ -19,28 +21,11 @@ export function ContactTheCavendersPageView({
   content = CONTACT_THE_CAVENDERS_PAGE_CONTENT,
 }: ContactTheCavendersPageViewProps) {
   const introParagraphs = splitParagraphs(content.intro.body);
+  const header = resolvePageHeader("contact-the-cavenders", content);
 
   return (
     <div className="contact-cavenders-page">
-      <section className="contact-cavenders-hero" aria-labelledby="contact-cavenders-title">
-        <div className="contact-cavenders-hero__media">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={content.hero.backgroundImageUrl}
-            alt=""
-            className="contact-cavenders-hero__img"
-          />
-          <div className="contact-cavenders-hero__overlay" aria-hidden />
-        </div>
-        <div className="contact-cavenders-hero__content">
-          <h1 id="contact-cavenders-title" className="contact-cavenders-hero__title">
-            {content.hero.title}
-          </h1>
-          <p className="contact-cavenders-hero__subtitle">{content.hero.subtitle}</p>
-          <p className="contact-cavenders-hero__supporting">{content.hero.supportingText}</p>
-          <span className="contact-cavenders-hero__rule" aria-hidden />
-        </div>
-      </section>
+      <PageHeaderRenderer header={header} />
 
       <section className="contact-cavenders-main" aria-labelledby="contact-cavenders-intro">
         <div className="portal-container contact-cavenders-main__grid">

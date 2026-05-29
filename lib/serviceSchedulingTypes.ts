@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 /** CMS-ready copy for the schedule service page. */
 export interface ScheduleServiceFeature {
   id: string;
@@ -7,6 +9,7 @@ export interface ScheduleServiceFeature {
 }
 
 export interface ScheduleServicePageContent {
+  header?: PageHeaderConfig;
   hero: {
     kicker: string;
     title: string;

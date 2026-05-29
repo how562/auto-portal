@@ -1,3 +1,5 @@
+import type { PageHeaderConfig } from "@/lib/pageHeaderTypes";
+
 export interface AboutUsFeature {
   id: string;
   title: string;
@@ -13,6 +15,7 @@ export interface AboutUsValue {
 }
 
 export interface AboutUsPageContent {
+  header?: PageHeaderConfig;
   hero: {
     title: string;
     tagline: string[];
