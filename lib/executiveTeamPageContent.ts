@@ -50,16 +50,14 @@ export interface ExecutiveTeamPageContent {
   };
 }
 
-const PORTRAIT_IMAGES = [
-  "/images/hero/lifestyle.jpg",
-  "/images/hero/community.jpg",
-  "/images/hero/vehicle.jpg",
-  "/images/hero/dealership.jpg",
-] as const;
-
-function portraitForIndex(index: number): string {
-  return PORTRAIT_IMAGES[index % PORTRAIT_IMAGES.length];
-}
+const EXECUTIVE_PORTRAITS = {
+  bobby: "/images/executive-team/bobby-cavender.png",
+  lee: "/images/executive-team/lee-cavender.png",
+  rob: "/images/executive-team/rob-cavender.png",
+  jonathan: "/images/executive-team/jonathan-gray.png",
+  amber: "/images/executive-team/amber-pfaff-chavez.png",
+  misty: "/images/executive-team/misty-avila.png",
+} as const;
 
 export const EXECUTIVE_TEAM_PAGE_CONTENT: ExecutiveTeamPageContent = {
   hero: {
@@ -78,53 +76,40 @@ export const EXECUTIVE_TEAM_PAGE_CONTENT: ExecutiveTeamPageContent = {
   },
   executives: [
     {
-      id: "ceo",
-      name: "Executive Name",
+      id: "bobby-cavender",
+      name: "Bobby Cavender",
+      title: "President",
+      image: EXECUTIVE_PORTRAITS.bobby,
+    },
+    {
+      id: "lee-cavender",
+      name: "Lee Cavender",
+      title: "Chief Development Officer",
+      image: EXECUTIVE_PORTRAITS.lee,
+    },
+    {
+      id: "rob-cavender",
+      name: "Rob Cavender",
       title: "Chief Executive Officer",
-      image: portraitForIndex(0),
-      email: "ceo@cavender.com",
-      phone: "(210) 555-0101",
-      linkedinUrl: "https://www.linkedin.com/",
+      image: EXECUTIVE_PORTRAITS.rob,
     },
     {
-      id: "coo",
-      name: "Executive Name",
+      id: "jonathan-gray",
+      name: "Jonathan Gray",
       title: "Chief Operating Officer",
-      image: portraitForIndex(1),
-      email: "coo@cavender.com",
-      linkedinUrl: "https://www.linkedin.com/",
+      image: EXECUTIVE_PORTRAITS.jonathan,
     },
     {
-      id: "cfo",
-      name: "Executive Name",
+      id: "amber-pfaff-chavez",
+      name: "Amber Pfaff-Chavez",
       title: "Chief Financial Officer",
-      image: portraitForIndex(2),
-      email: "cfo@cavender.com",
-      phone: "(210) 555-0103",
+      image: EXECUTIVE_PORTRAITS.amber,
     },
     {
-      id: "cmo",
-      name: "Executive Name",
-      title: "Chief Marketing Officer",
-      image: portraitForIndex(3),
-      phone: "(210) 555-0104",
-      linkedinUrl: "https://www.linkedin.com/",
-    },
-    {
-      id: "cpo",
-      name: "Executive Name",
-      title: "Chief People Officer",
-      image: portraitForIndex(0),
-      email: "people@cavender.com",
-    },
-    {
-      id: "cso",
-      name: "Executive Name",
-      title: "Chief Strategy Officer",
-      image: portraitForIndex(1),
-      email: "strategy@cavender.com",
-      phone: "(210) 555-0106",
-      linkedinUrl: "https://www.linkedin.com/",
+      id: "misty-avila",
+      name: "Misty Avila",
+      title: "Director of Human Resources",
+      image: EXECUTIVE_PORTRAITS.misty,
     },
   ],
   leadershipMessage: {

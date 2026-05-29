@@ -12,7 +12,7 @@ export function ExecutiveProfileCard({ executive }: ExecutiveProfileCardProps) {
     <article className="executive-profile-card">
       <div className="executive-profile-card__media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image} alt="" className="executive-profile-card__img" />
+        <img src={image} alt={name} className="executive-profile-card__img" />
       </div>
       <div className="executive-profile-card__body">
         <p className="executive-profile-card__title">{title}</p>
