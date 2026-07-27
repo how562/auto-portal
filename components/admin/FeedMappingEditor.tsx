@@ -179,9 +179,11 @@ export function FeedMappingEditor({
       </div>
 
       <p className="text-xs text-[var(--muted)]">
-        Patterns match HomeNet filenames (e.g.{" "}
+        Patterns match SFTP filenames (e.g.{" "}
         <code className="rounded bg-[var(--cream)] px-1">CavenderBuickGMCNorth</code>
         ). DB mappings take priority over{" "}
+        <code className="rounded bg-[var(--cream)] px-1">VAUTO_STORE_FILE_MAP</code>
+        {" / "}
         <code className="rounded bg-[var(--cream)] px-1">HOMENET_STORE_FILE_MAP</code>.
       </p>
 

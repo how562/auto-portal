@@ -21,14 +21,30 @@ function storeVinProviderKey(
 
 function toMergeUpdate(row: CanonicalVehicleRow) {
   return {
+    stock_number: row.stock_number,
+    year: row.year,
+    make: row.make,
+    model: row.model,
+    trim: row.trim,
+    condition: row.condition,
+    body_style: row.body_style,
+    exterior_color: row.exterior_color,
+    interior_color: row.interior_color,
+    mileage: row.mileage,
     internet_price: row.internet_price,
     msrp: row.msrp,
     sale_price: row.sale_price,
+    primary_image_url: row.primary_image_url,
     image_urls: row.image_urls,
     image_count: row.image_count,
     has_images: row.has_images,
     data_quality_score: row.data_quality_score,
+    status: row.status,
     dealer_name: row.dealer_name,
+    source_raw: row.source_raw,
+    import_source: row.import_source,
+    import_key: row.import_key,
+    imported_at: row.imported_at,
     updated_at: new Date().toISOString(),
   };
 }

@@ -110,7 +110,12 @@ export function InventoryFeedSourcesScreen() {
           <code className="rounded bg-[var(--cream)] px-1 py-0.5 text-xs">
             /api/import-vauto
           </code>{" "}
-          for intake/inspection once exports arrive (parser not enabled yet).
+          to import into the vAuto provider (shadow until you switch the active
+          source here). Use{" "}
+          <code className="rounded bg-[var(--cream)] px-1 py-0.5 text-xs">
+            ?mode=intake
+          </code>{" "}
+          for header inspection only.
         </p>
         <p className="mt-3 text-sm text-[var(--muted)]">
           <Link

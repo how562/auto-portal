@@ -37,7 +37,7 @@ export async function FeedsScreen() {
           <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
             /api/import-homenet
           </code>
-          . vAuto intake (inspect only):{" "}
+          . vAuto (upsert shadow inventory):{" "}
           <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
             /api/import-vauto
           </code>

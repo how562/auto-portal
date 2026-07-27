@@ -44,9 +44,9 @@ The overwhelming majority of this codebase exists to let non-developers edit the
 ### Inventory ingestion
 
 Full detail in `docs/inventory-ingestion-architecture.md` — read it before touching import code. Key points:
-- Two **provider-isolated**, never-merged sources: HomeNet (SFTP DealerSend feed, live) and vAuto (dedicated DigitalOcean SFTP, intake-only so far). Provider-specific parse/map code lives under `lib/import/providers/<provider>/` and must not be imported by portal/inventory display code — only the shared `lib/import/canonicalVehicle.ts` model and `lib/import/vehicleUpsert.ts` are shared.
+- Two **provider-isolated**, never-merged sources: HomeNet (SFTP DealerSend feed, live) and vAuto (dedicated DigitalOcean SFTP). Provider-specific parse/map code lives under `lib/import/providers/<provider>/` and must not be imported by portal/inventory display code — only the shared `lib/import/canonicalVehicle.ts` model and `lib/import/vehicleUpsert.ts` are shared.
 - `vehicles` rows are keyed by `(store_id, vin, inventory_provider)`; only one provider is "active" per store (`getActiveInventoryProvider`/`getActiveInventoryForDealership` in `lib/inventoryActiveSource.ts`) and **all** public read paths (SRP, VDP, homepage collections) must filter by the active provider — see the pattern in `lib/homepage.ts`.
-- Import endpoints (`/api/import-homenet`, `/api/import-vauto`) are secret-protected via `IMPORT_SECRET`, separate from the `/admin` cookie auth.
+- Import endpoints (`/api/import-homenet`, `/api/import-vauto`) are secret-protected via `IMPORT_SECRET`, separate from the `/admin` cookie auth. vAuto upserts with `inventory_provider: 'vauto'` for shadow validation; public inventory stays on the active source (HomeNet until switched in Admin → Inventory sources).
 
 ### Admin auth
 

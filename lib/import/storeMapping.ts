@@ -1,11 +1,13 @@
 import { readRowStoreHints } from "./dealerSendMap";
+import { readVautoRowStoreHints } from "@/lib/import/providers/vauto/vautoMap";
 
 export type StoreMappingSource =
   | "feed_file_mappings"
   | "env_file_map"
   | "filename_store_name"
   | "feed_store_id"
-  | "feed_dealer_name";
+  | "feed_dealer_name"
+  | "feed_dealer_id";
 
 export interface StoreRecord {
   id: string;
@@ -18,7 +20,7 @@ export interface StoreLookupTables {
   /** Normalized store name token → store id. */
   storeIdByNormalizedName: Map<string, string>;
   storeNameById: Map<string, string>;
-  /** Normalized filename key → store id (from HOMENET_STORE_FILE_MAP). */
+  /** Normalized filename key → store id (from HOMENET_STORE_FILE_MAP / VAUTO_STORE_FILE_MAP). */
   fileMap: Map<string, string>;
   /** Normalized filename key → store id (from feed_file_mappings, active rows). */
   dbFileMap: Map<string, string>;
@@ -56,9 +58,8 @@ function fileBaseName(fileName: string): string {
   return fileName.replace(/\.(csv|txt)$/i, "");
 }
 
-export function readStoreFileMapFromEnv(): Map<string, string> {
-  const raw = process.env.HOMENET_STORE_FILE_MAP?.trim();
-  if (!raw) return new Map();
+function parseStoreFileMapJson(raw: string | undefined): Map<string, string> {
+  if (!raw?.trim()) return new Map();
 
   try {
     const parsed = JSON.parse(raw) as Record<string, string>;
@@ -73,6 +74,25 @@ export function readStoreFileMapFromEnv(): Map<string, string> {
   } catch {
     return new Map();
   }
+}
+
+/**
+ * Merge optional filename → store UUID maps from env.
+ * HomeNet and vAuto maps are combined so shared dealership tokens work for both.
+ */
+export function readStoreFileMapFromEnv(): Map<string, string> {
+  const merged = new Map<string, string>();
+  for (const [key, value] of Array.from(
+    parseStoreFileMapJson(process.env.HOMENET_STORE_FILE_MAP).entries(),
+  )) {
+    merged.set(key, value);
+  }
+  for (const [key, value] of Array.from(
+    parseStoreFileMapJson(process.env.VAUTO_STORE_FILE_MAP).entries(),
+  )) {
+    merged.set(key, value);
+  }
+  return merged;
 }
 
 export function buildStoreLookupTables(
@@ -206,14 +226,25 @@ function resolveFromFeedRows(
 ): ResolvedStoreMapping | UnresolvedStoreMapping | null {
   const storeIds = new Set<string>();
   const dealerNames = new Set<string>();
+  const dealerIds = new Set<string>();
 
   for (const row of rows.slice(0, 25)) {
     const hints = readRowStoreHints(row);
+    const vautoHints = readVautoRowStoreHints(row);
     if (hints.storeIdFromFeed && isUuid(hints.storeIdFromFeed)) {
       storeIds.add(hints.storeIdFromFeed);
     }
+    if (vautoHints.storeIdFromFeed && isUuid(vautoHints.storeIdFromFeed)) {
+      storeIds.add(vautoHints.storeIdFromFeed);
+    }
     if (hints.dealerName) {
       dealerNames.add(hints.dealerName.trim().toLowerCase());
+    }
+    if (vautoHints.dealerName) {
+      dealerNames.add(vautoHints.dealerName.trim().toLowerCase());
+    }
+    if (vautoHints.dealerId && !isUuid(vautoHints.dealerId)) {
+      dealerIds.add(normalizeMappingToken(vautoHints.dealerId));
     }
   }
 
@@ -233,6 +264,32 @@ function resolveFromFeedRows(
     };
   }
 
+  if (dealerIds.size > 1) {
+    return {
+      reason:
+        "Feed contains multiple DealerId values — file skipped to avoid mixing stores",
+    };
+  }
+
+  if (dealerIds.size === 1) {
+    const dealerId = Array.from(dealerIds)[0];
+    const storeId =
+      lookup.storeIdByNormalizedName.get(dealerId) ??
+      lookup.fileMap.get(dealerId) ??
+      lookup.dbFileMap.get(dealerId) ??
+      null;
+    if (!storeId) {
+      return {
+        reason: `Unknown DealerId in feed: "${dealerId}" — add a feed_file_mappings row or VAUTO_STORE_FILE_MAP entry`,
+      };
+    }
+    return {
+      storeId,
+      storeName: lookup.storeNameById.get(storeId) ?? dealerId,
+      source: "feed_dealer_id",
+    };
+  }
+
   if (dealerNames.size > 1) {
     return {
       reason:
@@ -245,7 +302,7 @@ function resolveFromFeedRows(
     const storeId = lookup.storeIdByDealerName.get(dealerName);
     if (!storeId) {
       return {
-        reason: `Unknown DealerName in feed: "${dealerName}" — add a store or HOMENET_STORE_FILE_MAP entry`,
+        reason: `Unknown DealerName in feed: "${dealerName}" — add a store or VAUTO_STORE_FILE_MAP / HOMENET_STORE_FILE_MAP entry`,
       };
     }
     return {
@@ -296,6 +353,6 @@ export function resolveStoreForFile(
   }
 
   return {
-    reason: `Could not map "${fileName}" to a store — add an active feed_file_mappings row, HOMENET_STORE_FILE_MAP entry, or ensure DealerName/StoreID is present in the feed`,
+    reason: `Could not map "${fileName}" to a store — add an active feed_file_mappings row, VAUTO_STORE_FILE_MAP / HOMENET_STORE_FILE_MAP entry, or ensure DealerId/DealerName is present in the feed`,
   };
 }

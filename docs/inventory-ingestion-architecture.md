@@ -5,7 +5,7 @@ Provider-agnostic inventory ingestion for Cavender Auto Group. HomeNet and vAuto
 ## Principles
 
 1. **One active source per dealership (store)** — controlled in Admin → Inventory sources.
-2. **Separate physical feeds** — HomeNet DealerSend SFTP vs dedicated vAuto DigitalOcean SFTP (`vauto` user, `/feeds/vauto/incoming`).
+2. **Separate physical feeds** — HomeNet DealerSend SFTP vs dedicated vAuto DigitalOcean SFTP (`vauto` user, typically `/vauto`).
 3. **Separate rows in `vehicles`** — keyed by `(store_id, vin, inventory_provider)`.
 4. **All normalization inside our platform** — parsing, dedupe, images, analytics run after intake.
 
@@ -14,7 +14,7 @@ Provider-agnostic inventory ingestion for Cavender Auto Group. HomeNet and vAuto
 | Code | Label | Intake |
 |------|--------|--------|
 | `homenet` | HomeNet | `SFTP_*` → `/api/import-homenet` |
-| `vauto` | vAuto | `VAUTO_SFTP_*` → `/api/import-vauto` (intake phase 1) |
+| `vauto` | vAuto | `VAUTO_SFTP_*` → `/api/import-vauto` (full upsert; `?mode=intake` inspect-only) |
 
 Types: `lib/inventoryProviders.ts`  
 DB check constraints on `vehicles.inventory_provider` and `inventory_feed_sources.provider`.
@@ -37,7 +37,7 @@ DB check constraints on `vehicles.inventory_provider` and `inventory_feed_source
 | Provider | Parse | Map → canonical | Upsert |
 |----------|--------|-----------------|--------|
 | HomeNet | `lib/import/providers/homenet` (`dealerSendParse`) | `mapDealerSendRowToCanonical` | `lib/import/vehicleUpsert.ts` |
-| vAuto | `lib/import/providers/vauto/vautoParse.ts` | `vautoMap.ts` (aliases TBD) | same upsert when import enabled |
+| vAuto | `lib/import/providers/vauto/vautoParse.ts` | `vautoMap.ts` | same upsert + `vehicleReconcile.ts` |
 
 Shared model: `lib/import/canonicalVehicle.ts` — portal/inventory code never imports provider parsers.
 
@@ -49,18 +49,19 @@ SFTP intake → raw_feed_archives → inspect/format detect → normalize/map �
                             inventory_import_failures (on error)
                                       ↓
                             feed_import_runs (audit)
+                                      ↓
+                            reconcile missing VINs (vAuto; retention-gated)
 ```
 
-| Stage | HomeNet today | vAuto today | Future |
-|-------|---------------|-------------|--------|
-| Intake | SFTP download | SFTP download (`runVautoInventoryIntake`) | Same |
-| Inspect | CSV/TXT parse | Header preview + format detect | XML/JSON support |
-| Normalize | `dealerSendMap` | TBD after sample files | Shared normalizer |
-| Dedupe | `(store_id, vin, inventory_provider)` | Same | Cross-run VIN rules |
-| Upsert | Active when source = homenet | After parser | Gated by active source |
-| Reconcile | Partial | — | `missing` / sold from feed |
-| Images | From feed URLs | TBD | Dedicated sync job |
-| Snapshots | — | — | `inventory_snapshots` |
+| Stage | HomeNet | vAuto |
+|-------|---------|--------|
+| Intake | SFTP download | SFTP download (`runVautoInventoryImport` / `runVautoInventoryIntake`) |
+| Inspect | CSV/TXT parse | Header + column preview; document CSV parse |
+| Normalize | `dealerSendMap` | `vautoMap` (real export columns) |
+| Dedupe | `(store_id, vin, inventory_provider)` | Same |
+| Upsert | Active when source = homenet | Always writes `inventory_provider: 'vauto'` (shadow until admin switch) |
+| Reconcile | Status from feed row | Missing VIN → `inactive` when retention gate passes |
+| Images | Feed URL lists | `Photo Url List` |
 
 ## Public read path
 
@@ -70,25 +71,43 @@ Only the **active** provider per store is shown:
 - `getActiveInventoryForDealership(storeId)`
 - All portal/SRP/VDP/collection queries filter `inventory_provider`
 
-Switching source in admin does **not** delete inactive provider rows.
+Switching source in admin does **not** delete inactive provider rows. Keep HomeNet active while validating vAuto counts in Admin → Inventory sources.
 
 ## vAuto DigitalOcean server
 
 - Ubuntu + OpenSSH/SFTP
 - User: `vauto`
-- Path: `/vauto` (set `VAUTO_SFTP_PATH=/vauto` in env; example default in `.env.local.example` may differ)
+- Path: `/vauto` (set `VAUTO_SFTP_PATH=/vauto`)
 - Env: `VAUTO_SFTP_HOST`, `VAUTO_SFTP_PORT`, `VAUTO_SFTP_USER`, `VAUTO_SFTP_PASSWORD`, `VAUTO_SFTP_PATH`
+- Optional: `VAUTO_STORE_FILE_MAP` JSON (filename / DealerId token → store UUID), merged with `HOMENET_STORE_FILE_MAP`
 
-Phase 1 endpoint: `GET /api/import-vauto?secret=…` — archives files, logs run, **no vehicle upsert**.
+### Expected production files (8 stores)
 
-## Next steps (when vAuto delivers files)
+| File | Store (one file → one store; do not split JLR) |
+|------|-----------------------------------------------|
+| `CavenderBuickGMCNorth.csv` | Cavender Buick GMC North |
+| `CavenderBuickGMCWest.csv` | Cavender Buick GMC West |
+| `CavenderCadillac.csv` | Cavender Cadillac |
+| `CavenderChevrolet.csv` | Cavender Chevrolet |
+| `CavenderGrandeFord.csv` | Cavender Grande Ford |
+| `CavenderNissanofRockwall.csv` | Cavender Nissan of Rockwall |
+| `CavenderNissanSanMarcos.csv` | Cavender Nissan San Marcos |
+| `JaguarLandRoverofSanAntonio.csv` | Jaguar Land Rover of San Antonio |
 
-1. Run intake: `/api/import-vauto`
-2. Review `raw_feed_archives` + response `headerPreview` / `rowCountEstimate`
-3. Build `lib/import/vautoMap.ts` from real column layout
-4. Add `runVautoInventoryImport` (upsert with `inventory_provider: 'vauto'`)
-5. Compare counts in Admin → Inventory sources before switching active source
-6. Optional: copy raw files to Supabase Storage (`storage_kind: supabase_storage`)
+### Real export columns (mapped in `vautoMap.ts`)
+
+`DealerId`, `Dealer Name`, `VIN`, `Stock #`, `New/Used`, `Year`, `Make`, `Model`, `Model Number`, `Body`, `Transmission`, `Series`, `Body Door Ct`, `Odometer`, `Engine Cylinder Ct`, `Engine Displacement`, `Drivetrain Desc`, `Colour`, `Interior Color`, `MSRP`, `Price`, `Inventory Date`, `Certified`, `Description`, `Features`, `Photo Url List`, `City MPG`, `Highway MPG`, `Photos Last Modified Date`, `Series Detail`, `Engine`, `Age`, `Vehicle Detail Link`, `Disposition`.
+
+Store resolution order (shared with HomeNet): `feed_file_mappings` → env file maps → filename ↔ store name → feed `DealerId` / `Dealer Name` / StoreID.
+
+## Operations
+
+1. Configure `VAUTO_SFTP_*` + `IMPORT_SECRET` + service role key.
+2. Ensure each of the 8 files maps to a store (DB mappings and/or `VAUTO_STORE_FILE_MAP`).
+3. Run import: `GET /api/import-vauto?secret=…` (upserts vAuto rows only).
+4. Optional inspect: `GET /api/import-vauto?secret=…&mode=intake`
+5. Compare HomeNet vs vAuto counts in Admin → Inventory sources.
+6. Switch active source per store only after validation (does not delete the other provider’s rows).
 
 ## Environment variables
 

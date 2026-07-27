@@ -111,6 +111,7 @@ export async function runVautoInventoryIntake(
           parseStatus: "inspected",
           metadata: {
             headerPreview: inspection.headerPreview,
+            columnHeaders: inspection.columnHeaders,
             rowCountEstimate: inspection.rowCountEstimate,
             modifiedAt: file.modifiedAt,
           },
