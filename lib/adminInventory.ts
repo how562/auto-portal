@@ -1,4 +1,7 @@
-import { getActiveInventoryProviderFilterSpec } from "./inventoryActiveSource";
+import {
+  applyActiveInventoryProviderFilterSpec,
+  getActiveInventoryProviderFilterSpec,
+} from "./inventoryActiveSource";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 import type { Vehicle } from "./types";
 
@@ -123,11 +126,7 @@ export async function fetchAdminInventoryPage({
     .select(ADMIN_VEHICLE_SELECT, { count: "exact" })
     .eq("status", "active");
 
-  if (providerSpec.kind === "provider") {
-    query = query.eq("inventory_provider", providerSpec.provider);
-  } else {
-    query = query.or(providerSpec.orFilter);
-  }
+  query = applyActiveInventoryProviderFilterSpec(query, providerSpec);
 
   for (const spec of adminOrderingFor(sort)) {
     query = query.order(spec.column, {

@@ -25,6 +25,7 @@ export default async function InventoryPage({
     page,
     totalCount,
     serverPaginated,
+    audienceByStoreId,
   } = await loadInventoryPageData(searchParams);
 
   return (
@@ -37,6 +38,7 @@ export default async function InventoryPage({
       page={page}
       totalCount={totalCount}
       serverPaginated={serverPaginated}
+      audienceByStoreId={audienceByStoreId}
     />
   );
 }

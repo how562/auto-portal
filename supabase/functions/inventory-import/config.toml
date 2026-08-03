@@ -1,0 +1,12 @@
+# Auto Portal inventory-import Edge Function
+# Deploy: supabase functions deploy inventory-import --project-ref <portal-ref>
+#
+# Required secrets (supabase secrets set --env-file ...):
+#   IMPORT_SECRET or IMPORT_CRON_SECRET
+#   SUPABASE_SERVICE_ROLE_KEY (auto-injected on hosted)
+#   VAUTO_SFTP_HOST, VAUTO_SFTP_USER, VAUTO_SFTP_PASSWORD, VAUTO_SFTP_PATH, VAUTO_SFTP_PORT
+# Optional:
+#   PORTAL_IMPORT_URL=https://your-portal-host  (preferred — proxies to /api/import-vauto)
+
+[functions.inventory-import]
+verify_jwt = false

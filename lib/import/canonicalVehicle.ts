@@ -32,10 +32,32 @@ export interface CanonicalVehicleRow {
   import_source: string;
   inventory_provider: InventoryProvider;
   imported_at: string;
+  /** Soft-presence timestamp refreshed on every successful import match. */
+  last_seen_at?: string;
 }
 
-export function hasCanonicalUpsertKey(
+/** VIN-keyed identity for preferred upsert matching. */
+export function hasCanonicalVinKey(
   row: CanonicalVehicleRow,
 ): row is CanonicalVehicleRow & { store_id: string; vin: string } {
   return Boolean(row.store_id?.trim() && row.vin?.trim());
+}
+
+/**
+ * Stock-only identity when VIN is absent.
+ * Used as upsert fallback; stock-only rows are not included in VIN reconcile.
+ */
+export function hasCanonicalStockKey(
+  row: CanonicalVehicleRow,
+): row is CanonicalVehicleRow & { store_id: string; stock_number: string } {
+  return Boolean(
+    row.store_id?.trim() &&
+      row.stock_number?.trim() &&
+      !row.vin?.trim(),
+  );
+}
+
+/** True when the row can be upserted (VIN preferred, else stock). */
+export function hasCanonicalUpsertKey(row: CanonicalVehicleRow): boolean {
+  return hasCanonicalVinKey(row) || hasCanonicalStockKey(row);
 }

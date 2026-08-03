@@ -15,6 +15,8 @@ interface VehiclePricingPanelProps {
   store: Store | null;
   vdpCtaSettings: VdpCtaSettingRow[];
   mathboxConfig: PricingMathboxConfigRow[];
+  /** Public site store for shared pool vehicles (lead context). */
+  siteStoreId?: string | null;
 }
 
 export function VehiclePricingPanel({
@@ -22,11 +24,12 @@ export function VehiclePricingPanel({
   store,
   vdpCtaSettings,
   mathboxConfig,
+  siteStoreId = null,
 }: VehiclePricingPanelProps) {
   const { t } = useLanguage();
   const { openVdpLead } = useLeadCapture();
   const contactTeam = useCta("contact_team");
-  const storeId = store?.id ?? vehicle.store_id ?? null;
+  const storeId = siteStoreId ?? store?.id ?? vehicle.store_id ?? null;
   const label = formatVehicleLabel(vehicle);
   const headerPrice = formatVehiclePrice(vehicle);
 

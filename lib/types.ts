@@ -39,9 +39,9 @@ export interface Vehicle {
    * `msrp` and finally to "Call for Price".
    */
   internet_price: number | null;
-  /** Manufacturer suggested retail price (HomeNet `MSRP`). */
+  /** Manufacturer suggested retail price (normalized column). */
   msrp?: number | null;
-  /** Dealer's selling price (HomeNet `SellingPrice`). */
+  /** Dealer's selling price (normalized column). */
   sale_price?: number | null;
   mileage: number | null;
   stock_number: string | null;
@@ -62,7 +62,7 @@ export interface VehicleDetail extends Vehicle {
   store_id: string | null;
   image_urls: string[] | null;
   dealer_name: string | null;
-  /** Full HomeNet row preserved at import time (pricing/incentive keys). */
+  /** Full feed row preserved at import time (pricing/incentive keys; provider-agnostic). */
   source_raw?: Record<string, unknown> | null;
 }
 

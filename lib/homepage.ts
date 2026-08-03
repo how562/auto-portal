@@ -1,4 +1,3 @@
-import { getActiveInventoryProvider } from "./inventoryActiveSource";
 import { getSupabase } from "./supabase";
 import type {
   Collection,
@@ -71,15 +70,24 @@ async function fetchCollectionRules(
 
 async function fetchVehiclesForStore(storeId: string): Promise<Vehicle[]> {
   const supabase = getSupabase();
-  const activeProvider = await getActiveInventoryProvider(storeId);
+  const {
+    applyInventoryScopeToQuery,
+    resolveInventoryScope,
+  } = await import("./inventoryAudiences");
 
-  const { data, error } = await supabase
+  const scope = await resolveInventoryScope({ siteStoreId: storeId });
+  if (!scope || scope.kind === "multi") {
+    return [];
+  }
+
+  let query = supabase
     .from("vehicles")
     .select(VEHICLE_SELECT)
-    .eq("store_id", storeId)
-    .eq("status", "active")
-    .eq("inventory_provider", activeProvider)
-    .limit(VEHICLE_LIMIT);
+    .eq("status", "active");
+
+  query = applyInventoryScopeToQuery(query, scope);
+
+  const { data, error } = await query.limit(VEHICLE_LIMIT);
 
   if (error) {
     throw new Error(`Failed to load vehicles: ${error.message}`);

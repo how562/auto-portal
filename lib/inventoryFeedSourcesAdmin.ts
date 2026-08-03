@@ -1,4 +1,5 @@
 import {
+  countActiveVehiclesForProvider,
   getActiveInventoryProvider,
   syncInventoryFeedSourceCounts,
 } from "./inventoryActiveSource";
@@ -9,6 +10,7 @@ import {
   type ProviderFeedHealth,
 } from "./inventoryFeedSourceHealth";
 import {
+  FALLBACK_ACTIVE_INVENTORY_PROVIDER,
   INVENTORY_PROVIDER_LABELS,
   type InventoryProvider,
 } from "./inventoryProviders";
@@ -46,6 +48,9 @@ export interface StoreInventorySourcesBundle {
   activeProvider: InventoryProvider;
   sources: InventoryFeedSourceRow[];
   comparison: ReturnType<typeof buildStoreComparison>;
+  inventoryRole?: "dealership" | "inventory_pool";
+  isInventoryPool?: boolean;
+  audienceCounts?: { key: string; label: string; count: number }[];
 }
 
 export async function ensureInventoryFeedSourcesForStore(
@@ -70,11 +75,14 @@ export async function ensureInventoryFeedSourcesForStore(
     }
   }
 
-  const { data: homenetSource } = await supabase
+  // Never silently activate vAuto for a new store before a successful import.
+  // Prefer legacy HomeNet (rollback-safe) when creating initial settings.
+  const preferredProvider: InventoryProvider = FALLBACK_ACTIVE_INVENTORY_PROVIDER;
+  const { data: preferredSource } = await supabase
     .from("inventory_feed_sources")
     .select("id")
     .eq("store_id", storeId)
-    .eq("provider", "homenet")
+    .eq("provider", preferredProvider)
     .maybeSingle();
 
   const { data: existingSettings } = await supabase
@@ -83,10 +91,10 @@ export async function ensureInventoryFeedSourcesForStore(
     .eq("store_id", storeId)
     .maybeSingle();
 
-  if (!existingSettings && homenetSource?.id) {
+  if (!existingSettings && preferredSource?.id) {
     await supabase.from("dealership_inventory_settings").insert({
       store_id: storeId,
-      active_inventory_feed_source_id: homenetSource.id,
+      active_inventory_feed_source_id: preferredSource.id,
     });
   }
 
@@ -123,7 +131,7 @@ export async function listStoreInventorySourceBundles(): Promise<
 
   const { data: stores, error: storesError } = await supabase
     .from("stores")
-    .select("id, name")
+    .select("id, name, inventory_role")
     .order("name");
 
   if (storesError) {
@@ -179,23 +187,66 @@ export async function listStoreInventorySourceBundles(): Promise<
 
   const bundles: StoreInventorySourcesBundle[] = [];
 
+  const { countAudienceVehicles, getInventoryAudiences } = await import(
+    "./inventoryAudiences"
+  );
+  const audiences = await getInventoryAudiences();
+
   for (const store of stores ?? []) {
     const storeId = store.id as string;
     const storeSources = sourcesByStore.get(storeId) ?? [];
-    const homenet =
+    let homenet =
       storeSources.find((s) => s.provider === "homenet")?.last_vehicle_count ?? 0;
-    const vauto =
+    let vauto =
       storeSources.find((s) => s.provider === "vauto")?.last_vehicle_count ?? 0;
+
+    if (homenet === 0 || vauto === 0) {
+      const [liveHomenet, liveVauto] = await Promise.all([
+        countActiveVehiclesForProvider(storeId, "homenet"),
+        countActiveVehiclesForProvider(storeId, "vauto"),
+      ]);
+      if (homenet === 0 && liveHomenet > 0) homenet = liveHomenet;
+      if (vauto === 0 && liveVauto > 0) vauto = liveVauto;
+    }
+
     const activeFeedSourceId = settingsByStore.get(storeId) ?? null;
     const activeProvider = await getActiveInventoryProvider(storeId);
+    const isPool =
+      store.inventory_role === "inventory_pool" ||
+      storeId === "b7e1c2a0-4f11-4b2a-9c3d-11a22b33c44d";
+    const baseName = (store.name as string) ?? "Store";
+
+    const relatedAudiences = audiences.filter((a) => a.source_store_id === storeId);
+    const audienceCounts = isPool
+      ? await Promise.all(
+          relatedAudiences.map(async (a) => ({
+            key: a.audience_key,
+            label: a.label,
+            count: await countAudienceVehicles(a.audience_key, {
+              provider: "vauto",
+            }),
+          })),
+        )
+      : undefined;
 
     bundles.push({
       storeId,
-      storeName: (store.name as string) ?? "Store",
+      storeName: isPool ? `${baseName} (internal inventory pool)` : baseName,
       activeFeedSourceId,
       activeProvider,
-      sources: storeSources,
+      sources: storeSources.map((source) => {
+        if (source.provider === "homenet" && source.last_vehicle_count === 0 && homenet > 0) {
+          return { ...source, last_vehicle_count: homenet };
+        }
+        if (source.provider === "vauto" && source.last_vehicle_count === 0 && vauto > 0) {
+          return { ...source, last_vehicle_count: vauto };
+        }
+        return source;
+      }),
       comparison: buildStoreComparison(homenet, vauto),
+      inventoryRole: isPool ? "inventory_pool" : "dealership",
+      isInventoryPool: isPool,
+      audienceCounts,
     });
   }
 
@@ -206,6 +257,7 @@ export interface SetActiveInventoryFeedSourceInput {
   storeId: string;
   feedSourceId: string;
   acknowledgeMismatch?: boolean;
+  acknowledgeCutover?: boolean;
 }
 
 export async function setActiveInventoryFeedSource(
@@ -236,6 +288,7 @@ export async function setActiveInventoryFeedSource(
     targetFeedSourceId: feedSourceId,
     targetProvider,
     acknowledgeMismatch: input.acknowledgeMismatch,
+    acknowledgeCutover: input.acknowledgeCutover,
   });
 
   if (!validation.allowed) {
@@ -263,6 +316,8 @@ export async function setActiveInventoryFeedSource(
     toProvider: targetProvider,
     homenetCount: validation.comparison.homenetCount,
     vautoCount: validation.comparison.vautoCount,
-    acknowledgedMismatch: Boolean(input.acknowledgeMismatch),
+    acknowledgedMismatch: Boolean(
+      input.acknowledgeMismatch || input.acknowledgeCutover,
+    ),
   });
 }

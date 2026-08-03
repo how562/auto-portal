@@ -105,8 +105,14 @@ export function formatVehicleLabel(vehicle: Vehicle): string {
   return `${title}${trim}`;
 }
 
-export function vehicleDetailPath(id: string): string {
-  return `/inventory/${id}`;
+export function vehicleDetailPath(
+  id: string,
+  options?: { audience?: string | null },
+): string {
+  const base = `/inventory/${id}`;
+  const audience = options?.audience?.trim();
+  if (audience) return `${base}?audience=${encodeURIComponent(audience)}`;
+  return base;
 }
 
 export function formatMetadataTitle(vehicle: VehicleDetail): string {

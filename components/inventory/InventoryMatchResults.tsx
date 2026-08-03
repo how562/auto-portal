@@ -33,6 +33,8 @@ interface InventoryMatchResultsProps {
   filters: InventoryFilters;
   viewMode: InventoryViewMode;
   similarPicks?: boolean;
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function InventoryMatchResults({
@@ -43,6 +45,8 @@ export function InventoryMatchResults({
   filters,
   viewMode,
   similarPicks = false,
+  audienceKey = null,
+  siteStoreId = null,
 }: InventoryMatchResultsProps) {
   const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
@@ -102,6 +106,8 @@ export function InventoryMatchResults({
                 : undefined
             }
             microcopy={microcopyFor(spotlight)}
+            audienceKey={audienceKey}
+            siteStoreId={siteStoreId}
           />
         ) : null}
 
@@ -122,6 +128,8 @@ export function InventoryMatchResults({
                       : undefined
                   }
                   microcopy={microcopyFor(vehicle)}
+                  audienceKey={audienceKey}
+                  siteStoreId={siteStoreId}
                 />
               );
             })}
@@ -143,6 +151,8 @@ export function InventoryMatchResults({
                       : undefined
                   }
                   microcopy={microcopyFor(vehicle)}
+                  audienceKey={audienceKey}
+                  siteStoreId={siteStoreId}
                 />
               );
             })}
@@ -153,6 +163,8 @@ export function InventoryMatchResults({
           <FeaturedPicksStrip
             vehicles={featured}
             microcopyFor={microcopyFor}
+            audienceKey={audienceKey}
+            siteStoreId={siteStoreId}
           />
         ) : null}
 

@@ -13,7 +13,7 @@ export async function FeedMappingScreen() {
     try {
       [rows, stores] = await Promise.all([
         listFeedFileMappingsAdmin(),
-        listStoresForAdmin(),
+        listStoresForAdmin({ includePools: true }),
       ]);
     } catch (error: unknown) {
       loadError =
@@ -26,7 +26,8 @@ export async function FeedMappingScreen() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Feed Mapping</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Map HomeNet SFTP filenames to stores. Active rows in{" "}
+          Map SFTP filenames to stores (HomeNet today; same table is used for
+          vAuto dealership file mapping). Active rows in{" "}
           <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
             feed_file_mappings
           </code>{" "}

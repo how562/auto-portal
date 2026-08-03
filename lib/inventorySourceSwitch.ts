@@ -1,4 +1,7 @@
 import type { InventoryProvider } from "@/lib/inventoryProviders";
+import {
+  countActiveVehiclesForProvider,
+} from "@/lib/inventoryActiveSource";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Absolute count gap that always triggers a dramatic mismatch warning. */
@@ -12,6 +15,7 @@ export interface ProviderCountComparison {
   vautoCount: number;
   difference: number;
   dramaticMismatch: boolean;
+  zeroVautoWarning: boolean;
 }
 
 export function compareProviderCounts(
@@ -31,6 +35,7 @@ export function compareProviderCounts(
     difference,
     dramaticMismatch:
       bothHaveStock && (ratioMismatch || absoluteMismatch),
+    zeroVautoWarning: vautoCount === 0,
   };
 }
 
@@ -39,13 +44,16 @@ export interface ValidateProviderSwitchInput {
   targetFeedSourceId: string;
   targetProvider: InventoryProvider;
   acknowledgeMismatch?: boolean;
+  /** Required when switching HomeNet → vAuto (explicit cutover confirmation). */
+  acknowledgeCutover?: boolean;
 }
 
 export type ProviderSwitchBlockReason =
   | "running_import"
   | "target_has_no_data"
   | "already_active"
-  | "dramatic_mismatch_unacknowledged";
+  | "dramatic_mismatch_unacknowledged"
+  | "cutover_unacknowledged";
 
 export interface ProviderSwitchValidation {
   allowed: boolean;
@@ -54,6 +62,7 @@ export interface ProviderSwitchValidation {
   comparison: ProviderCountComparison;
   currentProvider: InventoryProvider | null;
   currentFeedSourceId: string | null;
+  requiresCutoverAck: boolean;
 }
 
 export async function hasRunningFeedImport(
@@ -76,6 +85,28 @@ export async function hasRunningFeedImport(
     return false;
   }
   return (data?.length ?? 0) > 0;
+}
+
+async function resolveProviderCounts(
+  storeId: string,
+  cachedHomenet: number,
+  cachedVauto: number,
+): Promise<ProviderCountComparison> {
+  let homenetCount = cachedHomenet;
+  let vautoCount = cachedVauto;
+
+  // Prefer live counts when cached last_vehicle_count is stale/zero so
+  // legacy null-provider HomeNet rows still allow rollback switches.
+  if (homenetCount === 0 || vautoCount === 0) {
+    const [liveHomenet, liveVauto] = await Promise.all([
+      countActiveVehiclesForProvider(storeId, "homenet"),
+      countActiveVehiclesForProvider(storeId, "vauto"),
+    ]);
+    if (homenetCount === 0 && liveHomenet > 0) homenetCount = liveHomenet;
+    if (vautoCount === 0 && liveVauto > 0) vautoCount = liveVauto;
+  }
+
+  return compareProviderCounts(homenetCount, vautoCount);
 }
 
 export async function validateProviderSwitch(
@@ -103,14 +134,17 @@ export async function validateProviderSwitch(
     currentProvider = (currentSource?.provider as InventoryProvider) ?? null;
   }
 
+  const emptyComparison = compareProviderCounts(0, 0);
+
   if (currentFeedSourceId === input.targetFeedSourceId) {
     return {
       allowed: false,
       reason: "already_active",
       message: "This provider is already the active inventory source.",
-      comparison: { homenetCount: 0, vautoCount: 0, difference: 0, dramaticMismatch: false },
+      comparison: emptyComparison,
       currentProvider,
       currentFeedSourceId,
+      requiresCutoverAck: false,
     };
   }
 
@@ -119,19 +153,26 @@ export async function validateProviderSwitch(
     .select("provider, last_vehicle_count")
     .eq("store_id", storeId);
 
-  const homenetCount =
-    sources?.find((s) => s.provider === "homenet")?.last_vehicle_count ?? 0;
-  const vautoCount =
-    sources?.find((s) => s.provider === "vauto")?.last_vehicle_count ?? 0;
-  const comparison = compareProviderCounts(
-    Number(homenetCount) || 0,
-    Number(vautoCount) || 0,
+  const cachedHomenet =
+    Number(sources?.find((s) => s.provider === "homenet")?.last_vehicle_count) ||
+    0;
+  const cachedVauto =
+    Number(sources?.find((s) => s.provider === "vauto")?.last_vehicle_count) ||
+    0;
+  const comparison = await resolveProviderCounts(
+    storeId,
+    cachedHomenet,
+    cachedVauto,
   );
 
   const targetCount =
     input.targetProvider === "homenet"
       ? comparison.homenetCount
       : comparison.vautoCount;
+
+  const switchingToVauto =
+    input.targetProvider === "vauto" && currentProvider !== "vauto";
+  const requiresCutoverAck = switchingToVauto;
 
   if (await hasRunningFeedImport()) {
     return {
@@ -142,6 +183,7 @@ export async function validateProviderSwitch(
       comparison,
       currentProvider,
       currentFeedSourceId,
+      requiresCutoverAck,
     };
   }
 
@@ -153,6 +195,20 @@ export async function validateProviderSwitch(
       comparison,
       currentProvider,
       currentFeedSourceId,
+      requiresCutoverAck,
+    };
+  }
+
+  if (requiresCutoverAck && !input.acknowledgeCutover) {
+    return {
+      allowed: false,
+      reason: "cutover_unacknowledged",
+      message:
+        "Confirm the HomeNet → vAuto cutover for this dealership. Public inventory will switch to vAuto only after you acknowledge.",
+      comparison,
+      currentProvider,
+      currentFeedSourceId,
+      requiresCutoverAck,
     };
   }
 
@@ -164,6 +220,7 @@ export async function validateProviderSwitch(
       comparison,
       currentProvider,
       currentFeedSourceId,
+      requiresCutoverAck,
     };
   }
 
@@ -172,6 +229,7 @@ export async function validateProviderSwitch(
     comparison,
     currentProvider,
     currentFeedSourceId,
+    requiresCutoverAck,
   };
 }
 

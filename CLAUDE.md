@@ -43,10 +43,13 @@ The overwhelming majority of this codebase exists to let non-developers edit the
 
 ### Inventory ingestion
 
-Full detail in `docs/inventory-ingestion-architecture.md` — read it before touching import code. Key points:
-- Two **provider-isolated**, never-merged sources: HomeNet (SFTP DealerSend feed, live) and vAuto (dedicated DigitalOcean SFTP, intake-only so far). Provider-specific parse/map code lives under `lib/import/providers/<provider>/` and must not be imported by portal/inventory display code — only the shared `lib/import/canonicalVehicle.ts` model and `lib/import/vehicleUpsert.ts` are shared.
-- `vehicles` rows are keyed by `(store_id, vin, inventory_provider)`; only one provider is "active" per store (`getActiveInventoryProvider`/`getActiveInventoryForDealership` in `lib/inventoryActiveSource.ts`) and **all** public read paths (SRP, VDP, homepage collections) must filter by the active provider — see the pattern in `lib/homepage.ts`.
-- Import endpoints (`/api/import-homenet`, `/api/import-vauto`) are secret-protected via `IMPORT_SECRET`, separate from the `/admin` cookie auth.
+Full detail in `docs/inventory-ingestion-architecture.md` and cutover runbook `docs/auto-portal-vauto-ui-cutover.md`. Key points:
+- Two **provider-isolated**, never-merged sources: vAuto (preferred / future default) and HomeNet (temporary rollback until every store is validated). Provider-specific parse/map code lives under `lib/import/providers/<provider>/` and must not be imported by portal/inventory display code — only the shared `lib/import/canonicalVehicle.ts` model and `lib/import/vehicleUpsert.ts` are shared.
+- `vehicles` rows are keyed by `(store_id, vin, inventory_provider)`; only one provider is "active" per store (`getActiveInventoryProvider`/`getActiveInventoryForDealership` in `lib/inventoryActiveSource.ts`). **All** public read paths (SRP, VDP, homepage collections) must filter via `applyInventoryProviderFilter` / `getActiveInventoryProviderFilterSpec` — null `inventory_provider` rows are treated as legacy HomeNet during cutover (do not hide inventory).
+- Preferred future config default is `vauto` (`DEFAULT_INVENTORY_PROVIDER`); stores without settings still fall back to HomeNet until an explicit admin cutover. Do not mass-switch providers.
+- Schema migrations `supabase/migrations/20260803170*.sql` are applied on the live Auto Portal project; remaining vAuto work is ops cutover (SFTP secrets, feed mappings, per-store switch) — see `docs/auto-portal-vauto-ui-cutover.md`.
+- Import endpoints (`/api/import-vauto`, `/api/import-homenet`) are secret-protected via `IMPORT_SECRET`, separate from the `/admin` cookie auth. HomeNet importer is retained for rollback until cutover completes.
+- Auto Portal and GEO remain separate applications; they may share the same normalized inventory *pattern* / feed files, never application code or databases.
 
 ### Admin auth
 

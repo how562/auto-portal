@@ -23,6 +23,8 @@ interface DiscoveryVehicleCardProps {
   highlightBadge?: BadgeKind | null;
   highlightBadgeLabel?: string;
   microcopy: string;
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function DiscoveryVehicleCard({
@@ -32,6 +34,8 @@ export function DiscoveryVehicleCard({
   highlightBadge,
   highlightBadgeLabel,
   microcopy,
+  audienceKey = null,
+  siteStoreId = null,
 }: DiscoveryVehicleCardProps) {
   const { openLead } = useLeadCapture();
   const viewDetails = useCta("view_details");
@@ -39,7 +43,7 @@ export function DiscoveryVehicleCard({
   const checkAvailability = useCta("check_availability");
 
   const label = formatVehicleLabel(vehicle);
-  const detailHref = vehicleDetailPath(vehicle.id);
+  const detailHref = vehicleDetailPath(vehicle.id, { audience: audienceKey });
 
   return (
     <article className={vehicleListingShell}>
@@ -78,6 +82,7 @@ export function DiscoveryVehicleCard({
                 openLead({
                   action: "shortlist",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Add to shortlist: ${label}`,
                 })
               }
@@ -91,6 +96,7 @@ export function DiscoveryVehicleCard({
                 openLead({
                   action: "availability",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Check availability for ${label}`,
                 })
               }

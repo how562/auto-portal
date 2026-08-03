@@ -15,6 +15,7 @@ export interface StoreProviderComparison {
   difference: number;
   mismatchWarning: boolean;
   dramaticMismatch: boolean;
+  zeroVautoWarning: boolean;
 }
 
 function healthKey(storeId: string, provider: InventoryProvider): string {
@@ -130,5 +131,6 @@ export function buildStoreComparison(
     mismatchWarning:
       cmp.homenetCount > 0 && cmp.vautoCount > 0 && cmp.difference > 0,
     dramaticMismatch: cmp.dramaticMismatch,
+    zeroVautoWarning: cmp.zeroVautoWarning,
   };
 }

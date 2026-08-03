@@ -1,7 +1,17 @@
 import {
+  applyInventoryProviderFilter,
   getActiveInventoryProvider,
-  getActiveInventoryProviderFilterSpec,
 } from "./inventoryActiveSource";
+import {
+  applyPublicInventoryQueryScope,
+  getAudienceBySiteStoreId,
+  isInventoryAudienceKey,
+  isInventoryPoolStoreId,
+  isSharedPreownedCondition,
+  vehicleMatchesAudience,
+  type InventoryAudienceKey,
+} from "./inventoryAudiences";
+import { vehicleMatchesActiveProvider } from "./inventoryProviders";
 import { getSupabase } from "./supabase";
 import type { InventorySort } from "./inventorySearch";
 import { INVENTORY_PAGE_SIZE } from "./inventorySearch";
@@ -87,6 +97,13 @@ export interface InventoryPageResult {
   pageSize: number;
 }
 
+export interface FetchVehicleByIdOptions {
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
+  /** Skip audience membership gate (redirect resolution only). */
+  bypassAudienceGate?: boolean;
+}
+
 /** Paginated active inventory from Supabase (20 per page by default). */
 export async function fetchInventoryVehiclesPage(
   page = 1,
@@ -99,23 +116,19 @@ export async function fetchInventoryVehiclesPage(
   const from = (safePage - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const providerSpec = await getActiveInventoryProviderFilterSpec({
-    storeId:
-      filters && filters.storeId !== "all" ? filters.storeId : undefined,
-  });
   let query = supabase
     .from("vehicles")
     .select(PORTAL_VEHICLE_SELECT, { count: "exact" })
     .eq("status", "active");
 
-  if (providerSpec.kind === "provider") {
-    query = query.eq("inventory_provider", providerSpec.provider);
-  } else {
-    query = query.or(providerSpec.orFilter);
-  }
+  const scoped = await applyPublicInventoryQueryScope(
+    query,
+    filters?.storeId,
+  );
+  query = scoped.query;
 
   if (filters) {
-    query = applyServerInventoryFilters(query, filters);
+    query = applyServerInventoryFilters(query, filters, { skipStoreId: true });
   }
 
   for (const spec of orderingFor(sort)) {
@@ -142,20 +155,17 @@ export async function fetchInventoryVehiclesPage(
 /** All active inventory rows (for client-side smart-match filtering). */
 export async function fetchInventoryVehicles(
   sort: InventorySort = "merchandised",
+  storeId?: string,
 ): Promise<Vehicle[]> {
   const supabase = getSupabase();
 
-  const providerSpec = await getActiveInventoryProviderFilterSpec();
   let query = supabase
     .from("vehicles")
     .select(PORTAL_VEHICLE_SELECT)
     .eq("status", "active");
 
-  if (providerSpec.kind === "provider") {
-    query = query.eq("inventory_provider", providerSpec.provider);
-  } else {
-    query = query.or(providerSpec.orFilter);
-  }
+  const scoped = await applyPublicInventoryQueryScope(query, storeId);
+  query = scoped.query;
 
   for (const spec of orderingFor(sort)) {
     query = query.order(spec.column, {
@@ -185,16 +195,8 @@ export async function fetchPortalVehicles(
     .order("internet_price", { ascending: true, nullsFirst: false })
     .limit(PORTAL_VEHICLE_LIMIT);
 
-  if (storeId) {
-    query = query.eq("store_id", storeId);
-  }
-
-  const providerSpec = await getActiveInventoryProviderFilterSpec({ storeId });
-  if (providerSpec.kind === "provider") {
-    query = query.eq("inventory_provider", providerSpec.provider);
-  } else {
-    query = query.or(providerSpec.orFilter);
-  }
+  const scoped = await applyPublicInventoryQueryScope(query, storeId);
+  query = scoped.query;
 
   const { data, error } = await query;
 
@@ -207,6 +209,7 @@ export async function fetchPortalVehicles(
 
 export async function fetchVehicleById(
   id: string,
+  options?: FetchVehicleByIdOptions,
 ): Promise<VehicleDetail | null> {
   const supabase = getSupabase();
 
@@ -221,14 +224,48 @@ export async function fetchVehicleById(
     throw new Error(`Failed to load vehicle: ${error.message}`);
   }
 
-  const vehicle = data as (VehicleDetail & { inventory_provider?: string }) | null;
+  const vehicle = data as (VehicleDetail & {
+    inventory_provider?: string | null;
+  }) | null;
   if (!vehicle) return null;
-  if (!vehicle.store_id) return vehicle;
+  if (!vehicle.store_id) return null;
 
   const activeProvider = await getActiveInventoryProvider(vehicle.store_id);
-  const rowProvider = vehicle.inventory_provider ?? "homenet";
-  if (rowProvider !== activeProvider) return null;
+  if (
+    !vehicleMatchesActiveProvider(vehicle.inventory_provider, activeProvider)
+  ) {
+    return null;
+  }
 
+  if (options?.bypassAudienceGate) {
+    return vehicle;
+  }
+
+  const isPool = await isInventoryPoolStoreId(vehicle.store_id);
+  if (!isPool) {
+    return vehicle;
+  }
+
+  // Pool-owned VDP: audience / site context gates new franchise vehicles.
+  let audienceKey: InventoryAudienceKey | null = null;
+  if (options?.audienceKey && isInventoryAudienceKey(options.audienceKey)) {
+    audienceKey = options.audienceKey;
+  } else if (options?.siteStoreId) {
+    const audience = await getAudienceBySiteStoreId(options.siteStoreId);
+    audienceKey = audience?.audience_key ?? null;
+  }
+
+  if (isSharedPreownedCondition(vehicle.condition)) {
+    // Shared used/CPO: allowed in any audience context or neutral canonical URL.
+    if (audienceKey && !vehicleMatchesAudience(vehicle, audienceKey)) {
+      return null;
+    }
+    return vehicle;
+  }
+
+  // New (or other) pool vehicles require a matching audience context.
+  if (!audienceKey) return null;
+  if (!vehicleMatchesAudience(vehicle, audienceKey)) return null;
   return vehicle;
 }
 
@@ -237,7 +274,7 @@ export async function fetchStoreById(storeId: string): Promise<Store | null> {
 
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, city, state, phone, website")
+    .select("id, name, city, state, phone, website, inventory_role")
     .eq("id", storeId)
     .maybeSingle();
 
@@ -245,11 +282,25 @@ export async function fetchStoreById(storeId: string): Promise<Store | null> {
     throw new Error(`Failed to load store: ${error.message}`);
   }
 
-  return (data as Store | null) ?? null;
+  if (!data) return null;
+  // Never treat the inventory pool as a public dealership storefront.
+  if ((data as { inventory_role?: string }).inventory_role === "inventory_pool") {
+    return null;
+  }
+
+  return {
+    id: data.id as string,
+    name: data.name as string,
+    city: (data.city as string | null) ?? null,
+    state: (data.state as string | null) ?? null,
+    phone: (data.phone as string | null) ?? null,
+    website: (data.website as string | null) ?? null,
+  };
 }
 
 export async function fetchSimilarVehicles(
   vehicle: VehicleDetail,
+  options?: { audienceKey?: InventoryAudienceKey | null },
 ): Promise<Vehicle[]> {
   const supabase = getSupabase();
   const excludeId = vehicle.id;
@@ -261,6 +312,9 @@ export async function fetchSimilarVehicles(
 
   const addRows = (rows: Vehicle[] | null) => {
     for (const row of rows ?? []) {
+      if (options?.audienceKey && !vehicleMatchesAudience(row, options.audienceKey)) {
+        continue;
+      }
       if (!seen.has(row.id)) {
         seen.add(row.id);
         collected.push(row);
@@ -276,8 +330,11 @@ export async function fetchSimilarVehicles(
       .eq("body_style", vehicle.body_style)
       .neq("id", excludeId)
       .limit(SIMILAR_VEHICLE_LIMIT);
+    if (vehicle.store_id) {
+      query = query.eq("store_id", vehicle.store_id);
+    }
     if (activeProvider) {
-      query = query.eq("inventory_provider", activeProvider);
+      query = applyInventoryProviderFilter(query, activeProvider);
     }
     const { data } = await query;
     addRows(data as Vehicle[] | null);
@@ -292,7 +349,7 @@ export async function fetchSimilarVehicles(
       .neq("id", excludeId)
       .limit(SIMILAR_VEHICLE_LIMIT);
     if (activeProvider) {
-      query = query.eq("inventory_provider", activeProvider);
+      query = applyInventoryProviderFilter(query, activeProvider);
     }
     const { data } = await query;
     addRows(data as Vehicle[] | null);
@@ -308,7 +365,7 @@ export async function fetchSimilarVehicles(
       .neq("id", excludeId)
       .limit(SIMILAR_VEHICLE_LIMIT);
     if (activeProvider) {
-      query = query.eq("inventory_provider", activeProvider);
+      query = applyInventoryProviderFilter(query, activeProvider);
     }
     const { data } = await query;
     addRows(data as Vehicle[] | null);
@@ -322,8 +379,11 @@ export async function fetchSimilarVehicles(
       .neq("id", excludeId)
       .order("year", { ascending: false })
       .limit(SIMILAR_VEHICLE_LIMIT);
+    if (vehicle.store_id) {
+      query = query.eq("store_id", vehicle.store_id);
+    }
     if (activeProvider) {
-      query = query.eq("inventory_provider", activeProvider);
+      query = applyInventoryProviderFilter(query, activeProvider);
     }
     const { data } = await query;
     addRows(data as Vehicle[] | null);

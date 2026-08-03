@@ -33,13 +33,14 @@ export async function FeedsScreen() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Feed Imports</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
-          Import run history. HomeNet:{" "}
-          <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
-            /api/import-homenet
-          </code>
-          . vAuto intake (inspect only):{" "}
+          Import run history. Preferred:{" "}
           <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
             /api/import-vauto
+          </code>{" "}
+          (portal-owned vAuto pipeline). HomeNet rollback (deprecated, retained
+          until cutover completes):{" "}
+          <code className="rounded bg-[var(--cream)] px-1.5 py-0.5 text-xs">
+            /api/import-homenet
           </code>
           . Choose which provider is live under{" "}
           <a

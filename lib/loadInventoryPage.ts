@@ -10,6 +10,7 @@ import {
   mergeInventoryFiltersWithPreset,
   type InventoryPagePreset,
 } from "@/lib/inventorySitePages";
+import { getInventoryAudiences } from "@/lib/inventoryAudiences";
 import { fetchStores } from "@/lib/stores";
 import {
   fetchInventoryVehicles,
@@ -27,6 +28,8 @@ export interface InventoryPageLoadResult {
   page: number;
   totalCount: number;
   serverPaginated: boolean;
+  /** site_store_id → audience_key for JLR contextual VDP links */
+  audienceByStoreId: Record<string, string>;
 }
 
 function readParam(
@@ -35,6 +38,15 @@ function readParam(
 ): string | undefined {
   const value = searchParams[key];
   return typeof value === "string" ? value : undefined;
+}
+
+async function loadAudienceByStoreId(): Promise<Record<string, string>> {
+  const audiences = await getInventoryAudiences();
+  const map: Record<string, string> = {};
+  for (const audience of audiences) {
+    map[audience.site_store_id] = audience.audience_key;
+  }
+  return map;
 }
 
 export async function loadInventoryPageData(
@@ -55,12 +67,15 @@ export async function loadInventoryPageData(
   const page = parseInventoryPage(readParam(searchParams, "page"));
   const useClientPagination =
     needsSmartMatchFiltering(filters) || searchQuery != null;
+  const storeScope =
+    filters.storeId !== "all" ? filters.storeId : undefined;
 
   try {
     if (useClientPagination) {
-      const [stores, vehicles] = await Promise.all([
+      const [stores, vehicles, audienceByStoreId] = await Promise.all([
         fetchStores(),
-        fetchInventoryVehicles(filters.sort),
+        fetchInventoryVehicles(filters.sort, storeScope),
+        loadAudienceByStoreId(),
       ]);
       return {
         vehicles,
@@ -71,10 +86,11 @@ export async function loadInventoryPageData(
         page,
         totalCount: vehicles.length,
         serverPaginated: false,
+        audienceByStoreId,
       };
     }
 
-    const [stores, result] = await Promise.all([
+    const [stores, result, audienceByStoreId] = await Promise.all([
       fetchStores(),
       fetchInventoryVehiclesPage(
         page,
@@ -82,6 +98,7 @@ export async function loadInventoryPageData(
         filters.sort,
         hasActiveInventoryFilters(filters) ? filters : undefined,
       ),
+      loadAudienceByStoreId(),
     ]);
 
     return {
@@ -93,6 +110,7 @@ export async function loadInventoryPageData(
       page: result.page,
       totalCount: result.totalCount,
       serverPaginated: true,
+      audienceByStoreId,
     };
   } catch (error: unknown) {
     return {
@@ -105,6 +123,7 @@ export async function loadInventoryPageData(
       page: 1,
       totalCount: 0,
       serverPaginated: true,
+      audienceByStoreId: {},
     };
   }
 }

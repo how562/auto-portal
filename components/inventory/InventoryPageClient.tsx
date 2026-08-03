@@ -58,6 +58,7 @@ interface InventoryPageClientProps {
   lockedPreset?: InventoryPagePreset;
   /** Filters restored by “reset” on landing pages (preset defaults). */
   resetFilters?: InventoryFilters;
+  audienceByStoreId?: Record<string, string>;
 }
 
 function applyMakeModelFilter(
@@ -89,6 +90,7 @@ export function InventoryPageClient({
   pageTitle,
   lockedPreset,
   resetFilters: resetFiltersProp,
+  audienceByStoreId = {},
 }: InventoryPageClientProps) {
   const { t, locale } = useLanguage();
   const smartMatchCatalog = useSmartMatchRulesCatalog();
@@ -353,6 +355,14 @@ export function InventoryPageClient({
               filters={filters}
               viewMode={viewMode}
               similarPicks={similarPicks}
+              audienceKey={
+                filters.storeId !== "all"
+                  ? audienceByStoreId[filters.storeId] ?? null
+                  : null
+              }
+              siteStoreId={
+                filters.storeId !== "all" ? filters.storeId : null
+              }
             />
           ) : null}
         </div>

@@ -1,9 +1,13 @@
-import { getActiveInventoryProviderFilterSpec } from "@/lib/inventoryActiveSource";
+import {
+  applyActiveInventoryProviderFilterSpec,
+  getActiveInventoryProviderFilterSpec,
+} from "@/lib/inventoryActiveSource";
 import { isAdminProtectionEnabled } from "@/lib/adminAuthConfig";
 import { listAllSitePages } from "@/lib/cmsAdmin";
 import { listFeedImportRuns, type FeedImportRunRow } from "@/lib/feedImportRunsAdmin";
 import { listFeedFileMappingsAdmin } from "@/lib/feedFileMappingsAdmin";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin";
+import { INVENTORY_PROVIDER_LABELS } from "@/lib/inventoryProviders";
 
 export type WorkspaceLight = "green" | "red";
 
@@ -61,7 +65,8 @@ function evaluateFeedStatus(
       ...base,
       light: "red",
       summary: "No imports yet",
-      detail: "Run the HomeNet import once feeds are connected.",
+      detail:
+        "Run a vAuto import (preferred) or HomeNet rollback import once feeds are connected.",
     };
   }
 
@@ -69,13 +74,16 @@ function evaluateFeedStatus(
     const started = new Date(latest.started_at).getTime();
     const stuck =
       Number.isFinite(started) && Date.now() - started > FEED_RUNNING_MAX_MS;
+    const providerLabel = latest.inventory_provider
+      ? INVENTORY_PROVIDER_LABELS[latest.inventory_provider]
+      : "inventory";
     return {
       ...base,
       light: "red",
       summary: stuck ? "Import appears stuck" : "Import in progress",
       detail: stuck
-        ? `Started ${formatWhen(latest.started_at)} — check /api/import-homenet.`
-        : `Started ${formatWhen(latest.started_at)}.`,
+        ? `Started ${formatWhen(latest.started_at)} — check /api/import-vauto or /api/import-homenet (${providerLabel}).`
+        : `Started ${formatWhen(latest.started_at)} (${providerLabel}).`,
     };
   }
 
@@ -120,11 +128,7 @@ async function countPublicActiveInventory(): Promise<number> {
     .select("id", { count: "exact", head: true })
     .eq("status", "active");
 
-  if (spec.kind === "provider") {
-    builder = builder.eq("inventory_provider", spec.provider);
-  } else {
-    builder = builder.or(spec.orFilter);
-  }
+  builder = applyActiveInventoryProviderFilterSpec(builder, spec);
 
   const { count, error } = await builder;
   if (error) {

@@ -2,7 +2,9 @@ import { cache } from "react";
 import { getSupabase } from "./supabase";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "./supabaseAdmin";
 import {
-  DEFAULT_INVENTORY_PROVIDER,
+  FALLBACK_ACTIVE_INVENTORY_PROVIDER,
+  inventoryProviderEqFilter,
+  resolveVehicleInventoryProvider,
   type InventoryProvider,
 } from "./inventoryProviders";
 import type { Vehicle } from "./types";
@@ -15,7 +17,7 @@ interface StoreProviderSetting {
   provider: InventoryProvider;
 }
 
-/** Map each store to its active inventory provider (defaults to HomeNet). */
+/** Map each store to its active inventory provider (legacy fallback when unset). */
 export const getActiveProviderByStoreMap = cache(
   async (): Promise<Map<string, InventoryProvider>> => {
     const supabase = getSupabase();
@@ -28,7 +30,7 @@ export const getActiveProviderByStoreMap = cache(
     if (settingsError || !settings?.length) {
       if (settingsError) {
         console.warn(
-          `dealership_inventory_settings: ${settingsError.message} — using HomeNet default`,
+          `dealership_inventory_settings: ${settingsError.message} — using legacy HomeNet fallback`,
         );
       }
       return map;
@@ -72,7 +74,40 @@ export async function getActiveInventoryProvider(
   dealershipId: string,
 ): Promise<InventoryProvider> {
   const map = await getActiveProviderByStoreMap();
-  return map.get(dealershipId) ?? DEFAULT_INVENTORY_PROVIDER;
+  return map.get(dealershipId) ?? FALLBACK_ACTIVE_INVENTORY_PROVIDER;
+}
+
+/**
+ * Apply active-provider filter to a vehicles query.
+ * HomeNet includes `inventory_provider IS NULL` (legacy untagged rows).
+ *
+ * Uses a structural cast so PostgREST/Supabase builder generics do not explode.
+ */
+export function applyInventoryProviderFilter<T>(
+  query: T,
+  provider: InventoryProvider,
+): T {
+  const spec = inventoryProviderEqFilter(provider);
+  const q = query as T & {
+    eq: (column: string, value: unknown) => T;
+    or: (filters: string) => T;
+  };
+  if (spec.kind === "eq") {
+    return q.eq("inventory_provider", spec.provider);
+  }
+  return q.or(spec.filter);
+}
+
+/** Apply a resolved filter spec (single provider or per-store OR). */
+export function applyActiveInventoryProviderFilterSpec<T>(
+  query: T,
+  spec: ActiveInventoryProviderFilterSpec,
+): T {
+  if (spec.kind === "provider") {
+    return applyInventoryProviderFilter(query, spec.provider);
+  }
+  const q = query as T & { or: (filters: string) => T };
+  return q.or(spec.orFilter);
 }
 
 /** Active inventory rows for one dealership — never mixes providers. */
@@ -80,15 +115,25 @@ export async function getActiveInventoryForDealership(
   dealershipId: string,
   limit = 500,
 ): Promise<Vehicle[]> {
-  const provider = await getActiveInventoryProvider(dealershipId);
-  const supabase = getSupabase();
+  const {
+    applyInventoryScopeToQuery,
+    resolveInventoryScope,
+  } = await import("./inventoryAudiences");
 
-  const { data, error } = await supabase
+  const scope = await resolveInventoryScope({ siteStoreId: dealershipId });
+  if (!scope || scope.kind === "multi") {
+    return [];
+  }
+
+  const supabase = getSupabase();
+  let query = supabase
     .from("vehicles")
     .select(PUBLIC_VEHICLE_SELECT)
-    .eq("store_id", dealershipId)
-    .eq("status", "active")
-    .eq("inventory_provider", provider)
+    .eq("status", "active");
+
+  query = applyInventoryScopeToQuery(query, scope);
+
+  const { data, error } = await query
     .order("internet_price", { ascending: true, nullsFirst: false })
     .limit(limit);
 
@@ -106,16 +151,19 @@ function buildStoreProviderOrFilter(
 ): string | null {
   if (pairs.length === 0) return null;
   return pairs
-    .map(
-      (p) =>
-        `and(store_id.eq.${p.store_id},inventory_provider.eq.${p.provider})`,
-    )
+    .map((p) => {
+      const providerFilter = inventoryProviderEqFilter(p.provider);
+      if (providerFilter.kind === "eq") {
+        return `and(store_id.eq.${p.store_id},inventory_provider.eq.${providerFilter.provider})`;
+      }
+      return `and(store_id.eq.${p.store_id},or(${providerFilter.filter}))`;
+    })
     .join(",");
 }
 
 /**
  * Restrict a vehicles query to each store's active provider only.
- * When no settings exist, filters to HomeNet (preserves single-feed behavior).
+ * When no settings exist, filters to legacy HomeNet (includes null provider rows).
  */
 export type ActiveInventoryProviderFilterSpec =
   | { kind: "provider"; provider: InventoryProvider }
@@ -134,7 +182,7 @@ export async function getActiveInventoryProviderFilterSpec(options?: {
 
   const map = await getActiveProviderByStoreMap();
   if (map.size === 0) {
-    return { kind: "provider", provider: DEFAULT_INVENTORY_PROVIDER };
+    return { kind: "provider", provider: FALLBACK_ACTIVE_INVENTORY_PROVIDER };
   }
 
   const pairs: StoreProviderSetting[] = [];
@@ -144,10 +192,34 @@ export async function getActiveInventoryProviderFilterSpec(options?: {
 
   const orFilter = buildStoreProviderOrFilter(pairs);
   if (!orFilter) {
-    return { kind: "provider", provider: DEFAULT_INVENTORY_PROVIDER };
+    return { kind: "provider", provider: FALLBACK_ACTIVE_INVENTORY_PROVIDER };
   }
 
   return { kind: "per_store_or", orFilter };
+}
+
+/** Live active vehicle count for a store + provider (null rows count as HomeNet). */
+export async function countActiveVehiclesForProvider(
+  storeId: string,
+  provider: InventoryProvider,
+): Promise<number> {
+  if (!isSupabaseAdminConfigured()) return 0;
+
+  const supabase = getSupabaseAdmin();
+  let query = supabase
+    .from("vehicles")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("status", "active");
+
+  query = applyInventoryProviderFilter(query, provider);
+
+  const { count, error } = await query;
+  if (error) {
+    console.warn(`countActiveVehiclesForProvider: ${error.message}`);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 /** Service-role: refresh cached vehicle counts on feed source rows. */
@@ -176,7 +248,9 @@ export async function syncInventoryFeedSourceCounts(
   const counts = new Map<string, number>();
   for (const row of vehicles ?? []) {
     const sid = row.store_id as string;
-    const prov = row.inventory_provider as InventoryProvider;
+    const prov = resolveVehicleInventoryProvider(
+      row.inventory_provider as string | null,
+    );
     const key = `${sid}:${prov}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }

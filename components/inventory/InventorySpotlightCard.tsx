@@ -23,6 +23,8 @@ interface InventorySpotlightCardProps {
   highlightBadge?: BadgeKind | null;
   highlightBadgeLabel?: string;
   microcopy: string;
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function InventorySpotlightCard({
@@ -32,6 +34,8 @@ export function InventorySpotlightCard({
   highlightBadge,
   highlightBadgeLabel,
   microcopy,
+  audienceKey = null,
+  siteStoreId = null,
 }: InventorySpotlightCardProps) {
   const { openLead } = useLeadCapture();
   const viewDetails = useCta("view_details");
@@ -39,7 +43,7 @@ export function InventorySpotlightCard({
   const checkAvailability = useCta("check_availability");
 
   const label = formatVehicleLabel(vehicle);
-  const detailHref = vehicleDetailPath(vehicle.id);
+  const detailHref = vehicleDetailPath(vehicle.id, { audience: audienceKey });
 
   return (
     <article
@@ -94,6 +98,7 @@ export function InventorySpotlightCard({
                 openLead({
                   action: "shortlist",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Add to shortlist: ${label}`,
                 })
               }
@@ -107,6 +112,7 @@ export function InventorySpotlightCard({
                 openLead({
                   action: "availability",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Check availability for ${label}`,
                 })
               }

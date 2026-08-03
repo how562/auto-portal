@@ -12,11 +12,14 @@ import type { Vehicle } from "@/lib/types";
 interface FeaturedPicksStripProps {
   vehicles: Vehicle[];
   microcopyFor: (vehicle: Vehicle) => string;
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function FeaturedPicksStrip({
   vehicles,
   microcopyFor,
+  audienceKey = null,
 }: FeaturedPicksStripProps) {
   if (vehicles.length === 0) return null;
 
@@ -32,7 +35,7 @@ export function FeaturedPicksStrip({
         {vehicles.map((vehicle) => (
           <Link
             key={vehicle.id}
-            href={vehicleDetailPath(vehicle.id)}
+            href={vehicleDetailPath(vehicle.id, { audience: audienceKey })}
             className="group flex gap-4 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] p-4 transition-colors duration-200 hover:border-white/25 hover:bg-white/[0.08]"
           >
             <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-md border border-white/10 bg-white/5">

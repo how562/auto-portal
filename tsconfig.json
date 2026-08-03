@@ -28,5 +28,11 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "_lovable-handoff", "auto-portal/_lovable-handoff", "auto-portal"]
+  "exclude": [
+    "node_modules",
+    "_lovable-handoff",
+    "auto-portal/_lovable-handoff",
+    "auto-portal",
+    "supabase/functions"
+  ]
 }

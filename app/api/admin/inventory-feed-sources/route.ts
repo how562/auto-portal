@@ -30,6 +30,7 @@ interface ActivateBody {
   storeId: string;
   feedSourceId: string;
   acknowledgeMismatch?: boolean;
+  acknowledgeCutover?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
       storeId: body.storeId.trim(),
       feedSourceId: body.feedSourceId.trim(),
       acknowledgeMismatch: body.acknowledgeMismatch,
+      acknowledgeCutover: body.acknowledgeCutover,
     });
     const bundles = await listStoreInventorySourceBundles();
     const bundle = bundles.find((b) => b.storeId === body.storeId.trim());

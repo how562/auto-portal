@@ -1,11 +1,20 @@
 import type { InventoryFilters } from "./inventorySearch";
 
+export type ApplyServerInventoryFiltersOptions = {
+  /** When true, store_id is already applied via inventory scope / audience. */
+  skipStoreId?: boolean;
+};
+
 /** Push simple inventory filters to Supabase so list pages stay paginated. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function applyServerInventoryFilters(query: any, filters: InventoryFilters) {
+export function applyServerInventoryFilters(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: any,
+  filters: InventoryFilters,
+  options?: ApplyServerInventoryFiltersOptions,
+) {
   let next = query;
 
-  if (filters.storeId !== "all") {
+  if (!options?.skipStoreId && filters.storeId !== "all") {
     next = next.eq("store_id", filters.storeId);
   }
 

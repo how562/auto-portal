@@ -3,8 +3,8 @@ import {
   normalizeSourceRaw,
   readDocFeeFromSourceRaw,
   readFeedIncentivesFromSourceRaw,
-  readHomenetPricesFromSourceRaw,
-} from "./homenetSourceRaw";
+  readFeedPricesFromSourceRaw,
+} from "./feedSourceRaw";
 import type { VehicleDetail } from "./types";
 
 export interface PricingSourceAmount {
@@ -64,13 +64,14 @@ function firstRawPrice(
   return null;
 }
 
-/** vAuto / HomeNet invoice field candidates. */
+/** Invoice field candidates across common feed layouts (vAuto / HomeNet / generic). */
 const INVOICE_KEYS = [
   "Invoice",
   "InvoicePrice",
   "invoice",
   "invoice_price",
   "DealerInvoice",
+  "Cost",
 ] as const;
 
 /** Feed-provided dealer discount (not derived). */
@@ -82,7 +83,7 @@ const DEALER_DISCOUNT_KEYS = [
   "TotalDiscount",
 ] as const;
 
-function readVAutoConditionalIncentives(
+function readConditionalIncentivesFromRaw(
   raw: Record<string, unknown> | null,
 ): ConditionalIncentiveSource[] {
   if (!raw) return [];
@@ -130,12 +131,13 @@ function readVAutoConditionalIncentives(
 /**
  * Collects all pricing values from mapped vehicle columns and source_raw.
  * Never invents amounts — derived dealer discount only when msrp and internet_price exist.
+ * Feed-agnostic: works with HomeNet, vAuto, or mixed raw key shapes.
  */
 export function buildVehiclePricingSources(
   vehicle: VehicleDetail,
 ): VehiclePricingSources {
   const raw = normalizeSourceRaw(vehicle.source_raw);
-  const fromRaw = readHomenetPricesFromSourceRaw(raw);
+  const fromRaw = readFeedPricesFromSourceRaw(raw);
 
   const msrp = pickUsable(vehicle.msrp, fromRaw.msrp, fromRaw.originalMsrp);
   const internetPrice = pickUsable(
@@ -156,16 +158,16 @@ export function buildVehiclePricingSources(
   const docFee = readDocFeeFromSourceRaw(raw);
   const effective = getEffectiveVehiclePrice(vehicle);
 
-  const homenetIncentives = readFeedIncentivesFromSourceRaw(raw).map((row) => ({
+  const namedIncentives = readFeedIncentivesFromSourceRaw(raw).map((row) => ({
     id: row.id,
     label: row.label,
     amount: row.amount,
     description: null as string | null,
   }));
-  const vautoIncentives = readVAutoConditionalIncentives(raw);
+  const scannedIncentives = readConditionalIncentivesFromRaw(raw);
 
   const incentiveMap = new Map<string, ConditionalIncentiveSource>();
-  for (const item of [...homenetIncentives, ...vautoIncentives]) {
+  for (const item of [...namedIncentives, ...scannedIncentives]) {
     if (!incentiveMap.has(item.id)) {
       incentiveMap.set(item.id, item);
     }

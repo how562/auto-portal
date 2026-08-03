@@ -1,4 +1,3 @@
-import { getActiveInventoryProvider } from "./inventoryActiveSource";
 import { getSupabase } from "./supabase";
 import type { Collection, CollectionRule, Vehicle } from "./types";
 
@@ -103,13 +102,24 @@ export async function fetchVehiclesForCollection(
   const cap = Math.min(Math.max(limit, 1), MAX_LIMIT);
 
   const supabase = getSupabase();
-  const activeProvider = await getActiveInventoryProvider(collection.store_id);
-  const { data, error } = await supabase
+  const {
+    applyInventoryScopeToQuery,
+    resolveInventoryScope,
+  } = await import("./inventoryAudiences");
+
+  const scope = await resolveInventoryScope({
+    siteStoreId: collection.store_id,
+  });
+  if (!scope || scope.kind === "multi") return [];
+
+  let query = supabase
     .from("vehicles")
     .select(VEHICLE_SELECT)
-    .eq("store_id", collection.store_id)
-    .eq("status", "active")
-    .eq("inventory_provider", activeProvider)
+    .eq("status", "active");
+
+  query = applyInventoryScopeToQuery(query, scope);
+
+  const { data, error } = await query
     .order("year", { ascending: false, nullsFirst: false })
     .limit(80);
 

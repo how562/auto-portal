@@ -7,7 +7,8 @@
     "dev:clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\" && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:vauto": "node --import tsx --test lib/import/providers/vauto/__tests__/vautoMap.test.ts lib/inventoryAudiences.__tests__.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
@@ -27,6 +28,7 @@
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

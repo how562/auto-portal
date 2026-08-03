@@ -23,6 +23,8 @@ interface InventoryListRowProps {
   highlightBadge?: BadgeKind | null;
   highlightBadgeLabel?: string;
   microcopy: string;
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function InventoryListRow({
@@ -32,6 +34,8 @@ export function InventoryListRow({
   highlightBadge,
   highlightBadgeLabel,
   microcopy,
+  audienceKey = null,
+  siteStoreId = null,
 }: InventoryListRowProps) {
   const { openLead } = useLeadCapture();
   const detailsLink = useCta("details_link");
@@ -39,7 +43,7 @@ export function InventoryListRow({
   const checkCompact = useCta("check_compact");
 
   const label = formatVehicleLabel(vehicle);
-  const detailHref = vehicleDetailPath(vehicle.id);
+  const detailHref = vehicleDetailPath(vehicle.id, { audience: audienceKey });
 
   return (
     <article className={vehicleListingShellRow}>
@@ -79,6 +83,7 @@ export function InventoryListRow({
               openLead({
                 action: "shortlist",
                 vehicle,
+                storeId: siteStoreId,
                 shopperIntent: `Add to shortlist: ${label}`,
               })
             }
@@ -92,6 +97,7 @@ export function InventoryListRow({
               openLead({
                 action: "availability",
                 vehicle,
+                storeId: siteStoreId,
                 shopperIntent: `Check availability for ${label}`,
               })
             }

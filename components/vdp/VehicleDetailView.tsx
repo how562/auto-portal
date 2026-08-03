@@ -40,6 +40,8 @@ interface VehicleDetailViewProps {
   similar: Vehicle[];
   vdpCtaSettings: VdpCtaSettingRow[];
   mathboxConfig: PricingMathboxConfigRow[];
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 function VdpTitleHeader({
@@ -134,6 +136,7 @@ export function VehicleDetailView({
   similar,
   vdpCtaSettings,
   mathboxConfig,
+  siteStoreId = null,
 }: VehicleDetailViewProps) {
   const { t, locale } = useLanguage();
   const catalog = useSmartMatchRulesCatalog();
@@ -201,6 +204,7 @@ export function VehicleDetailView({
               store={store}
               vdpCtaSettings={vdpCtaSettings}
               mathboxConfig={mathboxConfig}
+              siteStoreId={siteStoreId}
             />
           </aside>
         </section>

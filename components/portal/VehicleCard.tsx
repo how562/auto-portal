@@ -23,6 +23,8 @@ interface VehicleCardProps {
   highlightBadge?: BadgeKind | null;
   highlightBadgeLabel?: string;
   variant?: "editorial" | "rail";
+  audienceKey?: string | null;
+  siteStoreId?: string | null;
 }
 
 export function VehicleCard({
@@ -32,6 +34,8 @@ export function VehicleCard({
   highlightBadge,
   highlightBadgeLabel,
   variant = "rail",
+  audienceKey = null,
+  siteStoreId = null,
 }: VehicleCardProps) {
   const { openLead } = useLeadCapture();
   const availability = useCta("availability");
@@ -40,7 +44,7 @@ export function VehicleCard({
   const viewDetails = useCta("view_details");
 
   const label = formatVehicleLabel(vehicle);
-  const detailHref = vehicleDetailPath(vehicle.id);
+  const detailHref = vehicleDetailPath(vehicle.id, { audience: audienceKey });
   const isRail = variant === "rail";
 
   return (
@@ -77,6 +81,7 @@ export function VehicleCard({
                 openLead({
                   action: "availability",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Check availability for ${label}`,
                 })
               }
@@ -90,6 +95,7 @@ export function VehicleCard({
                 openLead({
                   action: "shortlist",
                   vehicle,
+                  storeId: siteStoreId,
                   shopperIntent: `Add to shortlist: ${label}`,
                 })
               }
@@ -104,6 +110,7 @@ export function VehicleCard({
               openLead({
                 action: "compare",
                 vehicle,
+                storeId: siteStoreId,
                 shopperIntent: `Find similar to ${label}`,
               })
             }
